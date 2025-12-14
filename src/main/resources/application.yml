@@ -19,15 +19,15 @@ spring:
       client:
         registration:
           google:
-            client-id: 541214774114-gl6011cjimgg33a76na2e50vjtugbtu9.apps.googleusercontent.com
-            client-secret: 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
+            client-id: test_id            # 고유한 값으로 바꾸지 않으면 OAuth 인증 시 문제 발생
+            client-secret: test_secret
             scope:
               - email
               - profile
 
 jwt:
   issuer: ajufresh@gmail.com
-  secret_key: study-springboot
+  secret_key: test_key  # 키가 바뀔 때 마다 토큰을 재발급 해야함
 
 
 
