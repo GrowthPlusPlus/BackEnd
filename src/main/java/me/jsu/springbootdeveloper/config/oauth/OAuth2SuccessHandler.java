@@ -42,7 +42,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         addRefreshTokenToCookie(request, response, refreshToken);  // 쿠키 저장
         // 2. 액세스 토큰 생성 -> 패스에 액세스 토큰 추가
         String accessToken = tokenProvider.generateToken(user, ACCESS_TOKEN_DURATION);  // 엑세스 토큰 생성
-        String targetUrl = getTargetUrl(accessToken);
+        String targetUrl = getTargetUrl(accessToken);  // 모바일 환경에선 삭제해야 함 PKCE 사용
         // 3. 인증 관련 설정값, 쿠키 제거
         clearAuthenticationAttributes(request, response);  // 스프링 세큐리티가 인증과정에서 세선/요청에 저장해둔 인증 정보 삭제함
         // 4. 리다이렉트
@@ -64,6 +64,17 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         CookieUtil.deleteCookie(request, response, REFRESH_TOKEN_COOKIE_NAME);
         CookieUtil.addCookie(response, REFRESH_TOKEN_COOKIE_NAME, refreshToken, cookieMaxAge);
     }
+
+    /*
+        앱에선 쿠키 형태가 아닌 json형태로 Keystore에 리프레시 토큰을 저장해야 함
+        HttpServletRequest/Response에 의존하지 않음
+        {
+          "accessToken": "...",
+          "refreshToken": "..."
+        } 형태로 로컬에 저장
+        요청 방식은 앱에서도 http를 사용해도 괜찮지만 보안과 같은 쿠키는 다른 방식을 사용함
+     */
+
 
     // 인증 관련 설정값, 쿠키 제거
     private void clearAuthenticationAttributes(HttpServletRequest request, HttpServletResponse response) {

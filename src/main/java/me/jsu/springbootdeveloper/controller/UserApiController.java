@@ -11,6 +11,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 
+// OAuth 방식에선 사용하지 않는 form 로그인 방식
 @RequiredArgsConstructor
 @Controller
 public class UserApiController {

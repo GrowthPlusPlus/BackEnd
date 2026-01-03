@@ -29,7 +29,7 @@ public class OAuth2AuthorizationRequestBasedOnCookieRepository implements Author
     // 구글 서버에 요청하여 받은 authorizationRequest값을 직렬화 하여 쿠키로 저장함
     @Override
     public void saveAuthorizationRequest(OAuth2AuthorizationRequest authorizationRequest, HttpServletRequest request, HttpServletResponse response) {
-        if (authorizationRequest == null) {
+        if (authorizationRequest == null) {  // 구글 인증이 완료되면 쿠키를 삭제함
             removeAuthorizationRequest(request, response);
             return;
         }

@@ -95,8 +95,8 @@ public class TokenProvider {  // 엑세스 or 리프레시 토큰을 생성하�
     }
 
     // 토큰을 필요한 부분만 추출하는 용도
-    private Claims getClaims(String token) {
-        return Jwts.parser()
+    private Claims getClaims(String token) { 
+        return Jwts.parser()  // 유효성 검사와 중복 부분으로 수정 가능
                 .setSigningKey(jwtProperties.getSecretKey())
                 .parseClaimsJws(token)
                 .getBody();  // Claim 클래스 형태로 반환해줌

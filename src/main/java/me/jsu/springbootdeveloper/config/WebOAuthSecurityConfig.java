@@ -52,9 +52,10 @@ public class WebOAuthSecurityConfig {
                 .sessionManagement(management -> management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))  // 서버가 세션을 만들지 않음 -> 인증은 JWT토큰으로만 수행
                 //헤더를 확인할 커스텀 필터 추가 -> 헤더가 Bearer JWT 형태인지 검사함
                 .addFilterBefore(tokenAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)  // user.. 는 formLogin을 쓰지 않으므로 JWT 인증을 가로채기 위함
-                // 토큰 재발급 URL은 인증 없이 접근 가능하도록 설정. 나머지 API URL은 인증 필요
+                // 토큰 재발급 URL은 보안 인증 없이 접근 가능하도록 설정. 나머지 API URL은 인증 필요/ 나머지 보안과 상관없는 api가 없는 주소는 그냥 허용
                 .authorizeRequests(auth -> auth.requestMatchers(new AntPathRequestMatcher("/api/token")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/api/**")).authenticated().anyRequest().permitAll())
+                //OAuth2 로그인 시작 URL 지정, 실제 Google 로그인 페이지가 아닌 우리 서비스의 진입 페이지임
                 .oauth2Login(oauth2 -> oauth2.loginPage("/login")
                         // Authorization 요청과 관련된 상태 저장
                         .authorizationEndpoint(authorizationEndpoint -> authorizationEndpoint
@@ -62,7 +63,7 @@ public class WebOAuthSecurityConfig {
                         .userInfoEndpoint(userInfoEndpoint -> userInfoEndpoint.userService(oAuth2UserCustomService))
                         // 인증 성공 시 실행할 핸들러
                         .successHandler(oAuth2SuccessHandler()))
-                // /api로 시작하는 url인 경우 401상태 코드를 반환하도록 예외 처리
+                // /api로 시작하는 url인 경우 401상태 코드를 반환하도록 예외 처리 -> 서버에만 401만 뜨고 유저는 무반응
                 .exceptionHandling(exceptionHandling -> exceptionHandling.defaultAuthenticationEntryPointFor(
                         new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
                         new AntPathRequestMatcher("/api/**")
