@@ -7,6 +7,8 @@ import me.jsu.springbootdeveloper.repository.UserRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import static me.jsu.springbootdeveloper.domain.Role.ROLE_USER;
+
 @RequiredArgsConstructor
 @Service
 public class UserService {
@@ -22,6 +24,7 @@ public class UserService {
                 .email(dto.getEmail())
                 //패스워드 암호화
                 .password(encoder.encode(dto.getPassword()))
+                .role(ROLE_USER)
                 .build()).getId();  // 데베에 등록된 id를 리턴값으로 받음
     }
 

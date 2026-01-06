@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.Map;
 
+import static me.jsu.springbootdeveloper.domain.Role.ROLE_USER;
+
 @RequiredArgsConstructor
 @Service
 public class OAuth2UserCustomService extends DefaultOAuth2UserService {
@@ -33,6 +35,7 @@ public class OAuth2UserCustomService extends DefaultOAuth2UserService {
                 .orElse(User.builder()  // 기존 유저가 없으면 새로운 User 객체 생성
                         .email(email)
                         .nickname(name)
+                        .role(ROLE_USER)
                         .build());
 
         return userRepository.save(user);

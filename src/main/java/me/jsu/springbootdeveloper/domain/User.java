@@ -30,10 +30,16 @@ public class User implements UserDetails {  //userDetails를 상속 받아서 �
     @Column(name = "password")
     private String password;
 
+    @Enumerated(EnumType.STRING)
+    private Role role;  // 유저 별 권한 지정을 위한 enum이다.
+
     @Builder
-    public User(String email, String password, String auth, String nickname) {
+    public User(String email, String password, Role role, String auth, String nickname) {
         this.email = email;
         this.password = password;
+        
+        // 회원가입 시 role 추가
+        this.role = role;
 
         //OAuth를 위한 닉네임 추가
         this.nickname = nickname;
@@ -47,7 +53,7 @@ public class User implements UserDetails {  //userDetails를 상속 받아서 �
 
     @Override  //사용 권한 -> 유저이므로 유저 권한을 반환함
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("user"));  // 스프링 시큐리티에게 “이 유저가 가진 권한이 무엇인지” 알려주는 메서드
+        return List.of(new SimpleGrantedAuthority(this.role.name()));  // 스프링 시큐리티에게 “이 유저가 가진 권한이 무엇인지” 알려주는 메서드
     }
 
     /*
