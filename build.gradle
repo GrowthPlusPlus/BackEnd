@@ -28,15 +28,24 @@ dependencies {
 
     /*
         보안을 위해 0.9.1 버전 비활성화
+
+    //implementation 'io.jsonwebtoken:jjwt:0.9.1'
+    //implementation 'javax.xml.bind:jaxb-api:2.3.1'
      */
     implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 
-    //implementation 'io.jsonwebtoken:jjwt:0.9.1'
-    //implementation 'javax.xml.bind:jaxb-api:2.3.1'
+    // pkce 인증을 위한 새로운 의존성 주입
 
-    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client' //  OAuth2 사용
+    // Spring 6+ HTTP 클라이언트 (RestClient 사용) -> google 토큰 교환용
+    implementation 'org.springframework.boot:spring-boot-starter-webflux' // WebClient/RestClient에 필요할 수 있음(환경 따라)
+    // (선택) ID Token 검증을 하려면 Google 공식 라이브러리 사용
+    implementation 'com.google.api-client:google-api-client:2.6.0'
+    implementation 'com.google.oauth-client:google-oauth-client:1.36.0'
+    implementation 'com.google.http-client:google-http-client-jackson2:1.44.1'
+
+    //implementation 'org.springframework.boot:spring-boot-starter-oauth2-client' //  웹 로그인 용 OAuth2
 }
 
 test {

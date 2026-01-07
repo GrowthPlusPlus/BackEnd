@@ -1,3 +1,5 @@
+// 정성우 수정 예정
+
 package me.jsu.springbootdeveloper.service;
 
 import lombok.RequiredArgsConstructor;
@@ -36,5 +38,32 @@ public class UserService {
     public User findByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("Unexpected user"));
+    }
+
+    /**
+     * 이메일로 유저를 찾거나 없으면 생성하는 함수
+     * PKCE OAuth2 인증에서 사용자 정보를 처리하기 위해 사용한다.
+     * 기존 유저가 있으면 닉네임을 업데이트하고, 없으면 새로 생성한다.
+     * 
+     * @param email 유저 이메일
+     * @param name 유저 닉네임
+     * @return 찾거나 생성된 User 엔티티
+     */
+    public User findOrCreate(String email, String name) {
+        return userRepository.findByEmail(email)
+                .map(user -> {
+                    // 필요하면 이름 갱신
+                    user.update(name);
+                    return userRepository.save(user);  // 업데이트 후 저장
+                })
+                .orElseGet(() ->
+                        userRepository.save(
+                                User.builder()
+                                        .email(email)
+                                        .nickname(name)
+                                        .role(ROLE_USER)
+                                        .build()
+                        )
+                );
     }
 }

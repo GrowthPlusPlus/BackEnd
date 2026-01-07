@@ -14,16 +14,24 @@ spring:
     console:
       enabled: true
 
-  security:
-    oauth2:
-      client:
-        registration:
-          google:
-            client-id: test_id            # 고유한 값으로 바꾸지 않으면 OAuth 인증 시 문제 발생
-            client-secret: test_secret
-            scope:
-              - email
-              - profile
+# 웹 기반 OAUTH 설정으로 비활성화
+#  security:
+#    oauth2:
+#      client:
+#        registration:
+#          google:
+#            client-id: test_id            # 고유한 값으로 바꾸지 않으면 OAuth 인증 시 문제 발생
+#            client-secret: test_secret
+#            scope:
+#              - email
+#              - profile
+      
+# 앱 PKCE 기반 설정
+  oauth:
+    google:
+      client-id: test_id
+      client-secret: test_secret
+      redirect-uri: com.example.app:/oauth2redirect  # 예시
 
 jwt:
   issuer: ajufresh@gmail.com
