@@ -6,34 +6,44 @@ import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.dto.oauth.GoogleCodeExchangeRequest;
 import me.jsu.springbootdeveloper.dto.oauth.LoginResponse;
 import me.jsu.springbootdeveloper.service.oauth.OAuthLoginService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@RestController
-@RequestMapping("/api/oauth/google")
-@RequiredArgsConstructor
+/*
+    해당 클래스는 모바일 앱에서 들어오는 Google OAuth 로그인 요청의 진입점(Controller) 역할을 한다.
+    즉 모바일 앱으로부터 Google OAuth 인증 코드를 받아 로그인 유스케이스(Service)를 호출하고
+    그 결과를 HTTP 응답으로 반환하는 웹 계층 컴포넌트이다.
+ */
+@RestController  // 반환 값을 json으로 자동 직렬화 한다.
+@RequestMapping("/api/oauth/google")  // 구글 oauth관련 api 공통 url이다.
+@RequiredArgsConstructor  // final 필드를 생성자로 주입한다.
 public class GoogleOAuthController {
-
     private final OAuthLoginService oauthLoginService;
 
+    /*
+        이 함수는 OAuth + PKCE 로그인 흐름의 HTTP 엔드포인트이다.
+        앱 → authorization code + code_verifier
+            ↓
+        서버 (/api/oauth/google/token) ← 이 메서드
+            ↓
+        OAuthLoginService 호출
+
+        즉 모바일에서 받은 값을 우리 서버가 구글 서버에 보내는 과정이다.
+
+        함수의 @RequestBody 파라미터는 모바일 앱이 전달한 json 요청 바디로, code (인증 코드), codeVerifier (PKCE 검증용 값)가 들어있다.
+     */
     @PostMapping("/token")
-    public ResponseEntity<LoginResponse> login(
-            @RequestBody GoogleCodeExchangeRequest request
-    ) {
-        try {
-            LoginResponse response =
-                    oauthLoginService.loginWithGoogle(
+    public ResponseEntity<LoginResponse> login(@RequestBody GoogleCodeExchangeRequest request) {
+        /*
+            실제 처리를 위해 service 계층을 호출한다.
+            서비스 계층에서 로그인에 성공하면 response에 엑세스 토큰, 리프레스 토큰을 반환한다. 이 값이 json 응답이다.
+            예외 처리는 모두 서비스 계층에 위임한다.
+         */
+        LoginResponse response = oauthLoginService.loginWithGoogle(
                             request.code(),
                             request.codeVerifier()
-                    );
+        );
 
-            return ResponseEntity.ok(response);
-
-        } catch (IllegalArgumentException e) {  // 예외 처리 개선해야 함
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        return ResponseEntity.ok(response);  // 200 OK + json 응답을 반환한다.
     }
 }

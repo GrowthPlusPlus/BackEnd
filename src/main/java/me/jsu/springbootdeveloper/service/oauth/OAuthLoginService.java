@@ -2,6 +2,7 @@
 
 package me.jsu.springbootdeveloper.service.oauth;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.config.jwt.TokenProvider;
 import me.jsu.springbootdeveloper.config.oauth.GoogleIdTokenVerifyService;
@@ -33,7 +34,7 @@ public class OAuthLoginService {
     /*
         Google OAuth (Authorization Code + PKCE) 로그인의 유스케이스를 한 번에 수행하는 함수이다.
      */
-    public LoginResponse loginWithGoogle(String code, String codeVerifier) throws Exception {
+    public LoginResponse loginWithGoogle(String code, String codeVerifier) {
         /*
             Google Token(Authorization Code + PKCE)을 교환하여 구글이 PKCE(codeVerifier)를 검증한다.
             검증 성공 시, 구글이 access_token, id_token를 반환한다.
@@ -41,11 +42,21 @@ public class OAuthLoginService {
         GoogleTokenResponse googleToken = tokenService.exchangeCode(code, codeVerifier);
         // 구글에서 온 토큰 응답이 유효하지 않으면 OAuth 로그인을 실패로 하고 해당 오류 처리를 위한 OAuthLoginException를 생성한다.
         if (googleToken == null || googleToken.idToken() == null) {
-            throw new OAuthLoginException("INVALID_AUTH_CODE");
+            throw new OAuthLoginException("INVALID_AUTH_CODE");  // OAuth 로그인 실패라는 예외를 발생시킨다. 이유는 INVALID_AUTH_CODE 이다.
         }
 
-        // 공개 키를 기반으로 jwt 서명 (iss, aud, exp)을 검증한다. ID Token 검증 과정이다. (OIDC)
-        var payload = idTokenVerifyService.verify(googleToken.idToken());
+        /*
+            공개 키를 기반으로 jwt 서명 (iss, aud, exp)을 검증한다. ID Token 검증 과정이다. (OIDC)
+            구글에서 제공하는 기능으로 checked exception로 설계되어 반드시 에러 처리를 해야 한다.
+
+            GoogleIdToken.Payload는 Google ID Token(JWT)의 내용물(Claims)을 담는 객체로 검증이 끝난 사용자 정보가 들어있다.
+         */
+        GoogleIdToken.Payload payload;
+        try {
+            payload = idTokenVerifyService.verify(googleToken.idToken());  // 정상적인 토큰인 경우 payload로 추출한다.
+        } catch (Exception e) {
+            throw new OAuthLoginException("INVALID_ID_TOKEN");  // 문제가 생긴 경우, 구체적인 실패 원인 코드를 담아 예외처리 한다.
+        }
 
         // 검증된 사용자의 구글 이메일, 이름 정보를 추출한다.
         String email = payload.getEmail();
