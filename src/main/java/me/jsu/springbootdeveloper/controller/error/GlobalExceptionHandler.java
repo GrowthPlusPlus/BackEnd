@@ -4,6 +4,8 @@ package me.jsu.springbootdeveloper.controller.error;
 
 import me.jsu.springbootdeveloper.dto.error.ErrorResponse;
 import me.jsu.springbootdeveloper.service.oauth.OAuthLoginException;
+import me.jsu.springbootdeveloper.service.token.InvalidTokenException;
+import me.jsu.springbootdeveloper.service.token.TokenNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -33,6 +35,36 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(
                         "LOGIN_FAILED",  // 로그인 실패 유형이다.
                         e.getErrorCode()  // 로그인 실패에 대한 구체적인 실패 원인 코드이다. (INVALID_ID_TOKEN, INVALID_AUTH_CODE 등)
+                ));
+    }
+
+    /*
+        토큰 인증 자체가 실패하는 경우의 핸들러이다.
+     */
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidToken(
+            InvalidTokenException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorResponse(
+                        "INVALID_TOKEN",
+                        e.getErrorCode()
+                ));
+    }
+
+    /*
+        DB에서 토큰 검색에 실패하는 경우의 핸들러이다.
+     */
+    @ExceptionHandler(TokenNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleTokenNotFound(
+            TokenNotFoundException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorResponse(
+                        "TOKEN_NOT_FOUND",
+                        e.getErrorCode()
                 ));
     }
 
