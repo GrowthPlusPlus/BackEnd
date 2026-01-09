@@ -37,7 +37,7 @@ public class UserService {
      */
     public User findById(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Unexpected user"));
+                .orElseThrow(() -> new UserNotFoundException("USER_NOT_FOUND_FOR_ID"));
     }
 
     /*
@@ -45,7 +45,7 @@ public class UserService {
      */
     public User findByEmail(String email) {
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Unexpected user"));
+                .orElseThrow(() -> new UserNotFoundException("USER_NOT_FOUND_FOR_EMAIL"));
     }
 
     /*

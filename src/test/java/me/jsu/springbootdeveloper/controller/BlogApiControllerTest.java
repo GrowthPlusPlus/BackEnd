@@ -5,7 +5,7 @@ import me.jsu.springbootdeveloper.domain.Article;
 import me.jsu.springbootdeveloper.domain.User;
 import me.jsu.springbootdeveloper.dto.AddArticleRequest;
 import me.jsu.springbootdeveloper.dto.UpdateArticleRequest;
-import me.jsu.springbootdeveloper.repository.BlogRepository;
+import me.jsu.springbootdeveloper.repository.PostRepository;
 import me.jsu.springbootdeveloper.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -19,7 +19,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MockMvcBuilder;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
@@ -29,7 +28,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -48,7 +46,7 @@ class BlogApiControllerTest {
     WebApplicationContext context;
 
     @Autowired
-    BlogRepository blogRepository;
+    PostRepository postRepository;
 
     @Autowired
     UserRepository userRepository;
@@ -59,7 +57,7 @@ class BlogApiControllerTest {
     public void mockMvcSetup() {
         this.mockMvc = MockMvcBuilders.webAppContextSetup(context)
                 .build();
-        blogRepository.deleteAll();
+        postRepository.deleteAll();
     }
 
     @BeforeEach
@@ -99,7 +97,7 @@ class BlogApiControllerTest {
         //then 검증
         result.andExpect(status().isCreated());  //실제로 생성 되었는지 검사
 
-        List<Article> articles = blogRepository.findAll();  //데베 내용 모두 가져오기
+        List<Article> articles = postRepository.findAll();  //데베 내용 모두 가져오기
 
         assertThat(articles.size()).isEqualTo(1);  //하나만 넣을 예정이므로 하나만 있는지 검사
         assertThat(articles.get(0).getTitle()).isEqualTo(title);  //첫번째 객체의 타이틀 값이 title인지 검사
@@ -176,7 +174,7 @@ class BlogApiControllerTest {
                 .andExpect(status().isOk());
 
         //then
-        List<Article> articles = blogRepository.findAll();  //전체 글을 검색
+        List<Article> articles = postRepository.findAll();  //전체 글을 검색
 
         assertThat(articles).isEmpty();
     }
@@ -208,7 +206,7 @@ class BlogApiControllerTest {
         //then
         result.andExpect(status().isOk());
 
-        Optional<Article> article = blogRepository.findById(savedArticle.getId());  //아까 업데이트 한 객체를 검색하여 article에 넣음
+        Optional<Article> article = postRepository.findById(savedArticle.getId());  //아까 업데이트 한 객체를 검색하여 article에 넣음
         if (article.isPresent()) {
             assertThat(article.get().getTitle()).isEqualTo(newTitle);
             assertThat(article.get().getContent()).isEqualTo(newContent);
@@ -216,7 +214,7 @@ class BlogApiControllerTest {
     }
 
     private Article createDefaultArticle() {
-        return blogRepository.save(Article.builder()
+        return postRepository.save(Article.builder()
                 .title("title")
                 .author(user.getUsername())
                 .content("content")

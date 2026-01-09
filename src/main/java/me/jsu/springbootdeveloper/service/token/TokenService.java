@@ -31,8 +31,6 @@ public class TokenService {
             throw new InvalidTokenException("INVALID_REFRESH_TOKEN");
         }
 
-        // 실무에선 유저id가 없는 경우에 대한 런타임 에러 처리를 해야함 -> UserService에서 구현
-
         // 유저에게 받은 리프레시 토큰으로 서버에 저장된 리프레스 토큰 검색한다.
         RefreshToken storedToken = refreshTokenService.findByRefreshToken(refreshToken);
         Long userId = storedToken.getUserId();  // 리프레시 토큰에 등록된 유저 id를 추출한다.

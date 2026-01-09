@@ -3,6 +3,9 @@
 package me.jsu.springbootdeveloper.controller.error;
 
 import me.jsu.springbootdeveloper.dto.error.ErrorResponse;
+import me.jsu.springbootdeveloper.service.ArticleAccessDeniedException;
+import me.jsu.springbootdeveloper.service.ArticleNotFoundException;
+import me.jsu.springbootdeveloper.service.UserNotFoundException;
 import me.jsu.springbootdeveloper.service.oauth.OAuthLoginException;
 import me.jsu.springbootdeveloper.service.token.InvalidTokenException;
 import me.jsu.springbootdeveloper.service.token.TokenNotFoundException;
@@ -64,6 +67,51 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.UNAUTHORIZED)
                 .body(new ErrorResponse(
                         "TOKEN_NOT_FOUND",
+                        e.getErrorCode()
+                ));
+    }
+
+    /*
+        DB에서 유저 검색에 실패하는 경우의 핸들러이다.
+     */
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleUserNotFound(
+            UserNotFoundException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorResponse(
+                        "USER_NOT_FOUND",
+                        e.getErrorCode()
+                ));
+    }
+
+    /*
+        DB에서 게시글 검색에 실패하는 경우의 핸들러이다.
+     */
+    @ExceptionHandler(ArticleNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleArticleNotFound(
+            ArticleNotFoundException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(
+                        "ARTICLE_NOT_FOUND",
+                        e.getErrorCode()
+                ));
+    }
+
+    /*
+        올바르지 않은 유저가 게시글 수정/삭제를 시도하는 경우의 핸들러이다.
+     */
+    @ExceptionHandler(ArticleAccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleArticleAccessDenied(
+            ArticleAccessDeniedException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(new ErrorResponse(
+                        "ARTICLE_ACCESS_DENIED",
                         e.getErrorCode()
                 ));
     }

@@ -77,6 +77,7 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
         즉, UserDetails의 getUsername(), getPassword() (Spring Security 인증용 함수)를 유저가 직접 override하여 구현한 함수를 쓴다.
 
         OAuth 로그인에서는 사용하지 않고, 우리 서비스에 직접 회원가입한 유저의 경우에만 사용하는 인증이다.
+        단, 로그인에선 사용하지 않지만, PostApiController처럼 게시글을 올리는 경우 스프링 시큐리티가 사용하기도 한다.
      */
     @Override
     public String getUsername() {
