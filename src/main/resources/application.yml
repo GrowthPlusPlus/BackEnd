@@ -33,6 +33,12 @@ spring:
       client-secret: test_secret
       redirect-uri: com.example.app:/oauth2redirect  # 예시
 
+# 페이징 기능으로 클라이언트가 요청하여 한 번에 최대 검색 가능한 게시글 수를 50개로 제한한다.
+  data:
+    web:
+      pageable:
+        max-page-size: 50
+
 jwt:
   issuer: ajufresh@gmail.com
   secret_key: test_key  # 키가 바뀔 때 마다 토큰을 재발급 해야함

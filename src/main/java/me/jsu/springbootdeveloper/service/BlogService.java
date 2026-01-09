@@ -6,6 +6,8 @@ import me.jsu.springbootdeveloper.domain.Article;
 import me.jsu.springbootdeveloper.dto.AddArticleRequest;
 import me.jsu.springbootdeveloper.dto.UpdateArticleRequest;
 import me.jsu.springbootdeveloper.repository.BlogRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -23,8 +25,8 @@ public class BlogService {
     }
 
     // 블로그 글을 전체 조회
-    public List<Article> findAll() {  //리턴하는 값이 Article 객체를 가지고 있는 리스트임
-        return blogRepository.findAll();
+    public Page<Article> findAll(Pageable pageable) {  //리턴하는 값이 Article 객체를 가지고 있는 리스트임
+        return blogRepository.findAll(pageable);
     }
 
     //블로그 글 하나를 조회
