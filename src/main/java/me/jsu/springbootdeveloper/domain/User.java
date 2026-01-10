@@ -7,10 +7,13 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -18,6 +21,7 @@ import java.util.List;
 /*
     DB에 저장될 유저 정보를 저장하는 클래스이다.
  */
+@EntityListeners(AuditingEntityListener.class)  // 생성 및 수정시간을 감시하고 기록할 수 있게 해준다.
 @Table(name = "users")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
@@ -41,12 +45,17 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
     @Column(name = "nickname", unique = true)
     private String nickname;  // 사용자의 이름이다.
 
+    @CreatedDate  // 유저가 생성된 시간이다.
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
     @Builder
-    public User(String email, String password, Role role, String nickname) {
+    public User(String email, String password, Role role, String nickname, LocalDateTime createdAt) {
         this.email = email;
         this.password = password;
         this.role = role;  // 회원가입 시 role(권한)이 추가된다.
         this.nickname = nickname;  //OAuth 로그인 시, 구글 프로필에 사용된 이름이 저장된다.
+        this.createdAt = createdAt;  // 유저 생성 시각이다.
     }
 
     /*

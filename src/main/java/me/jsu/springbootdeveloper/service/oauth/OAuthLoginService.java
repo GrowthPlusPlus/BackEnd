@@ -16,6 +16,7 @@ import me.jsu.springbootdeveloper.service.UserService;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 
 /*
     해당 클래스는 Google OAuth와 PKCE 로그인 유스케이스 전체를 담당하는 Service 계층 클래스이다.
@@ -83,11 +84,18 @@ public class OAuthLoginService {
     /*
         유저 id와 새로 발급한 리프레시 토큰 정보로 DB에 저장할 엔트리를 생성한다.
         만들어진 엔트리를 우리 서버의 리프레시 토큰 DB에 저장한다.
+
+        @param userId 유저 id
+        @param newRefreshToken 새로 발급한 리프레시 토큰
      */
     private void saveRefreshToken(Long userId, String newRefreshToken) {
         RefreshToken refreshToken = refreshTokenRepository.findByUserId(userId)  // 유저의 리프레시 토큰을 유저 id로 DB에서 검색한다.
                         .map(entity -> entity.update(newRefreshToken))  // 재로그인이라면 리프레시 토큰을 업데이트 한다.
-                        .orElse(new RefreshToken(userId, newRefreshToken));  // 최초 로그인이라면 새로 작성한다.
+                        .orElse(RefreshToken.builder()  // 최초 로그인이라면 새로 작성한다.
+                                .userId(userId)
+                                .refreshToken(newRefreshToken)
+                                .createdAt(LocalDateTime.now())  // OAuth 로그인 시 리프레시 토큰 생성 시각을 현재 시간으로 설정한다.
+                                .build());
 
         refreshTokenRepository.save(refreshToken);  // 새로 생성한 리프레시 토큰 엔트리를 실제로 DB에 저장한다.
     }

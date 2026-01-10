@@ -7,6 +7,8 @@ import me.jsu.springbootdeveloper.domain.RefreshToken;
 import me.jsu.springbootdeveloper.repository.RefreshTokenRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+
 /*
     리프레시 토큰에 관한 DB 처리를 위한 클래스이다.
  */
@@ -23,8 +25,17 @@ public class RefreshTokenService {
                 .orElseThrow(() -> new TokenNotFoundException("REFRESH_TOKEN_NOT_FOUND"));
     }
 
+    /*
+        리프레시 토큰을 저장하는 함수이다.
+     */
     public RefreshToken save(Long userId, String refreshToken) {
-        return refreshTokenRepository.save(new RefreshToken(userId, refreshToken));
+        return refreshTokenRepository.save(
+                RefreshToken.builder()
+                        .userId(userId)
+                        .refreshToken(refreshToken)
+                        .createdAt(LocalDateTime.now())  // 리프레시 토큰 생성 시각을 현재 시간으로 설정한다.
+                        .build()
+        );
     }
 
     public void delete(RefreshToken refreshToken) {
