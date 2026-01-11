@@ -13,4 +13,5 @@ import java.util.Optional;
  */
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);  //이메일 정보로 사용자 정보를 가져올 수 있게 하는 쿼리문을 작성 가능하게 함
+    Optional<User> findByNickname(String nickname); // 닉네임 정보로 사용자 정보를 가져올 수 있게 하는 쿼리문을 작성 가능하게 함
 }

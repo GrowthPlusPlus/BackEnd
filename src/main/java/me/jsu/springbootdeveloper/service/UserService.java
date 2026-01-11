@@ -70,4 +70,12 @@ public class UserService {
                         )
                 );
     }
+
+    /*
+        유저 닉네임을 기반으로 유저 정보를 검색하는 함수이다。
+     */
+    public User findByNickname(String nickname) {
+        return userRepository.findByNickname(nickname)
+                .orElseThrow(() -> new UserNotFoundException("USER_NOT_FOUND_FOR_NICKNAME"));
+    }
 }

@@ -1,16 +1,24 @@
-// 정성우
-
 package me.jsu.springbootdeveloper.service;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
+
 /*
-    DB에서 유저 정보를 검색하지 못한 경우에 실행하는 예외처리 클래스이다.
+    해당 클래스는 유저를 찾지 못했을 때 발생하는 커스텀 예외 클래스이다.
+    HTTP 404 Not Found 상태 코드를 반환하도록 설정한다.
+    최초 작성자: 정성우
  */
-public class UserNotFoundException extends RuntimeException {
+@ResponseStatus(HttpStatus.NOT_FOUND)
+public class UserNotFoundException extends IllegalArgumentException {
     private final String errorCode;
 
-    public UserNotFoundException(String errorCode) {
-        super(errorCode);   // 사람을 위한 메시지
-        this.errorCode = errorCode;  // 시스템/클라이언트 분기용 코드
+    public UserNotFoundException(String message) {
+        this(message, message); // 기본적으로 메시지를 에러 코드로 사용
+    }
+
+    public UserNotFoundException(String message, String errorCode) {
+        super(message);
+        this.errorCode = errorCode;
     }
 
     public String getErrorCode() {

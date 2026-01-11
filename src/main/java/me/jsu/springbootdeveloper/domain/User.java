@@ -14,6 +14,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import me.jsu.springbootdeveloper.dto.UserResponse;
 
 /*
     DB에 저장될 유저 정보를 저장하는 클래스이다.
@@ -48,7 +49,7 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
         this.role = role;  // 회원가입 시 role(권한)이 추가된다.
         this.nickname = nickname;  //OAuth 로그인 시, 구글 프로필에 사용된 이름이 저장된다.
     }
-
+    
     /*
         사용자 이름을 변경해주는 함수로, OAuth 사용 시 최초 로그인에는 무조건 OAuth 프로필의 닉네임이 들어가므로,
         닉네임을 수정하고 싶다면 해당 함수를 사용해야 한다.
@@ -57,6 +58,14 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
         this.nickname = nickname;
 
         return this;
+    }
+
+    /*
+        User 엔티티를 UserResponse DTO로 변환하는 함수이다.
+        @return UserResponse DTO 객체
+     */
+    public UserResponse toResponse() {
+        return new UserResponse(this);
     }
 
     /*

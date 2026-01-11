@@ -79,10 +79,10 @@ public class GlobalExceptionHandler {
             UserNotFoundException e
     ) {
         return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
+                .status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse(
                         "USER_NOT_FOUND",
-                        e.getErrorCode()
+                        e.getMessage()
                 ));
     }
 
