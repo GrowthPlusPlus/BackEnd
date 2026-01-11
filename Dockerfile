@@ -2,20 +2,20 @@
 FROM eclipse-temurin:17-jdk-alpine AS build
 WORKDIR /app
 
-# Gradle 설정 파일들을 먼저 복사 (캐싱 활용)
+# [추가] 리눅스용 줄바꿈 변환 도구 설치
+RUN apk add --no-cache dos2unix
+
+# 설정 파일들 복사
 COPY gradlew .
 COPY gradle gradle
 COPY build.gradle .
 COPY settings.gradle .
 
-# 실행 권한 부여 및 의존성 다운로드
-RUN chmod +x ./gradlew
-RUN ./gradlew dependencies
+# [추가] 윈도우 줄바꿈 문자(\r)를 강제로 제거하고 실행 권한 부여
+RUN dos2unix gradlew
+RUN chmod +x gradlew
 
-#윈도우 줄바꿈 문자 (/r)제거
-RUN sed -i 's/\r$//' gradlew
-
-# 소스 코드 복사 및 빌드 (테스트 제외)
+# 소스 복사 및 빌드 (테스트 제외)
 COPY src src
 RUN ./gradlew build -x test
 
@@ -23,8 +23,8 @@ RUN ./gradlew build -x test
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
-# 빌드 단계에서 생성된 jar 파일만 복사
+# 빌드 결과물(JAR) 복사
 COPY --from=build /app/build/libs/*.jar app.jar
 
-# Render의 메모리 제한을 고려한 실행 명령어
-ENTRYPOINT ["java", "-Xmx300m", "-jar", "app.jar"]
+# Render 무료 플랜 메모리 최적화 옵션 추가
+ENTRYPOINT ["java", "-Xmx300m", "-Xms300m", "-jar", "app.jar"]
