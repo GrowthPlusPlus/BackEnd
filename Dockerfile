@@ -12,6 +12,9 @@ COPY settings.gradle .
 RUN chmod +x ./gradlew
 RUN ./gradlew dependencies
 
+#윈도우 줄바꿈 문자 (/r)제거
+RUN sed -i 's/\r$//' gradlew
+
 # 소스 코드 복사 및 빌드 (테스트 제외)
 COPY src src
 RUN ./gradlew build -x test
