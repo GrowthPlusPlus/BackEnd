@@ -82,7 +82,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse(
                         "USER_NOT_FOUND",
-                        e.getMessage()
+                        e.getErrorCode()
                 ));
     }
 
