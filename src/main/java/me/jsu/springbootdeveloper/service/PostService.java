@@ -48,7 +48,6 @@ public class PostService {
                 .user(user)
                 .challenge(challenge)
                 .postDate(postDate)
-                .createdAt(LocalDateTime.now())  // 서버에서 게시글 생성 시각을 현재 시간으로 설정한다.
                 .build());
     }
 
@@ -102,7 +101,7 @@ public class PostService {
 
         authorizeArticleAuthor(article);  // 글 작성자인지 확인한다.
         // 위에서 찾은 게시글을 UpdateArticleRequest 객체의 값으로 업데이트 한다.
-        article.update(request.getTitle(), request.getContent(), LocalDateTime.now());
+        article.update(request.getTitle(), request.getContent());
 
         // @Transactional가 엔티티 수정을 감지하고 자동으로 DB에 값을 업데이트 하므로, 수정된 게시글 정보만 반환한다.
         return article;

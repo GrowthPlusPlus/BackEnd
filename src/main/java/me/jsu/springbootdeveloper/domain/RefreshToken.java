@@ -26,8 +26,9 @@ public class RefreshToken {
     @Column(name = "id", updatable = false)
     private Long id;
 
-    @Column(name = "user_id", nullable = false, unique = true)
-    private Long userId;
+    @OneToOne(fetch = FetchType.LAZY)  // 유저 당 하나의 리프레시 토큰만 갖는다.
+    @JoinColumn(name = "user_id", unique = true, nullable = false)
+    private User user;
 
     @Column(name = "refresh_token", nullable = false)
     private String refreshToken;
@@ -37,17 +38,15 @@ public class RefreshToken {
     private LocalDateTime createdAt;
 
     @Builder
-    public RefreshToken(Long userId, String refreshToken, LocalDateTime createdAt) {
-        this.userId = userId;
+    public RefreshToken(User user, String refreshToken) {
+        this.user = user;
         this.refreshToken = refreshToken;
-        this.createdAt = createdAt;  // 리프레시 토큰 생성 시각이다.
     }
 
     /*
         유저의 리프레시 토큰을 업데이트 할 때 사용하는 함수로, OAuth 로그인 과정에서만 사용한다.
      */
-    public RefreshToken update(String newRefreshToken) {
+    public void update(String newRefreshToken) {
         this.refreshToken = newRefreshToken;
-        return this;
     }
 }

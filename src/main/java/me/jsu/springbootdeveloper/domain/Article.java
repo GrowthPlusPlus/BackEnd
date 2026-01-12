@@ -26,7 +26,7 @@ import java.time.LocalDateTime;
                 @Index(
                         name = "uk_user_challenge_date",
                         columnList = "user_id, challenge_id, post_date",
-                        unique = true
+                        unique = true  // 하루에 하나의 글만 올릴 수 있다.
                 ),
                 @Index(
                         name = "idx_user_date",
@@ -55,10 +55,11 @@ public class Article {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @LastModifiedDate  // 게시글이 수정된 시간이다.
+    @LastModifiedDate  // 게시글이 수정된 시간이다. 필드를 수정하면 자동으로 업데이트 된다.
     @Column(name = "updated_at")
     private LocalDateTime updateAt;
 
+    // user DB의 값을 갖는 fk값이다.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
@@ -81,24 +82,20 @@ public class Article {
             .build();
      */
     @Builder
-    public Article(String title, String content, User user, Challenge challenge, LocalDate postDate, LocalDateTime createdAt) {
+    public Article(String title, String content, User user, Challenge challenge, LocalDate postDate) {
         this.title = title;
         this.content = content;
         this.user = user;
         this.challenge = challenge;
         this.postDate = postDate;
-        this.createdAt = createdAt;  // 게시글 생성 시각이다.
-        this.updateAt = createdAt;  // 처음엔 게시글 생성 시각과 같다.
     }
 
-    public void update(String title, String content, LocalDateTime updateAt) {
+    public void update(String title, String content) {
         if (title != null) {  // 게시글을 업데이트하는 경우, 내용만 수정해도 제목에는 null값이 들어가지 않도록 한다.
             this.title = title;
         }
         if (content != null) {
             this.content = content;
         }
-
-        this.updateAt = updateAt;  // 마지막 수정 시각을 업데이트 한다.
     }
 }

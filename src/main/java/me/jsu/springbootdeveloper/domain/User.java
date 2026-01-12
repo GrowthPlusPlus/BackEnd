@@ -50,12 +50,11 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
     private LocalDateTime createdAt;
 
     @Builder
-    public User(String email, String password, Role role, String nickname, LocalDateTime createdAt) {
+    public User(String email, String password, Role role, String nickname) {
         this.email = email;
         this.password = password;
         this.role = role;  // 회원가입 시 role(권한)이 추가된다.
         this.nickname = nickname;  //OAuth 로그인 시, 구글 프로필에 사용된 이름이 저장된다.
-        this.createdAt = createdAt;  // 유저 생성 시각이다.
     }
 
     /*

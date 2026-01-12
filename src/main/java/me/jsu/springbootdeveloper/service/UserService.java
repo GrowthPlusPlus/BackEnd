@@ -34,7 +34,6 @@ public class UserService {
                 .email(dto.getEmail())
                 .password(encoder.encode(dto.getPassword()))  // 패스워드를 암호화한다.
                 .role(ROLE_USER)
-                .createdAt(LocalDateTime.now())  // 유저 생성 시각을 현재 시간으로 설정한다.
                 .build()).getId();  // 데베에 등록된 id를 리턴값으로 반환한다.
     }
 
@@ -72,7 +71,6 @@ public class UserService {
                                         .email(email)
                                         .nickname(name)
                                         .role(ROLE_USER)  // 신규 유저는 일반 유저로 권한을 부여한다.
-                                        .createdAt(LocalDateTime.now())  // OAuth 로그인 시 유저 생성 시각을 현재 시간으로 설정한다.
                                         .build()
                         )
                 );
