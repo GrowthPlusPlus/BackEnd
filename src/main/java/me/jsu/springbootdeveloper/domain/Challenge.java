@@ -16,6 +16,27 @@ import java.time.LocalDateTime;
 /*
     DB에 저장될 챌린지 정보이다.
  */
+@Table(
+        name = "challenge",
+        indexes = {
+                @Index(  // 피드를 위해 공개 범위와 시작 일로 최신순으로 인덱싱 한다.
+                        name = "idx_visibility_start_date",
+                        columnList = "challenge_visibility, start_date"
+                ),
+                @Index(  // 내가 만든 챌린지를 관리하기 위해 내 id로 인덱싱 한다.
+                        name = "idx_user_created",
+                        columnList = "user_id"
+                ),
+                /*
+                    챌린지 시작일과 종료일로 인덱싱 하여 진행중, 완료, 종료 상태의 챌린지를 쉽게 찾아낸다.
+                    참여자는 챌린지 참여자 DB에서 상태를 알아낼 수 있으므로, 챌린지에 참여하지 않은 유저를 위한 인덱싱이다.
+                 */
+                @Index(
+                        name = "idx_date_range",
+                        columnList = "start_date, end_date"
+                )
+        }
+)
 @EntityListeners(AuditingEntityListener.class)  // 생성 및 수정시간을 감시하고 기록할 수 있게 해준다.
 @Entity
 @Getter
@@ -46,20 +67,33 @@ public class Challenge {
     private int participantNumber;
 
     @Enumerated(EnumType.STRING)
-    private ChallengeVisibility challengeVisibility;  // 유저 별 권한 지정을 위한 enum이다.
+    private ChallengeVisibility challengeVisibility;  // 챌린지 공개 범위를 설정하기 위한 값이다.
+
+    @Column(name = "start_date", nullable = false)
+    private LocalDate startDate;  // 챌린지 시작일이다.
+
+    @Column(name = "end_date", nullable = false)
+    private LocalDate endDate;  // 챌린지 종료일이다.
+
+    @Column(name = "requiredWeeklyCount", nullable = false)
+    private int requiredWeeklyCount;  // 주당 최소 인증 횟수이다.
 
     @CreatedDate
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     @Builder
-    public Challenge(String title, String content, User user, int maxParticipantNumber, ChallengeVisibility challengeVisibility) {
+    public Challenge(String title, String content, User user, int maxParticipantNumber, ChallengeVisibility challengeVisibility, 
+                     LocalDate startDate, LocalDate endDate, int requiredWeeklyCount) {
         this.title = title;
         this.content = content;
         this.user = user;
         this.maxParticipantNumber = maxParticipantNumber;
         this.participantNumber = 1;  // 초기 상태엔 혼자만 있다.
         this.challengeVisibility = challengeVisibility;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.requiredWeeklyCount = requiredWeeklyCount;
     }
 
     /*

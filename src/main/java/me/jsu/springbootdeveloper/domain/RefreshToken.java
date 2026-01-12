@@ -15,6 +15,20 @@ import java.time.LocalDateTime;
 /*
     DB에 저장하기 위한 리프레시 토큰에 관한 클래스이다.
  */
+@Table(
+        name = "refresh_token",
+        indexes = {
+                @Index(  // 유저는 당 하나의 리프레시 토큰을 가지므로 유니크하다. 또한 id 검색을 인덱싱 한다.
+                        name = "uk_refresh_token_user",
+                        columnList = "user_id",
+                        unique = true
+                ),
+                @Index(  // 토큰을 통한 검색을 인덱싱 한다.
+                        name = "idx_refresh_token_value",
+                        columnList = "refresh_token"
+                )
+        }
+)
 @EntityListeners(AuditingEntityListener.class)  // 생성 및 수정시간을 감시하고 기록할 수 있게 해준다.
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter

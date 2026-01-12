@@ -21,8 +21,17 @@ import java.util.List;
 /*
     DB에 저장될 유저 정보를 저장하는 클래스이다.
  */
+@Table(
+        name = "user",
+        indexes = {
+                @Index(  // 유저 이메일은 서버에 단 하나로 유니크하게 취급하며, 이메일 검색을 인덱싱 한다.
+                        name = "uk_user_email",
+                        columnList = "email",
+                        unique = true
+                )
+        }
+)
 @EntityListeners(AuditingEntityListener.class)  // 생성 및 수정시간을 감시하고 기록할 수 있게 해준다.
-@Table(name = "users")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 @Entity

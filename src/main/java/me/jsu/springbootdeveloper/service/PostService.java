@@ -6,10 +6,10 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.domain.Article;
 import me.jsu.springbootdeveloper.domain.Challenge;
+import me.jsu.springbootdeveloper.domain.ChallengeVisibility;
 import me.jsu.springbootdeveloper.domain.User;
 import me.jsu.springbootdeveloper.dto.AddArticleRequest;
 import me.jsu.springbootdeveloper.dto.UpdateArticleRequest;
-import me.jsu.springbootdeveloper.repository.ChallengeRepository;
 import me.jsu.springbootdeveloper.repository.PostRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,7 +17,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 
 @RequiredArgsConstructor  // final 또는 notNull이 있는 맴버변수만 생성자에서 초기화 한다.
@@ -52,11 +51,11 @@ public class PostService {
     }
 
     /*
-        게시글 전체를 조회하는 함수이다.
+        공개 상태의 게시글 일부를 조회하는 함수이다.
         리턴하는 값은 Article 객체를 가지고 있는 리스트이다.
      */
     public Page<Article> findAll(Pageable pageable) {
-        return postRepository.findAll(pageable);
+        return postRepository.findPublicChallengePostFeed(ChallengeVisibility.PUBLIC, pageable);
     }
 
     /*

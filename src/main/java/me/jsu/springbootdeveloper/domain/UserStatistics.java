@@ -17,7 +17,16 @@ import java.time.temporal.ChronoUnit;
 /*
     유저의 전체 챌린지에 관한 통계를 관리하는 클래스이다.
  */
-@Table(name = "user_statistics")
+@Table(
+        name = "user_statistics",
+        indexes = {
+                @Index(
+                        name = "uk_user_id",
+                        columnList = "user_id",
+                        unique = true  // 유저 당 하나의 통계 값만 가질 수 있다.
+                )
+        }
+)
 @Entity
 @EntityListeners(AuditingEntityListener.class)
 @Getter

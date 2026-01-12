@@ -27,7 +27,7 @@ import java.time.LocalDateTime;
                 ),
                 @Index(
                         name = "idx_user_date",
-                        columnList = "user_id, post_date"  // 조회용 인덱스이다.
+                        columnList = "user_id, post_date"  // 조회용 인덱스로, 유저 id와 게시 날짜를 포함하여 검색하면 성능이 향상된다.
                 )
         }
 )

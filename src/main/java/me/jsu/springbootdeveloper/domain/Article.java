@@ -30,7 +30,11 @@ import java.time.LocalDateTime;
                 ),
                 @Index(
                         name = "idx_user_date",
-                        columnList = "user_id, post_date"
+                        columnList = "user_id, post_date"  // 유저별 하루의 post를 검사하기 위한 인덱싱이다.
+                ),
+                @Index(
+                        name = "idx_created_at",
+                        columnList = "created_at"  // 최신순으로 post 피드를 보여주기 위한 인덱싱이다.
                 )
         }
 )
