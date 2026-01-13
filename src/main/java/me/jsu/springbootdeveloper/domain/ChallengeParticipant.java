@@ -21,8 +21,12 @@ import java.time.LocalDateTime;
                 )
         },
         indexes = {
-                @Index(name = "idx_cp_user_id", columnList = "user_id"),  // 유저 id로 검색하기 위한 인덱싱이다.
-                @Index(name = "idx_cp_challenge_id", columnList = "challenge_id")  // 챌린지 id로 검색하기 위한 인덱싱이다.
+                @Index(
+                        name = "idx_cp_user_id",
+                        columnList = "user_id"),  // 유저 id로 검색하기 위한 인덱싱이다.
+                @Index(
+                        name = "idx_cp_challenge_id",
+                        columnList = "challenge_id")  // 챌린지 id로 검색하기 위한 인덱싱이다.
         }
 )
 @EntityListeners(AuditingEntityListener.class)  // 생성 및 수정시간을 감시하고 기록할 수 있게 해준다.
