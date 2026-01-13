@@ -11,5 +11,4 @@ public enum NotificationType {
     LIKE,  // 좋아요
     CHALLENGE,  // 챌린지 관련
     SYSTEM,  // 시스템 공지
-
 }
