@@ -23,11 +23,10 @@ import java.util.List;
  */
 @Table(
         name = "user",
-        indexes = {
-                @Index(  // 유저 이메일은 서버에 단 하나로 유니크하게 취급하며, 이메일 검색을 인덱싱 한다.
+        uniqueConstraints = {
+                @UniqueConstraint(  // 유저 이메일은 서버에 단 하나로 유니크하게 취급하며, 이메일 검색을 인덱싱 한다.
                         name = "uk_user_email",
-                        columnList = "email",
-                        unique = true
+                        columnNames = {"email"}
                 )
         }
 )

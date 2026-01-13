@@ -19,11 +19,10 @@ import java.time.temporal.ChronoUnit;
  */
 @Table(
         name = "user_statistics",
-        indexes = {
-                @Index(
+        uniqueConstraints = {
+                @UniqueConstraint(  // 유저 당 하나의 통계 값만 가질 수 있다.
                         name = "uk_user_id",
-                        columnList = "user_id",
-                        unique = true  // 유저 당 하나의 통계 값만 가질 수 있다.
+                        columnNames = {"user_id"}
                 )
         }
 )

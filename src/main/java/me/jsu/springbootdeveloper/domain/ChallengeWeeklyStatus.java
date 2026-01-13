@@ -22,11 +22,10 @@ import java.time.LocalDateTime;
  */
 @Table(
         name = "challenge_weekly_status",
-        indexes = {
-                @Index(
+        uniqueConstraints = {
+                @UniqueConstraint(  // 1주차 당 한 챌린지만 해당 엔티티 값이 존재하도록 보장한다.
                         name = "uk_challenge_user_week",
-                        columnList = "challenge_id, user_id, week_start_date",
-                        unique = true  // 1주차 당 한 챌린지만 해당 엔티티 값이 존재하도록 보장한다.
+                        columnNames = {"challenge_id", "user_id", "week_start_date"}
                 )
         }
 )

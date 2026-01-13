@@ -17,12 +17,13 @@ import java.time.LocalDateTime;
  */
 @Table(
         name = "refresh_token",
-        indexes = {
-                @Index(  // 유저는 당 하나의 리프레시 토큰을 가지므로 유니크하다. 또한 id 검색을 인덱싱 한다.
+        uniqueConstraints = {
+                @UniqueConstraint(  // 유저는 당 하나의 리프레시 토큰을 가지므로 유니크하다. 또한 id 검색을 인덱싱 한다.
                         name = "uk_refresh_token_user",
-                        columnList = "user_id",
-                        unique = true
-                ),
+                        columnNames = {"user_id"}
+                )
+        },
+        indexes = {
                 @Index(  // 토큰을 통한 검색을 인덱싱 한다.
                         name = "idx_refresh_token_value",
                         columnList = "refresh_token"

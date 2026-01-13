@@ -4,7 +4,6 @@ package me.jsu.springbootdeveloper.repository;
 
 import me.jsu.springbootdeveloper.domain.Article;
 import me.jsu.springbootdeveloper.domain.ChallengeVisibility;
-import me.jsu.springbootdeveloper.domain.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,8 +18,8 @@ import java.util.List;
  */
 public interface PostRepository extends JpaRepository<Article, Long> {
     // 오늘 하루 유저의 모든 종류의 post를 조회하기 위한 쿼리문이다.
-    List<Article> findByUserAndPostDate(
-            User user,
+    List<Article> findByUserIdAndPostDate(
+            Long userId,
             LocalDate postDate
     );
 

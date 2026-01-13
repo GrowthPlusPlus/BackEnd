@@ -19,12 +19,13 @@ import java.time.LocalDateTime;
  */
 @Table(
         name = "challengeDailyLog",
-        indexes = {
-                @Index(
+        uniqueConstraints = {
+                @UniqueConstraint(  // 한 챌린지 당 post가 하나만 가능하므로, 하루에 한 로그만 생성된다.
                         name = "uk_user_challenge_date",
-                        columnList = "user_id, challenge_id, post_date",
-                        unique = true  // 한 챌린지 당 하루에 한 로그만 생성된다.
-                ),
+                        columnNames = {"user_id", "challenge_id", "post_date"}
+                )
+        },
+        indexes = {
                 @Index(
                         name = "idx_user_date",
                         columnList = "user_id, post_date"  // 조회용 인덱스로, 유저 id와 게시 날짜를 포함하여 검색하면 성능이 향상된다.
@@ -43,11 +44,11 @@ public class ChallengeDailyLog {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "challenge_id")
+    @JoinColumn(name = "challenge_id", nullable = false)
     private Challenge challenge;
 
     @OneToOne(fetch = FetchType.LAZY)  // 하루에 한 게시글 당 하나의 로그만 생성되므로 OneToOne 관계이다.
@@ -55,7 +56,7 @@ public class ChallengeDailyLog {
     private Article article;
 
     // 해당 날에 챌린지를 수행했는지 안했는지 체크하기 위해 사용하는 값이다.
-    @Column(name = "post_date")
+    @Column(name = "post_date", nullable = false)
     private LocalDate postDate;
 
     @CreatedDate

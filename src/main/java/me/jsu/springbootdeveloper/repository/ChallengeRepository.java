@@ -4,7 +4,6 @@ package me.jsu.springbootdeveloper.repository;
 
 import me.jsu.springbootdeveloper.domain.Challenge;
 import me.jsu.springbootdeveloper.domain.ChallengeVisibility;
-import me.jsu.springbootdeveloper.domain.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -36,5 +35,5 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
     );
 
     // 유저가 관리하는 모든 챌린지를 검색한다.
-    List<Challenge> findByUser(User user);
+    List<Challenge> findByUserId(Long userId);
 }
