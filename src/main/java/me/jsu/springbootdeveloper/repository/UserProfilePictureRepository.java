@@ -10,5 +10,5 @@ import java.util.Optional;
     유저의 프로필 사진을 저장하는 DB이다.
  */
 public interface UserProfilePictureRepository extends JpaRepository<UserProfilePicture, Long> {
-    Optional<UserProfilePicture> findByUserId(Long userId);  // 유저 id로 유저 프로필 사진을 검색한다.
+    Optional<UserProfilePicture> findByUser_Id(Long userId);  // 유저 id로 유저 프로필 사진을 검색한다.
 }

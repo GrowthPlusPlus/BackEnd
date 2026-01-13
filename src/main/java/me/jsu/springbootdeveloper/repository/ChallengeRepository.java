@@ -35,5 +35,5 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
     );
 
     // 유저가 관리하는 모든 챌린지를 검색한다.
-    List<Challenge> findByUserId(Long userId);
+    List<Challenge> findByUser_Id(Long userId);
 }

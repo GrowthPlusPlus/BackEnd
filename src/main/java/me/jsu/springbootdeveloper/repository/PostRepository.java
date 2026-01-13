@@ -12,13 +12,14 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 /*
     게시글을 저장하는 DB로, 테이블에 매핑되는 엔티티 타입은 Article, 엔티티의 pk 타입은 Long이다.
  */
 public interface PostRepository extends JpaRepository<Article, Long> {
     // 오늘 하루 유저의 모든 종류의 post를 조회하기 위한 쿼리문이다.
-    List<Article> findByUserIdAndPostDate(
+    List<Article> findByUser_IdAndPostDate(
             Long userId,
             LocalDate postDate
     );

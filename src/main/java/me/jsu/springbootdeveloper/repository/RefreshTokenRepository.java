@@ -12,6 +12,6 @@ import java.util.Optional;
     findByAll 검색 방식 이외에도 유저 정보, 리프레시 토큰 값으로 조회가 가능하다.
  */
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {
-    Optional<RefreshToken> findByUserId(Long userId);
+    Optional<RefreshToken> findByUser_Id(Long userId);
     Optional<RefreshToken> findByRefreshToken(String refreshToken);
 }

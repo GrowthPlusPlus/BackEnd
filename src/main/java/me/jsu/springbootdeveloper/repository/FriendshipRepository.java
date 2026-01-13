@@ -27,5 +27,5 @@ public interface FriendshipRepository extends JpaRepository<Friendship, Long> {
         이미 친구로 등록되어있는지 검사해준다. 해당 로직을 수행하기 전에 서비스 레벨에서 user1Id < user2Id 의 순서가 정해져야 한다.
         해당 검사는 조회용 api가 아닌 도메인 규칙으로 존재 여부를 검사하기 때문에 user id가 아닌 객체로 비교한다.
      */
-    boolean existsByUser1IdAndUser2Id(User user1, User user2);
+    boolean existsByUser1AndUser2(User user1, User user2);
 }

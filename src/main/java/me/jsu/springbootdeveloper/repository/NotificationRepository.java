@@ -12,7 +12,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
  */
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
     // 유저 id를 기준으로 알림을 최신순으로 조회한다. page를 이용하여 전체에서 일부분을 조회한다.
-    Page<Notification> findByUserIdOrderByCreateAtDesc(
+    Page<Notification> findByUser_IdOrderByCreatedAtDesc(
             Long userId,
             Pageable pageable
     );

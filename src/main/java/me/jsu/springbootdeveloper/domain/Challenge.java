@@ -113,7 +113,14 @@ public class Challenge {
     /*
         챌린지에 참여자 수가 늘 때마다 참여자 필드 값을 업데이트 한다.
      */
-    public void updateParticipantNumber() {
+    public void updateParticipate() {
         this.participantNumber++;
+    }
+
+    /*
+        챌린지에 참여자 수가 줄 때마다 참여자 필드 값을 업데이트 한다.
+     */
+    public void updateLeave() {
+        this.participantNumber--;
     }
 }

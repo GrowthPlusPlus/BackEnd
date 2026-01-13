@@ -77,6 +77,12 @@ public class Article {
     @Column(name = "post_date")
     private LocalDate postDate;
 
+    @Column(name = "like_number")
+    private int likeNumber;  // 게시글의 좋아요 수이다.
+
+    @Column(name = "comment_number")
+    private int commentNumber;  // 게시글의 댓글 수이다.
+
     /*
         @Builder로 빌더 패턴으로 객체를 생성할 수 있게 해준다.
         ex)
@@ -93,6 +99,8 @@ public class Article {
         this.user = user;
         this.challenge = challenge;
         this.postDate = postDate;
+        this.likeNumber = 0;  // 초기엔 둘 다 0이다.
+        this.commentNumber = 0;
     }
 
     public void update(String title, String content) {
@@ -102,5 +110,33 @@ public class Article {
         if (content != null) {
             this.content = content;
         }
+    }
+
+    /*
+        좋아요를 누른 경우 좋아요 개수를 증가시킨다. 중복 좋아요는 서비스 레이어에서 방지한다.
+     */
+    public void plusLikeNumber() {
+        likeNumber++;
+    }
+
+    /*
+        좋아요를 취소한 경우 좋아요 개수를 감소시킨다.
+     */
+    public void minusLikeNumber() {
+        likeNumber--;
+    }
+
+    /*
+        댓글이 달린 경우 댓글 수를 증가시킨다.
+     */
+    public void plusCommentNumber() {
+        commentNumber++;
+    }
+
+    /*
+        댓글이 삭제된 경우 댓글 수를 감소시킨다.
+     */
+    public void minusCommentNumber() {
+        commentNumber--;
     }
 }

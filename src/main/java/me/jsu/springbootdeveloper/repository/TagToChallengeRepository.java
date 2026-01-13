@@ -5,6 +5,7 @@ package me.jsu.springbootdeveloper.repository;
 import me.jsu.springbootdeveloper.domain.TagToChallenge;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -19,5 +20,5 @@ public interface TagToChallengeRepository extends JpaRepository<TagToChallenge, 
         join fetch ttc.tag
         where ttc.challenge.id = :challengeId
     """)
-    List<TagToChallenge> findWithTagByChallengeId(Long challengeId);  // 챌린지 id로 태그를 검색한다.
+    List<TagToChallenge> findWithTagByChallengeId(@Param("challengeId") Long challengeId);  // 챌린지 id로 태그를 검색한다.
 }
