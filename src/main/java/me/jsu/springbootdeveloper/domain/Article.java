@@ -53,7 +53,7 @@ public class Article {
     @Column(name = "title", nullable = false)
     private String title;
 
-    @Column(name = "content", nullable = false)
+    @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 
     @CreatedDate  // 게시글이 생성된 시간이다.
