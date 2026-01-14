@@ -16,8 +16,8 @@ import java.time.LocalDateTime;
         name = "notification",
         indexes = {
                 @Index(
-                        name = "idx_user_created_at",
-                        columnList = "user_id, created_at"  // 최신순으로 유저의 알람을 보여주기 위한 인덱싱이다.
+                        name = "idx_user",
+                        columnList = "user_id"  // 알림을 유저 id로 검색하기 위한 인덱싱이다.
                 )
         }
 )
