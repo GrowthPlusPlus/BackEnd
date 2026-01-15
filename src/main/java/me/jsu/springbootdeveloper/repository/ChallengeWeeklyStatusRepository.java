@@ -2,10 +2,12 @@
 
 package me.jsu.springbootdeveloper.repository;
 
+import me.jsu.springbootdeveloper.domain.ChallengeDailyLog;
 import me.jsu.springbootdeveloper.domain.ChallengeWeeklyStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 /*
@@ -14,6 +16,12 @@ import java.util.Optional;
 public interface ChallengeWeeklyStatusRepository extends JpaRepository<ChallengeWeeklyStatus, Long> {
     Optional<ChallengeWeeklyStatus> findByChallenge_IdAndUser_IdAndWeekStartDate(  // 이번 주의 챌린지 상태 엔트리를 조회한다.
             Long challengeId,
+            Long userId,
+            LocalDate weekStartDate
+    );
+
+    // 이번 주의 챌린지 상태 엔트리들을 유저 id로 조회한다.
+    List<ChallengeWeeklyStatus> findByUser_IdAndWeekStartDate(
             Long userId,
             LocalDate weekStartDate
     );

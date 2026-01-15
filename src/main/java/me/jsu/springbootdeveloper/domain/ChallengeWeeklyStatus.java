@@ -27,6 +27,12 @@ import java.time.LocalDateTime;
                         name = "uk_challenge_user_week",
                         columnNames = {"challenge_id", "user_id", "week_start_date"}
                 )
+        },
+        indexes = {
+                @Index(  // 유저 id로 이번주 챌린지 리스트들을 검색하는 인덱싱이다.
+                        name = "idx_user_id",
+                        columnList = "user_id"
+                )
         }
 )
 @Entity

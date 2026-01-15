@@ -32,7 +32,10 @@ import java.time.LocalDateTime;
                         columnList = "to_user_id"),
                 @Index(  // 보낸 친구 요청을 인덱싱 한다.
                         name = "idx_from_user",
-                        columnList = "from_user_id")
+                        columnList = "from_user_id"),
+                @Index(  // A -> B, B -> A 요청 방지를 위한 인덱싱이다.
+                        name = "idx_request",
+                        columnList = "from_user_id, to_user_id, status")
         }
 )
 @EntityListeners(AuditingEntityListener.class)  // 생성 및 수정시간을 감시하고 기록할 수 있게 해준다.
@@ -54,7 +57,7 @@ public class FriendRequest {
     private User toUser;  // 친구 요청을 받은 유저
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "status", nullable = false)
     private FriendRequestStatus status;
 
     @CreatedDate

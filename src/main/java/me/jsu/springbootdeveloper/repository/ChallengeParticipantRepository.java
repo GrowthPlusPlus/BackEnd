@@ -27,4 +27,14 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
         where cp.challenge.id = :challengeId
     """)
     List<ChallengeParticipant> findWithUserByChallengeId(Long challengeId);  // 챌린지 id로 챌린지에 참여한 유저들을 검색한다.
+
+    // 유저 id로 유저가 참여한 챌린지 중, 현재 진행중인 챌린지들을 검색한다.
+    @Query("""
+        select cp
+        from ChallengeParticipant cp
+        join fetch cp.challenge c
+        where cp.user.id = :userId
+          and cp.status = 'IN_PROGRESS'
+    """)
+    List<ChallengeParticipant> findInProgressWithChallengeByUserId(Long userId);
 }
