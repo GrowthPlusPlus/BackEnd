@@ -40,6 +40,7 @@ public class NotificationService {
 
     /*
         유저 id로 알람을 검색하여 List형태로 정제하고, 더 읽을 페이지가 있는지에 대한 여부를 포함하는 dto를 생성하여 반환하는 함수이다.
+        읽은 알림, 읽지 않은 알림 구분 없이 생성일을 기준으로 검색한다.
         page는 데이터를 검색하지 못하면 빈 List가 반환되므로 예외처리를 할 필요는 없다.
      */
     public MyNotificationResponse getNotification(String userEmail, int page) {

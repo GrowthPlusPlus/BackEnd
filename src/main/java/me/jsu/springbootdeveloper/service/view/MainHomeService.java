@@ -2,6 +2,7 @@
 
 package me.jsu.springbootdeveloper.service.view;
 
+import me.jsu.springbootdeveloper.service.ChallengeService;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.domain.*;
@@ -29,9 +30,7 @@ import java.util.stream.Collectors;
 public class MainHomeService {
     private final UserService userService;
     private final NotificationService notificationService;
-    private final ChallengeParticipantRepository challengeParticipantRepository;
-    private final ChallengeDailyLogRepository challengeDailyLogRepository;
-    private final ChallengeWeeklyStatusRepository challengeWeeklyStatusRepository;
+    private final ChallengeService challengeService;
 
     public MainHomeResponse getMainHome(String userEmail, LocalDate today, LocalDate weekStartDate, LocalDate targetDate) {
         User user = userService.findByEmail(userEmail);
@@ -50,7 +49,7 @@ public class MainHomeService {
         Map<Long, ChallengeWeeklyStatus> weeklyStatusMap = Collections.emptyMap();
 
         // 내가 참여한 챌린지 중, 현재 진행중인 챌린지 목록을 가져온다. 시점은 상관없다.
-        List<ChallengeParticipant> joinedChallenges = challengeParticipantRepository.findInProgressWithChallengeByUserId(user.getId());
+        List<ChallengeParticipant> joinedChallenges = challengeService.findInProgressWithChallengeByUserId(user.getId());
         if (joinedChallenges.isEmpty()) {  // 아직 아무런 챌린지에도 참여하지 않는 경우 빈 리스트를 반환한다.
                 return new MainHomeResponse(Collections.emptyList(), notificationNumber);
         }
@@ -60,7 +59,7 @@ public class MainHomeService {
             과거, 현재의 경우에만 데일리 로그를 검색한다.
          */
         if (!isFuture) {
-            List<ChallengeDailyLog> challengeDailyLogs = challengeDailyLogRepository.findByUser_IdAndPostDate(user.getId(), targetDate);
+            List<ChallengeDailyLog> challengeDailyLogs = challengeService.findByUser_IdAndPostDate(user.getId(), targetDate);
             // 데일리 로그 list를 map으로 바꾸어서 챌린지 id와 데일리 로그의 챌린지 id를 바로 매핑한다.
             dailyLogMap = challengeDailyLogs.stream().collect(Collectors.toMap(
                     log -> log.getChallenge().getId(),  // 챌린지 id를 map key로 설정한다.
@@ -73,7 +72,7 @@ public class MainHomeService {
             오늘만 주간 상태가 의미가 있으므로, 현재가 아니면 처리하지 않는다.
          */
         if (isToday) {
-            List<ChallengeWeeklyStatus> challengeWeeklyStatuses = challengeWeeklyStatusRepository.findByUser_IdAndWeekStartDate(
+            List<ChallengeWeeklyStatus> challengeWeeklyStatuses = challengeService.findByUser_IdAndWeekStartDate(
                     user.getId(), weekStartDate);
             // 위와 마찬가지로 챌린지 id를 매핑하기 위해 map을 사용한다.
             weeklyStatusMap = challengeWeeklyStatuses.stream().collect(Collectors.toMap(

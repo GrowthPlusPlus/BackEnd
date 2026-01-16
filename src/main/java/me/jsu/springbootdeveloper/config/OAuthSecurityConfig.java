@@ -2,6 +2,7 @@
 
 package me.jsu.springbootdeveloper.config;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.config.jwt.TokenProvider;
 import org.springframework.context.annotation.Bean;
@@ -80,6 +81,10 @@ public class OAuthSecurityConfig {
                         .requestMatchers(new AntPathRequestMatcher("/api/**")).authenticated()
                         // api가 아닌 화면/정적 페이지 등은 허용한다.
                         .anyRequest().permitAll())
+                // 토큰이 없으면 컨트롤러에 진입하지 못하도록 401응답을 만들어준다.
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint((request, response, authException) ->
+                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED)))
                 .build();
     }
 

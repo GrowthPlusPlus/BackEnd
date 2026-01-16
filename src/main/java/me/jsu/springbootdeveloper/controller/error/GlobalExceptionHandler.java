@@ -134,11 +134,13 @@ public class GlobalExceptionHandler {
 
     /*
         위에서 정의하지 않은 모든 기타 서버 오류들을 처리해준다.
-     */
+        spring 기본 처리에 예외를 맡기는 것이 좋다. 따라서 비활성화 한다.
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Void> handleServerError() {
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)  // http 상태 코드가 500이다.
                 .build();  // 내부 구현 세부 정보 노출을 방지하기 위해 따로 body를 두지 않는다.
     }
+     */
 }

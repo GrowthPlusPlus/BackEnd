@@ -34,7 +34,14 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         // 요청 헤더의 authorization 키값 조회로 요청 헤더의 Authorization값을 가져온다. ex) Authorization: Bearer ABCsdfW...
-        String authorizationHeader = request.getHeader(HEADER_AUTHORIZATION);  
+        String authorizationHeader = request.getHeader(HEADER_AUTHORIZATION);
+
+        // 토큰이 없는 경우 그냥 통과 시키고 세큐리티에서 처리하도록 한다.
+        if (authorizationHeader == null || !authorizationHeader.startsWith(TOKEN_PREFIX)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         // 가져온 값에서 접두사를 제거한다.
         String token = getAccessToken(authorizationHeader);
 
@@ -47,6 +54,10 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
             SecurityContextHolder
                     .getContext()
                     .setAuthentication(authentication);
+        }
+        else {  // 토큰은 있지만 유효하지 않은 경우 401을 반환한다.
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
         }
 
         // 다음 필터로 요청 전달한다.
