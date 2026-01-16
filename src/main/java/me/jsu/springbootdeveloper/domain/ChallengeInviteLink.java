@@ -27,7 +27,7 @@ import java.time.LocalDateTime;
         },
         indexes = {
                 @Index(  // 특정 유저가 생성한 모든 초대 링크를 조회하기 위한 인덱싱이다.
-                        name = "idx_user_id",
+                        name = "idx_user_id_link",
                         columnList = "user_id"
                 ),
                 @Index(  // 특정 유저가 생성한 유효한 모든 초대 링크를 조회하기 위한 인덱싱이다.

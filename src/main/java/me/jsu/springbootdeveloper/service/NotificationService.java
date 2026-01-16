@@ -14,8 +14,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-
 /*
     알람을 관리하기 위한 서비스이다.
  */
@@ -34,7 +32,7 @@ public class NotificationService {
 
     /*
         유저 id로 알림을 검색하는 함수이다.
-        요청한 page 크기만큼 검색하여 반환한다.
+        요청한 page 크기만큼 검색하여 반환한다. 현재는 사용하지 않는다.
      */
     public Page<Notification> findByUser_Id(Long userId, Pageable pageable) {
         return notificationRepository.findByUser_Id(userId, pageable);
@@ -42,6 +40,7 @@ public class NotificationService {
 
     /*
         유저 id로 알람을 검색하여 List형태로 정제하고, 더 읽을 페이지가 있는지에 대한 여부를 포함하는 dto를 생성하여 반환하는 함수이다.
+        page는 데이터를 검색하지 못하면 빈 List가 반환되므로 예외처리를 할 필요는 없다.
      */
     public MyNotificationResponse getNotification(String userEmail, int page) {
         User user = userService.findByEmail(userEmail);

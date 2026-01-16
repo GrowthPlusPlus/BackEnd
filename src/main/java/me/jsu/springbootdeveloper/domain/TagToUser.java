@@ -25,7 +25,7 @@ import java.time.LocalDateTime;
         },
         indexes = {
                 @Index(  // 유저 id를 통한 챌린지 태그 검색을 인덱싱 한다.
-                        name = "idx_user",
+                        name = "idx_user_tag",
                         columnList = "user_id"
                 )
         }

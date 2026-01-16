@@ -22,7 +22,7 @@ import java.util.List;
     DB에 저장될 유저 정보를 저장하는 클래스이다.
  */
 @Table(
-        name = "user",
+        name = "users",
         uniqueConstraints = {
                 @UniqueConstraint(  // 유저 이메일은 서버에 단 하나로 유니크하게 취급하며, 이메일 검색을 인덱싱 한다.
                         name = "uk_user_email",

@@ -17,7 +17,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
         name = "post_picture",
         indexes = {
                 @Index(
-                        name = "idx_article",
+                        name = "idx_article_picture",
                         columnList = "article_id"  // post id로 인덱싱 한다.
                 )
         }

@@ -30,7 +30,7 @@ import java.time.LocalDateTime;
         },
         indexes = {
                 @Index(  // 유저 id로 이번주 챌린지 리스트들을 검색하는 인덱싱이다.
-                        name = "idx_user_id",
+                        name = "idx_user_id_weekly",
                         columnList = "user_id"
                 )
         }

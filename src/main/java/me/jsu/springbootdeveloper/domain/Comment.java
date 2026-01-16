@@ -22,7 +22,7 @@ import java.util.List;
         name = "comment",
         indexes = {
                 @Index(
-                        name = "idx_article",
+                        name = "idx_article_comment",
                         columnList = "article_id"  // 게시글에 달린 댓글을 검색하기 위한 인덱싱이다.
                 )
         }

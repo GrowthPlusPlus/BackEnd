@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
         name = "notification",
         indexes = {
                 @Index(
-                        name = "idx_user",
+                        name = "idx_user_notification",
                         columnList = "user_id"  // 알림을 유저 id로 검색하기 위한 인덱싱이다.
                 )
         }

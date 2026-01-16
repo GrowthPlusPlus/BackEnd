@@ -24,13 +24,13 @@ import java.time.LocalDateTime;
         name = "posts",
         uniqueConstraints = {
                 @UniqueConstraint(  // 유저당 하루에 하나의 글만 올릴 수 있다.
-                        name = "uk_user_challenge_date",
+                        name = "uk_user_challenge_date_article",
                         columnNames = {"user_id", "challenge_id", "post_date"}
                 )
         },
         indexes = {
                 @Index(
-                        name = "idx_user_date",
+                        name = "idx_user_date_article",
                         columnList = "user_id, post_date"  // 유저별 하루의 post를 검사하기 위한 인덱싱이다.
                 ),
                 @Index(

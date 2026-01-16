@@ -25,7 +25,7 @@ import java.time.LocalDateTime;
         },
         indexes = {
                 @Index(  // 게시글에 좋아요를 누른 유저를 보기 위한 인덱스이다.
-                        name = "idx_article",
+                        name = "idx_article_like",
                         columnList = "article_id"
                 )
         }
