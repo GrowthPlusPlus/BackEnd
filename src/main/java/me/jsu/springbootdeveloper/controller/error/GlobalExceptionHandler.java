@@ -5,6 +5,7 @@ package me.jsu.springbootdeveloper.controller.error;
 import me.jsu.springbootdeveloper.dto.error.ErrorResponse;
 import me.jsu.springbootdeveloper.service.ArticleAccessDeniedException;
 import me.jsu.springbootdeveloper.service.ArticleNotFoundException;
+import me.jsu.springbootdeveloper.service.ChallengeNotFoundException;
 import me.jsu.springbootdeveloper.service.UserNotFoundException;
 import me.jsu.springbootdeveloper.service.oauth.OAuthLoginException;
 import me.jsu.springbootdeveloper.service.token.InvalidTokenException;
@@ -112,6 +113,21 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.FORBIDDEN)
                 .body(new ErrorResponse(
                         "ARTICLE_ACCESS_DENIED",
+                        e.getErrorCode()
+                ));
+    }
+
+    /*
+        DB에서 챌린지를 검색하지 못한 경우의 핸들러이다.
+    */
+    @ExceptionHandler(ChallengeNotFoundException.class)
+    public ResponseEntity<ErrorResponse>  handleArticleNotFound(
+            ChallengeNotFoundException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(
+                        "CHALLENGE_NOT_FOUND",
                         e.getErrorCode()
                 ));
     }

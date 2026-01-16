@@ -62,7 +62,7 @@ public class PostApiController {
      */
     @GetMapping("/api/articles")
     public ResponseEntity<Page<ArticleResponse>> findAllArticles(
-            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         Page<ArticleResponse> articles = postService.findAll(pageable)
                 .map(ArticleResponse::new);  // 검색한 Article값을 ArticleResponse로 변환한다.
 

@@ -9,6 +9,8 @@ import me.jsu.springbootdeveloper.repository.UserRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+
 import static me.jsu.springbootdeveloper.domain.Role.ROLE_USER;
 
 /*
@@ -21,6 +23,9 @@ public class UserService {
 
     /*
         회원가입을 구현한 함수이다. 현재는 OAuth 인증 방식을 사용하므로 사용되지 않는다.
+
+        @param dto 회원가입 요청 정보
+        @return 생성된 유저의 id
      */
     public Long save(AddUserRequest dto) {
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();

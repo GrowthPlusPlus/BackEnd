@@ -11,11 +11,12 @@ import me.jsu.springbootdeveloper.domain.RefreshToken;
 import me.jsu.springbootdeveloper.domain.User;
 import me.jsu.springbootdeveloper.dto.oauth.GoogleTokenResponse;
 import me.jsu.springbootdeveloper.dto.oauth.LoginResponse;
-import me.jsu.springbootdeveloper.repository.RefreshTokenRepository;
 import me.jsu.springbootdeveloper.service.UserService;
+import me.jsu.springbootdeveloper.service.token.RefreshTokenService;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 
 /*
     해당 클래스는 Google OAuth와 PKCE 로그인 유스케이스 전체를 담당하는 Service 계층 클래스이다.
@@ -29,7 +30,7 @@ public class OAuthLoginService {
     private final GoogleIdTokenVerifyService idTokenVerifyService;  // 구글 id 토큰 검증을 위한 라이브러리
     private final UserService userService;
     private final TokenProvider tokenProvider;
-    private final RefreshTokenRepository refreshTokenRepository;
+    private final RefreshTokenService refreshTokenService;
 
     /*
         Google OAuth (Authorization Code + PKCE) 로그인의 유스케이스를 한 번에 수행하는 함수이다.
@@ -74,21 +75,9 @@ public class OAuthLoginService {
         String refreshToken = tokenProvider.generateToken(user, Duration.ofDays(30));
 
         // Refresh Token을 우리 서비스의 서버에 저장한다.
-        saveRefreshToken(user.getId(), refreshToken);
+        refreshTokenService.saveForOAuth(user, refreshToken);
 
         // 생성한 리프레시 토큰과 엑세스 토큰을 LoginResponse 클래스 형태로 가공하여 컨트롤러에 반환한다.
         return new LoginResponse(accessToken, refreshToken);
-    }
-
-    /*
-        유저 id와 새로 발급한 리프레시 토큰 정보로 DB에 저장할 엔트리를 생성한다.
-        만들어진 엔트리를 우리 서버의 리프레시 토큰 DB에 저장한다.
-     */
-    private void saveRefreshToken(Long userId, String newRefreshToken) {
-        RefreshToken refreshToken = refreshTokenRepository.findByUserId(userId)  // 유저의 리프레시 토큰을 유저 id로 DB에서 검색한다.
-                        .map(entity -> entity.update(newRefreshToken))  // 재로그인이라면 리프레시 토큰을 업데이트 한다.
-                        .orElse(new RefreshToken(userId, newRefreshToken));  // 최초 로그인이라면 새로 작성한다.
-
-        refreshTokenRepository.save(refreshToken);  // 새로 생성한 리프레시 토큰 엔트리를 실제로 DB에 저장한다.
     }
 }

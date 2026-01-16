@@ -24,6 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 @SpringBootTest
@@ -64,7 +65,11 @@ public class TokenApiControllerTest {
                 .build()
                 .createToken(jwtProperties);
 
-        refreshTokenRepository.save(new RefreshToken(testUser.getId(), refreshToken));
+//        refreshTokenRepository.save(RefreshToken.builder()
+//                .userId(testUser.getId())
+//                .refreshToken(refreshToken)
+//                .createdAt(LocalDateTime.now())
+//                .build());
 
         CreateAccessTokenRequest request = new CreateAccessTokenRequest();
         request.setRefreshToken(refreshToken);

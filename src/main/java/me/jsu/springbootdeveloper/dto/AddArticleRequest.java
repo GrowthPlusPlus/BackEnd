@@ -16,12 +16,5 @@ import me.jsu.springbootdeveloper.domain.Article;
 public class AddArticleRequest {
     private String title;
     private String content;
-
-    public Article toEntity(String author) {  // DB에 넣을 게시글에 author 정보를 포함시켜 Article 객체를 생성한다.
-        return Article.builder()
-                .title(title)
-                .content(content)
-                .author(author)
-                .build();
-    }
+    private Long challengeId;  // 어떤 챌린지에 속하는지 알도록 하는 필드이다.
 }

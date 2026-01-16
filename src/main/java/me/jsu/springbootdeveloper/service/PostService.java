@@ -5,6 +5,9 @@ package me.jsu.springbootdeveloper.service;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.domain.Article;
+import me.jsu.springbootdeveloper.domain.Challenge;
+import me.jsu.springbootdeveloper.domain.ChallengeVisibility;
+import me.jsu.springbootdeveloper.domain.User;
 import me.jsu.springbootdeveloper.dto.AddArticleRequest;
 import me.jsu.springbootdeveloper.dto.UpdateArticleRequest;
 import me.jsu.springbootdeveloper.repository.PostRepository;
@@ -13,25 +16,46 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+
 @RequiredArgsConstructor  // final 또는 notNull이 있는 맴버변수만 생성자에서 초기화 한다.
 @Service
 public class PostService {
     private final PostRepository postRepository;
+    private final UserService userService;
+    private final ChallengeService challengeService;
 
     /*
         게시글을 추가하는 함수이다.
         request 객체와 userName 정보를 바탕으로 게시글을 생성하여 DB에 업데이트 한다.
      */
     public Article save(AddArticleRequest request, String userName) {
-        return postRepository.save(request.toEntity(userName));
+        // 유저 이메일로 user 객체를 검색한다.
+        User user = userService.findByEmail(userName);
+
+        // request로 온 챌린지 id로 post가 어떤 챌린지에 속하는지 검색한다.
+        Challenge challenge = challengeService.findById(request.getChallengeId());
+
+        // 챌린지 인증 시각을 정확하게 보기 위해 생성 시각과는 다른 인증 날짜 도메인을 생성한다.
+        LocalDate postDate = LocalDate.now(ZoneId.of("Asia/Seoul"));
+
+        // 서버에서 게시글 생성 시각을 명시적으로 설정한다.
+        return postRepository.save(Article.builder()
+                .title(request.getTitle())
+                .content(request.getContent())
+                .user(user)
+                .challenge(challenge)
+                .postDate(postDate)
+                .build());
     }
 
     /*
-        게시글 전체를 조회하는 함수이다.
+        공개 상태의 게시글 일부를 조회하는 함수이다.
         리턴하는 값은 Article 객체를 가지고 있는 리스트이다.
      */
     public Page<Article> findAll(Pageable pageable) {
-        return postRepository.findAll(pageable);
+        return postRepository.findPublicChallengePostFeed(ChallengeVisibility.PUBLIC, pageable);
     }
 
     /*
@@ -89,7 +113,7 @@ public class PostService {
     private static void authorizeArticleAuthor(Article article) {
         String userName = SecurityContextHolder.getContext().getAuthentication().getName();  // 현재 로그인한 유저의 이메일을 가져온다.
 
-        if (!article.getAuthor().equals(userName)) {  // 유저의 이메일과 게시글 작성자의 이메일을 비교한다.
+        if (!article.getUser().getEmail().equals(userName)) {  // 유저의 이메일과 게시글 작성자의 이메일을 비교한다.
             throw new ArticleAccessDeniedException("ARTICLE_ACCESS_DENIED");
         }
     }

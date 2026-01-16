@@ -7,10 +7,13 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -19,7 +22,16 @@ import me.jsu.springbootdeveloper.dto.UserResponse;
 /*
     DB에 저장될 유저 정보를 저장하는 클래스이다.
  */
-@Table(name = "users")
+@Table(
+        name = "user",
+        uniqueConstraints = {
+                @UniqueConstraint(  // 유저 이메일은 서버에 단 하나로 유니크하게 취급하며, 이메일 검색을 인덱싱 한다.
+                        name = "uk_user_email",
+                        columnNames = {"email"}
+                )
+        }
+)
+@EntityListeners(AuditingEntityListener.class)  // 생성 및 수정시간을 감시하고 기록할 수 있게 해준다.
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 @Entity
@@ -41,6 +53,10 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
 
     @Column(name = "nickname", unique = true)
     private String nickname;  // 사용자의 이름이다.
+
+    @CreatedDate  // 유저가 생성된 시간이다.
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
 
     @Builder
     public User(String email, String password, Role role, String nickname) {
