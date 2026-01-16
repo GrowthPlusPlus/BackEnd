@@ -12,5 +12,6 @@ import java.util.Optional;
     findByAll 검색 방식 이외에도 유저 이메일로 조회가 가능하다.
  */
 public interface UserRepository extends JpaRepository<User, Long> {
-    Optional<User> findByEmail(String email);  // 이메일 정보로 사용자 정보를 가져올 수 있게 하는 쿼리문을 작성 가능하게 한다.
+    Optional<User> findByEmail(String email);  //이메일 정보로 사용자 정보를 가져올 수 있게 하는 쿼리문을 작성 가능하게 함
+    Optional<User> findByNickname(String nickname); // 닉네임 정보로 사용자 정보를 가져올 수 있게 하는 쿼리문을 작성 가능하게 함
 }
