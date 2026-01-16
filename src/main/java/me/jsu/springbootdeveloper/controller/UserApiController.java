@@ -1,32 +1,44 @@
-//package me.jsu.springbootdeveloper.controller;
-//
-//import jakarta.servlet.http.HttpServletRequest;
-//import jakarta.servlet.http.HttpServletResponse;
-//import lombok.RequiredArgsConstructor;
-//import me.jsu.springbootdeveloper.dto.AddUserRequest;
-//import me.jsu.springbootdeveloper.service.UserService;
-//import org.springframework.security.core.context.SecurityContextHolder;
-//import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
-//import org.springframework.stereotype.Controller;
-//import org.springframework.web.bind.annotation.GetMapping;
-//import org.springframework.web.bind.annotation.PostMapping;
-//
-//// OAuth 방식에선 사용하지 않는 form 로그인 방식으로 내 서비스 자체의 로그인, 회원가입 기능을 지원하는 클래스이다. 세션 기반으로 토큰을 사용하지 않는다.
-//@RequiredArgsConstructor
-//@Controller
-//public class UserApiController {
-//
-//    private final UserService userService;
-//
-//    @PostMapping("/user")
-//    public String signup(AddUserRequest request) {
-//        userService.save(request);  // 회원가입 메서드 호출
-//        return "redirect:/login";  // 회원가입이 완료된 이후에 로그인 페이지로 이동
-//    }
-//
-//    @GetMapping("/logout")
-//    public String logout(HttpServletRequest request, HttpServletResponse response) {
-//        new SecurityContextLogoutHandler().logout(request, response, SecurityContextHolder.getContext().getAuthentication());
-//        return "redirect:/login";
-//    }
-//}
+package me.jsu.springbootdeveloper.controller;
+
+import lombok.RequiredArgsConstructor;
+import me.jsu.springbootdeveloper.domain.User;
+import me.jsu.springbootdeveloper.dto.UserResponse;
+import me.jsu.springbootdeveloper.service.UserService;
+import me.jsu.springbootdeveloper.service.UserNotFoundException;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RestController;
+
+/*
+    해당 클래스는 REST API 방식으로 유저 정보를 검색하는 기능을 제공한다.
+    최초 작성자: 정성우
+ */
+@RequiredArgsConstructor
+@RestController
+public class UserApiController {
+
+    private final UserService userService;
+
+    /*
+        닉네임을 통해 유저 정보를 검색하는 GET 요청 API이다.
+        @param nickname 검색할 유저의 닉네임
+        @return 검색된 유저 정보 (UserResponse 객체)
+     */
+    @GetMapping("/api/users/nickname/{nickname}")
+    public ResponseEntity<UserResponse> findUserByNickname(@PathVariable String nickname) {
+        User user = userService.findByNickname(nickname);
+        return ResponseEntity.ok(user.toResponse());
+    }
+
+    /*
+        이메일을 통해 유저 정보를 검색하는 GET 요청 API이다.
+        @param email 검색할 유저의 이메일
+        @return 검색된 유저 정보 (UserResponse 객체)
+     */
+    @GetMapping("/api/users/email/{email}")
+    public ResponseEntity<UserResponse> findUserByEmail(@PathVariable String email) {
+        User user = userService.findByEmail(email);
+        return ResponseEntity.ok(user.toResponse());
+    }
+}
