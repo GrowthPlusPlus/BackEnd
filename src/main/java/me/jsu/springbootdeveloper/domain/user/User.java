@@ -53,6 +53,10 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
     @Column(name = "nickname", unique = true)
     private String nickname;  // 사용자의 이름이다.
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private UserStatus userStatus;  // 유저의 상태를 나타내기 위한 enum이다.
+
     @CreatedDate  // 유저가 생성된 시간이다.
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -63,6 +67,7 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
         this.password = password;
         this.role = role;  // 회원가입 시 role(권한)이 추가된다.
         this.nickname = nickname;  //OAuth 로그인 시, 구글 프로필에 사용된 이름이 저장된다.
+        this.userStatus = UserStatus.NEW;  // 처음 생성시엔 초기 설정을 위해 NEW 상태가 된다.
     }
     
     /*
@@ -73,6 +78,20 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
         this.nickname = nickname;
 
         return this;
+    }
+
+    /*
+        유저를 active 상태로 변경한다.
+     */
+    public void userToActive() {
+        this.userStatus = UserStatus.ACTIVE;
+    }
+
+    /*
+        유저가 신고를 당한 경우 제재당한 상태로 변경한다.
+     */
+    public void userToSuspend() {
+        this.userStatus = UserStatus.SUSPENDED;
     }
 
     /*

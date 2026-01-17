@@ -75,7 +75,10 @@ public class OAuthLoginService {
         // Refresh Token을 우리 서비스의 서버에 저장한다.
         refreshTokenService.saveForOAuth(user, refreshToken);
 
-        // 생성한 리프레시 토큰과 엑세스 토큰을 LoginResponse 클래스 형태로 가공하여 컨트롤러에 반환한다.
-        return new LoginResponse(accessToken, refreshToken);
+        /*
+            생성한 리프레시 토큰과 엑세스 토큰을 LoginResponse 클래스 형태로 가공하여 컨트롤러에 반환한다.
+            또한 처음 우리 서비스에 로그인한 사람에게 초기 설정을 할 수 있도록 상태 값도 반환한다.
+         */
+        return new LoginResponse(accessToken, refreshToken, user.getUserStatus());
     }
 }
