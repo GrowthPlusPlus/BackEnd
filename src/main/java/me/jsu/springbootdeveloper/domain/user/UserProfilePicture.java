@@ -43,7 +43,7 @@ public class UserProfilePicture {
     @Column(name = "cloudinary_public_id", nullable = false)
     private String cloudinaryPublicId;  // 클라우디너리에 저장된 사진의 id이다.
 
-    @Column(name = "image_url", columnDefinition = "TEXT")
+    @Column(name = "image_url", columnDefinition = "TEXT", nullable = false)
     private String imageUrl;  // 실제로 클라우디너리에서 사진을 가져오는 경로이다.
 
     @CreatedDate

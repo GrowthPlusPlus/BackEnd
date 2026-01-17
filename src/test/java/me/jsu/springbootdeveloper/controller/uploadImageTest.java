@@ -2,8 +2,10 @@
 
 package me.jsu.springbootdeveloper.controller;
 
+import me.jsu.springbootdeveloper.domain.user.User;
 import me.jsu.springbootdeveloper.dto.picture.ImageUploadResult;
 import me.jsu.springbootdeveloper.service.cloudinary.CloudinaryService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,5 +58,17 @@ public class uploadImageTest {
 
         // then
         assertNull(imageUploadResult);  // 업로드 되지 않고 비어있는지 확인
+    }
+
+    @DisplayName("deleteImage: id로 이미지를 삭제한다.")
+    @Test
+    void deleteImage() throws Exception {
+        // given
+
+        // when
+        cloudinaryService.deleteImage("rtdyr4ixohwydou9gwtf");
+
+        // then
+        // 직접 사이트에서 확인
     }
 }

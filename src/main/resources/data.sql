@@ -2,10 +2,10 @@
 -- 작성자: 정성우
 
 -- 사용자 데이터 삽입
-INSERT INTO users (email, password, role, nickname, created_at) VALUES 
-('user1@example.com', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iwy8pL5O', 'ROLE_USER', '테스트유저1', CURRENT_TIMESTAMP),
-('user2@example.com', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iwy8pL5O', 'ROLE_USER', '테스트유저2', CURRENT_TIMESTAMP),
-('admin@example.com', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iwy8pL5O', 'ROLE_ADMIN', '관리자', CURRENT_TIMESTAMP);
+INSERT INTO users (email, password, role, nickname, status, created_at) VALUES
+('user1@example.com', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iwy8pL5O', 'ROLE_USER', '테스트유저1', 'ACTIVE', CURRENT_TIMESTAMP),
+('user2@example.com', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iwy8pL5O', 'ROLE_USER', '테스트유저2', 'ACTIVE', CURRENT_TIMESTAMP),
+('admin@example.com', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iwy8pL5O', 'ROLE_ADMIN', '관리자', 'ACTIVE', CURRENT_TIMESTAMP);
 
 -- 챌린지 데이터 삽입
 INSERT INTO challenge (user_id, title, content, max_participant_number, participant_number, challenge_visibility, start_date, end_date, required_weekly_count, created_at) VALUES 

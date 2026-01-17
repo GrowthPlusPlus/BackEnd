@@ -2,12 +2,23 @@
 
 package me.jsu.springbootdeveloper.service;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.domain.user.User;
+import me.jsu.springbootdeveloper.domain.user.UserProfilePicture;
+import me.jsu.springbootdeveloper.domain.user.UserStatus;
 import me.jsu.springbootdeveloper.dto.AddUserRequest;
+import me.jsu.springbootdeveloper.dto.picture.ImageUploadResult;
+import me.jsu.springbootdeveloper.repository.user.UserProfilePictureRepository;
 import me.jsu.springbootdeveloper.repository.user.UserRepository;
+import me.jsu.springbootdeveloper.service.cloudinary.CloudinaryService;
+import me.jsu.springbootdeveloper.service.cloudinary.CloudinaryUploadException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Map;
+import java.util.Optional;
 
 import static me.jsu.springbootdeveloper.domain.user.Role.ROLE_USER;
 
@@ -18,6 +29,8 @@ import static me.jsu.springbootdeveloper.domain.user.Role.ROLE_USER;
 @Service
 public class UserService {
     private final UserRepository userRepository;
+    private final UserProfilePictureRepository userProfilePictureRepository;
+    private final CloudinaryService cloudinaryService;
 
     /*
         회원가입을 구현한 함수이다. 현재는 OAuth 인증 방식을 사용하므로 사용되지 않는다.
@@ -80,5 +93,59 @@ public class UserService {
     public User findByNickname(String nickname) {
         return userRepository.findByNickname(nickname)
                 .orElseThrow(() -> new UserNotFoundException("USER_NOT_FOUND_FOR_NICKNAME"));
+    }
+
+    /*
+        유저의 이름을 업데이트 한다.
+     */
+    @Transactional  // 변경 사항을 DB에 JPA가 자동으로 업데이트 한다.
+    public void updateNickname(String email, String nickname) {
+        User user = findByEmail(email);  // 이메일로 유저 정보를 검색한다.
+
+        // 같은 닉네임이면 아무 작업도 하지 않는다.
+        if (nickname.equals(user.getNickname())) {
+            return;
+        }
+
+        // 사전에 닉네임의 중복 검사를 한다.
+        if (userRepository.existsByNickname(nickname)) {
+            throw new DuplicateNicknameException("DUPLICATE_NICKNAME");
+        }
+
+        user.updateNickname(nickname);  // 유저의 닉네임을 업데이트 한다.
+
+        if (user.getUserStatus() == UserStatus.NEW) {  // 유저가 첫 로그인 후 닉네임을 변경하면 active 상태가 된다.
+            user.userToActive(); // NEW → ACTIVE
+        }
+    }
+
+    /*
+        유저 프로필 사진을 등록한다.
+        사진을 주지 않으면 등록하지 않고, 기존에 등록된 사진이 있다면 삭제한다.
+     */
+    @Transactional
+    public void updateProfileImage(String email, MultipartFile image) {
+        User user = findByEmail(email);
+
+        if (image == null || image.isEmpty()) {  // 이미지가 없는 경우이다.
+            throw new CloudinaryUploadException("EMPTY_IMAGE");
+        }
+
+        // 유저에게 기존 프로필 이미지기 있는지 검색하고 있다면 DB, 클라우디너리에서 삭제한다.
+        Optional<UserProfilePicture> userProfilePicture = userProfilePictureRepository.findByUser_Id(user.getId());
+        if (userProfilePicture.isPresent()) {
+            cloudinaryService.deleteImage(userProfilePicture.get().getCloudinaryPublicId());  // 클라우디너리에서 삭제한다.
+            userProfilePictureRepository.delete(userProfilePicture.get());  // 서비스 DB에서 삭제한다.
+        }
+
+        // 클라이언트에게 받은 이미지를 업로드하고 정보를 반환받는다.
+        ImageUploadResult imageUploadResult = cloudinaryService.uploadImage(image);
+
+        // 사진 정보를 DB에 반영한다.
+        userProfilePictureRepository.save(UserProfilePicture.builder()
+                .user(user)
+                .cloudinaryPublicId(imageUploadResult.publicId())
+                .imageUrl(imageUploadResult.secureUrl())
+                .build());
     }
 }

@@ -5,6 +5,7 @@ package me.jsu.springbootdeveloper.controller.error;
 import me.jsu.springbootdeveloper.dto.error.ErrorResponse;
 import me.jsu.springbootdeveloper.service.*;
 import me.jsu.springbootdeveloper.service.challenge.ChallengeNotFoundException;
+import me.jsu.springbootdeveloper.service.cloudinary.CloudinaryDeleteException;
 import me.jsu.springbootdeveloper.service.cloudinary.CloudinaryUploadException;
 import me.jsu.springbootdeveloper.service.oauth.OAuthLoginException;
 import me.jsu.springbootdeveloper.service.post.ArticleAccessDeniedException;
@@ -144,6 +145,36 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)  // 500
                 .body(new ErrorResponse(
                         "CLOUDINARY_UPLOAD_ERROR",
+                        e.getErrorCode()
+                ));
+    }
+
+    /*
+        클라우디너리에 사진을 삭제하지 못한 경우의 핸들러이다.
+     */
+    @ExceptionHandler(CloudinaryDeleteException.class)
+    public ResponseEntity<ErrorResponse> handleCloudinaryDeleteException(
+            CloudinaryDeleteException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse(
+                        "CLOUDINARY_DELETE_ERROR",
+                        e.getErrorCode()
+                ));
+    }
+
+    /*
+        DB에 이미 동일한 닉네임을 가진 유저가 존재하는 경우의 핸들러이다.
+     */
+    @ExceptionHandler(DuplicateNicknameException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateNickname(
+            DuplicateNicknameException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)  // 409
+                .body(new ErrorResponse(
+                        "DUPLICATE_NICKNAME",
                         e.getErrorCode()
                 ));
     }

@@ -26,22 +26,44 @@ public class CloudinaryService {
     /*
         사진을 받아서 비어있으면 아무런 일을 하지 않고, 업로드에 실패하면 예외처리를 한다.
      */
-    public ImageUploadResult uploadImage(MultipartFile file) throws IOException {
-        List<String> imageInformation = new ArrayList<>();  // 반환할 값이다.
+    public ImageUploadResult uploadImage(MultipartFile file) {
+        try {
+            if (file == null || file.isEmpty()) {
+                return null;  // 사진이 없으면 null을 반환한다.
+            }
 
-        if (file == null || file.isEmpty()) {
-            return null;  // 사진 주소를 반환하지 않는다.
+            // 클라이언트가 보낸 사진을 클라우디너리에 업로드 하고 결과를 map으로 받는다.
+            Map uploadResult = cloudinary.uploader().upload(file.getBytes(), Map.of());
+
+            Object secureUrl = uploadResult.get("secure_url");  // 사진의 주소를 추출한다.
+            Object publicId = uploadResult.get("public_id");  // 사진을 관리하기 위한 id를 추출한다.
+            if (secureUrl == null || publicId == null) {  // null이면 사진을 업로드하지 못한 것이다.
+                throw new CloudinaryUploadException("PICTURE_IS_NOT_UPLOADED");
+            }
+
+            return new ImageUploadResult(secureUrl.toString(), publicId.toString());  // 사진 정보를 반환한다.
+        } catch (IOException e) {  // 전체 과정의 오류이다.
+            throw new CloudinaryUploadException("CLOUDINARY_UPLOAD_ERROR");
         }
+    }
 
-        // 클라이언트가 보낸 사진을 클라우디너리에 업로드 하고 결과를 map으로 받는다.
-        Map uploadResult = cloudinary.uploader().upload(file.getBytes(), Map.of());
+    /*
+        클라우디너리의 사진을 id로 삭제한다.
+     */
+    public void deleteImage(String publicId) {
+        try {
+            Map destroyResult = cloudinary.uploader().destroy(publicId, Map.of());  // result에 ok 또는 not found 값이 존재한다.
+            Object result = destroyResult.get("result");  // result 값을 추출한다.
 
-        Object secureUrl = uploadResult.get("secure_url");  // 사진의 주소를 추출한다.
-        Object publicId  = uploadResult.get("public_id");  // 사진을 관리하기 위한 id를 추출한다.
-        if (secureUrl == null || publicId == null) {  // null이면 사진을 업로드하지 못한 것이다.
-            throw new CloudinaryUploadException("PICTURE_IS_NOT_UPLOADED");
+            if ("not found".equals(result)) {  // 없는 이미지를 삭제하려하면 그냥 반환한다.
+                return;
+            }
+
+            if (!"ok".equals(result)) {  // 잘 삭제됐는지 검사하고 문제가 있다면 예외처리한다.
+                throw new CloudinaryDeleteException("PICTURE_IS_NOT_DELETED");
+            }
+        } catch (IOException e) {  // 전체 과정의 오류이다.
+            throw new CloudinaryDeleteException("CLOUDINARY_DELETE_ERROR");
         }
-
-        return new ImageUploadResult(secureUrl.toString(), publicId.toString());  // 사진 정보를 반환한다.
     }
 }

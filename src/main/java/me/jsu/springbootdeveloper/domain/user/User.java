@@ -74,10 +74,8 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
         사용자 이름을 변경해주는 함수로, OAuth 사용 시 최초 로그인에는 무조건 OAuth 프로필의 닉네임이 들어가므로,
         닉네임을 수정하고 싶다면 해당 함수를 사용해야 한다.
     */
-    public User update(String nickname) {
+    public void updateNickname(String nickname) {
         this.nickname = nickname;
-
-        return this;
     }
 
     /*
