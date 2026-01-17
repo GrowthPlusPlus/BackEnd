@@ -41,7 +41,7 @@ public class UserWithdrawalService {
         userService.detachStatistics(user);  // 통계 해제
 
         // 참여한 챌린지에서 나온다. CASCADE에 의존하지 않고 직접 구현한 챌린지 서비스의 삭제를 사용한다.
-        challengeService.deleteParticipant(user);
+        challengeService.deleteParticipant(user.getId());
 
         /*
             클라우디너리의 사진인 외부 리소스를 삭제한다.

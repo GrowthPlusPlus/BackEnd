@@ -68,7 +68,7 @@ public class Article {
 
     // user DB의 값을 갖는 fk값이다.
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = true)  // 유저가 탈퇴해도 게시글은 남는다.
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)

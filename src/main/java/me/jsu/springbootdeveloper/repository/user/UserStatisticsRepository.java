@@ -2,8 +2,12 @@
 
 package me.jsu.springbootdeveloper.repository.user;
 
+import me.jsu.springbootdeveloper.domain.user.User;
 import me.jsu.springbootdeveloper.domain.user.UserStatistics;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 
@@ -12,4 +16,15 @@ import java.util.Optional;
  */
 public interface UserStatisticsRepository extends JpaRepository<UserStatistics, Long> {
     Optional<UserStatistics> findByUser_Id(Long userId);  // 유저 정보로 유저 통계를 검색한다.
+
+    /*
+        유저 통계 테이블에서 user가 특정 유저인 모든 행에 대해 user_id 칼럼을 null로 바꾸는 쿼리문이다.
+     */
+    @Modifying
+    @Query("""
+        update UserStatistics us
+        set us.user = null
+        where us.user = :user
+    """)
+    void detachUser(@Param("user") User user);
 }

@@ -11,6 +11,7 @@ import me.jsu.springbootdeveloper.dto.AddUserRequest;
 import me.jsu.springbootdeveloper.dto.picture.ImageUploadResult;
 import me.jsu.springbootdeveloper.repository.user.UserProfilePictureRepository;
 import me.jsu.springbootdeveloper.repository.user.UserRepository;
+import me.jsu.springbootdeveloper.repository.user.UserStatisticsRepository;
 import me.jsu.springbootdeveloper.service.cloudinary.CloudinaryService;
 import me.jsu.springbootdeveloper.service.cloudinary.CloudinaryUploadException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -30,6 +31,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserProfilePictureRepository userProfilePictureRepository;
     private final CloudinaryService cloudinaryService;
+    private final UserStatisticsRepository userStatisticsRepository;
 
     /*
         회원가입을 구현한 함수이다. 현재는 OAuth 인증 방식을 사용하므로 사용되지 않는다.
@@ -179,5 +181,14 @@ public class UserService {
      */
     public void deleteProfilePicture(UserProfilePicture userProfilePicture) {
         userProfilePictureRepository.delete(userProfilePicture);
+    }
+
+    /*
+        유저 통계의 유저 fk값을 null로 바꿔주는 함수이다.
+        회원 탈퇴 시에 사용한다.
+     */
+    @Transactional
+    public void detachStatistics(User user) {
+        userStatisticsRepository.detachUser(user);
     }
 }

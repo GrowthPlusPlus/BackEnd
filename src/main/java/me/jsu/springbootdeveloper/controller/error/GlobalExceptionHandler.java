@@ -2,6 +2,7 @@
 
 package me.jsu.springbootdeveloper.controller.error;
 
+import me.jsu.springbootdeveloper.domain.challenge.ParticipantNumberException;
 import me.jsu.springbootdeveloper.dto.error.ErrorResponse;
 import me.jsu.springbootdeveloper.service.*;
 import me.jsu.springbootdeveloper.service.challenge.ChallengeNotFoundException;

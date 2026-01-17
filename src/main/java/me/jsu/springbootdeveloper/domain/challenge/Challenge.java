@@ -129,6 +129,10 @@ public class Challenge {
         챌린지에 참여자 수가 줄 때마다 참여자 필드 값을 업데이트 한다.
      */
     public void updateLeave() {
+        if (this.participantNumber <= 0) {
+            throw new IllegalStateException("Participant number corrupted for challenge id=" + id);
+        }
+
         this.participantNumber--;
     }
 }

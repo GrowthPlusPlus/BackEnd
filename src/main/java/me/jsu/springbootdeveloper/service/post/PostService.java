@@ -10,6 +10,8 @@ import me.jsu.springbootdeveloper.domain.challenge.ChallengeVisibility;
 import me.jsu.springbootdeveloper.domain.user.User;
 import me.jsu.springbootdeveloper.dto.article.AddArticleRequest;
 import me.jsu.springbootdeveloper.dto.article.UpdateArticleRequest;
+import me.jsu.springbootdeveloper.repository.post.CommentRepository;
+import me.jsu.springbootdeveloper.repository.post.PostLikeRepository;
 import me.jsu.springbootdeveloper.repository.post.PostRepository;
 import me.jsu.springbootdeveloper.service.UserService;
 import me.jsu.springbootdeveloper.service.challenge.ChallengeService;
@@ -27,6 +29,8 @@ public class PostService {
     private final PostRepository postRepository;
     private final UserService userService;
     private final ChallengeService challengeService;
+    private final CommentRepository commentRepository;
+    private final PostLikeRepository postLikeRepository;
 
     /*
         게시글을 추가하는 함수이다.
@@ -118,5 +122,32 @@ public class PostService {
         if (!article.getUser().getEmail().equals(userName)) {  // 유저의 이메일과 게시글 작성자의 이메일을 비교한다.
             throw new ArticleAccessDeniedException("ARTICLE_ACCESS_DENIED");
         }
+    }
+
+    /*
+        게시글의 유저 fk값을 null로 바꿔주는 함수이다.
+        회원 탈퇴 시에 사용한다.
+     */
+    @Transactional
+    public void detachPostToUser(User user) {
+        postRepository.detachUser(user);
+    }
+
+    /*
+        댓글의 유저 fk값을 null로 바꿔주는 함수이다.
+        회원 탈퇴 시에 사용한다.
+     */
+    @Transactional
+    public void detachCommentToUser(User user) {
+        commentRepository.detachUser(user);
+    }
+
+    /*
+        게시글 좋아요의 유저 fk값을 null로 바꿔주는 함수이다.
+        회원 탈퇴 시에 사용한다.
+     */
+    @Transactional
+    public void detachLikeToUser(User user) {
+        postLikeRepository.detachUser(user);
     }
 }

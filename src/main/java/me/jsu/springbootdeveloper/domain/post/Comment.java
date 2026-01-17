@@ -39,7 +39,7 @@ public class Comment {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)  // 한 유저가 여러 댓글을 달 수 있으므로 many to one 관계이다.
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = true)  // 유저가 탈퇴해도 댓글은 남는다.
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)  // 한 게시글에 여러 댓글이 가능하므로 many to one 관계이다.

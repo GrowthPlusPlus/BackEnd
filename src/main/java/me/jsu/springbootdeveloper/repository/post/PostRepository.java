@@ -4,9 +4,11 @@ package me.jsu.springbootdeveloper.repository.post;
 
 import me.jsu.springbootdeveloper.domain.post.Article;
 import me.jsu.springbootdeveloper.domain.challenge.ChallengeVisibility;
+import me.jsu.springbootdeveloper.domain.user.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -35,4 +37,13 @@ public interface PostRepository extends JpaRepository<Article, Long> {
             @Param("visibility") ChallengeVisibility visibility,
             Pageable pageable
     );
+
+    // post 테이블에서 user가 특정 유저인 모든 행에 대해 user_id 칼럼을 null로 바꾸는 쿼리문이다.
+    @Modifying
+    @Query("""
+        update Article p
+        set p.user = null
+        where p.user = :user
+    """)
+    void detachUser(@Param("user") User user);
 }

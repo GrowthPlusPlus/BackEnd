@@ -38,7 +38,7 @@ public class UserStatistics {
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)  // 유저 당 하나의 통계 값을 가진다.
-    @JoinColumn(name = "user_id", unique = true, nullable = false)
+    @JoinColumn(name = "user_id", unique = true, nullable = true)  // 유저가 탈퇴해도 통계는 남는다.
     private User user;
 
     // 참여한 전체 챌린지 수이다.
