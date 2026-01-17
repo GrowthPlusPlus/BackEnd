@@ -3,9 +3,9 @@
 package me.jsu.springbootdeveloper.controller;
 
 import lombok.RequiredArgsConstructor;
-import me.jsu.springbootdeveloper.dto.CreateAccessTokenRequest;
-import me.jsu.springbootdeveloper.dto.TokenPair;
-import me.jsu.springbootdeveloper.dto.TokenResponse;
+import me.jsu.springbootdeveloper.dto.token.CreateAccessTokenRequest;
+import me.jsu.springbootdeveloper.dto.token.TokenPair;
+import me.jsu.springbootdeveloper.dto.token.TokenResponse;
 import me.jsu.springbootdeveloper.service.token.TokenService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;

@@ -2,7 +2,7 @@
 //
 //import lombok.Getter;
 //import lombok.RequiredArgsConstructor;
-//import me.jsu.springbootdeveloper.domain.Article;
+//import me.jsu.springbootdeveloper.domain.post.Article;
 //import me.jsu.springbootdeveloper.dto.ArticleListViewResponse;
 //import me.jsu.springbootdeveloper.dto.ArticleViewResponse;
 //import me.jsu.springbootdeveloper.service.BlogService;

@@ -4,7 +4,7 @@ package me.jsu.springbootdeveloper.service.token;
 
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.domain.RefreshToken;
-import me.jsu.springbootdeveloper.domain.User;
+import me.jsu.springbootdeveloper.domain.user.User;
 import me.jsu.springbootdeveloper.repository.RefreshTokenRepository;
 import org.springframework.stereotype.Service;
 

@@ -3,8 +3,8 @@
 //package me.jsu.springbootdeveloper.config.oauth;
 //
 //import lombok.RequiredArgsConstructor;
-//import me.jsu.springbootdeveloper.domain.User;
-//import me.jsu.springbootdeveloper.repository.UserRepository;
+//import me.jsu.springbootdeveloper.domain.user.User;
+//import me.jsu.springbootdeveloper.repository.user.UserRepository;
 //import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 //import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 //import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -13,7 +13,7 @@
 //
 //import java.util.Map;
 //
-//import static me.jsu.springbootdeveloper.domain.Role.ROLE_USER;
+//import static me.jsu.springbootdeveloper.domain.user.Role.ROLE_USER;
 //
 //@RequiredArgsConstructor
 //@Service

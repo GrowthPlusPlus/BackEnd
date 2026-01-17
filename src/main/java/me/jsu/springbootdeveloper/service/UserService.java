@@ -3,15 +3,13 @@
 package me.jsu.springbootdeveloper.service;
 
 import lombok.RequiredArgsConstructor;
-import me.jsu.springbootdeveloper.domain.User;
+import me.jsu.springbootdeveloper.domain.user.User;
 import me.jsu.springbootdeveloper.dto.AddUserRequest;
-import me.jsu.springbootdeveloper.repository.UserRepository;
+import me.jsu.springbootdeveloper.repository.user.UserRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-
-import static me.jsu.springbootdeveloper.domain.Role.ROLE_USER;
+import static me.jsu.springbootdeveloper.domain.user.Role.ROLE_USER;
 
 /*
     해당 클래스는 유저 데이터베이스를 이용하여 검색하거나 데이터베이스에 엔트리를 저장하는 역할을 한다.

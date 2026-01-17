@@ -2,7 +2,7 @@
 //
 //import lombok.Getter;
 //import lombok.NoArgsConstructor;
-//import me.jsu.springbootdeveloper.domain.Article;
+//import me.jsu.springbootdeveloper.domain.post.Article;
 //
 //import java.time.LocalDateTime;
 //

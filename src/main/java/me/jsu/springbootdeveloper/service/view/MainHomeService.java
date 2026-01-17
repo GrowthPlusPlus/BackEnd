@@ -2,13 +2,16 @@
 
 package me.jsu.springbootdeveloper.service.view;
 
-import me.jsu.springbootdeveloper.service.ChallengeService;
+import me.jsu.springbootdeveloper.domain.challenge.Challenge;
+import me.jsu.springbootdeveloper.domain.challenge.ChallengeDailyLog;
+import me.jsu.springbootdeveloper.domain.challenge.ChallengeParticipant;
+import me.jsu.springbootdeveloper.domain.challenge.ChallengeWeeklyStatus;
+import me.jsu.springbootdeveloper.domain.user.User;
+import me.jsu.springbootdeveloper.service.challenge.ChallengeService;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
-import me.jsu.springbootdeveloper.domain.*;
 import me.jsu.springbootdeveloper.dto.mainHome.MainHomeResponse;
 import me.jsu.springbootdeveloper.dto.mainHome.MyChallenge;
-import me.jsu.springbootdeveloper.repository.*;
 import me.jsu.springbootdeveloper.service.NotificationService;
 import me.jsu.springbootdeveloper.service.UserService;
 import org.springframework.stereotype.Service;

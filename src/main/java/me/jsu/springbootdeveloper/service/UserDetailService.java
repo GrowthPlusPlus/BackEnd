@@ -3,8 +3,8 @@
 //package me.jsu.springbootdeveloper.service;
 //
 //import lombok.RequiredArgsConstructor;
-//import me.jsu.springbootdeveloper.domain.User;
-//import me.jsu.springbootdeveloper.repository.UserRepository;
+//import me.jsu.springbootdeveloper.domain.user.User;
+//import me.jsu.springbootdeveloper.repository.user.UserRepository;
 //import org.springframework.security.core.userdetails.UserDetailsService;
 //import org.springframework.stereotype.Service;
 //

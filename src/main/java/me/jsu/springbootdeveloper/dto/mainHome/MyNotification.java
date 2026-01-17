@@ -3,7 +3,7 @@
 package me.jsu.springbootdeveloper.dto.mainHome;
 
 import lombok.Getter;
-import me.jsu.springbootdeveloper.domain.Notification;
+import me.jsu.springbootdeveloper.domain.notification.Notification;
 
 /*
     알림에서 필요한 정보만 정제하여 제공한다. 매핑을 위한 클래스이다.

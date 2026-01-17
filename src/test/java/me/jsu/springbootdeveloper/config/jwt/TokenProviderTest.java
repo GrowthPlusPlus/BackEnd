@@ -1,8 +1,8 @@
 package me.jsu.springbootdeveloper.config.jwt;
 
 import io.jsonwebtoken.Jwts;
-import me.jsu.springbootdeveloper.domain.User;
-import me.jsu.springbootdeveloper.repository.UserRepository;
+import me.jsu.springbootdeveloper.domain.user.User;
+import me.jsu.springbootdeveloper.repository.user.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,7 +10,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;

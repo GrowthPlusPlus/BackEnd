@@ -4,7 +4,7 @@ package me.jsu.springbootdeveloper.config.jwt;
 
 import io.jsonwebtoken.*;
 import lombok.RequiredArgsConstructor;
-import me.jsu.springbootdeveloper.domain.User;
+import me.jsu.springbootdeveloper.domain.user.User;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

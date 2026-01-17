@@ -1,7 +1,7 @@
 //package me.jsu.springbootdeveloper.dto;
 //
 //import lombok.Getter;
-//import me.jsu.springbootdeveloper.domain.Article;
+//import me.jsu.springbootdeveloper.domain.post.Article;
 //
 //@Getter
 //public class ArticleListViewResponse {

@@ -3,8 +3,8 @@
 package me.jsu.springbootdeveloper.service;
 
 import lombok.RequiredArgsConstructor;
-import me.jsu.springbootdeveloper.domain.Notification;
-import me.jsu.springbootdeveloper.domain.User;
+import me.jsu.springbootdeveloper.domain.notification.Notification;
+import me.jsu.springbootdeveloper.domain.user.User;
 import me.jsu.springbootdeveloper.dto.mainHome.MyNotification;
 import me.jsu.springbootdeveloper.dto.mainHome.MyNotificationResponse;
 import me.jsu.springbootdeveloper.repository.NotificationRepository;

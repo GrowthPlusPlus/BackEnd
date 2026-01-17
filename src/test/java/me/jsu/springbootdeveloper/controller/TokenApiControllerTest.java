@@ -3,11 +3,10 @@ package me.jsu.springbootdeveloper.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import me.jsu.springbootdeveloper.config.jwt.JwtFactory;
 import me.jsu.springbootdeveloper.config.jwt.JwtProperties;
-import me.jsu.springbootdeveloper.domain.RefreshToken;
-import me.jsu.springbootdeveloper.domain.User;
-import me.jsu.springbootdeveloper.dto.CreateAccessTokenRequest;
+import me.jsu.springbootdeveloper.domain.user.User;
+import me.jsu.springbootdeveloper.dto.token.CreateAccessTokenRequest;
 import me.jsu.springbootdeveloper.repository.RefreshTokenRepository;
-import me.jsu.springbootdeveloper.repository.UserRepository;
+import me.jsu.springbootdeveloper.repository.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -24,7 +23,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
-import java.time.LocalDateTime;
 import java.util.Map;
 
 @SpringBootTest

@@ -2,8 +2,8 @@
 
 package me.jsu.springbootdeveloper.controller;
 
-import me.jsu.springbootdeveloper.dto.ImageUploadResult;
-import me.jsu.springbootdeveloper.service.CloudinaryService;
+import me.jsu.springbootdeveloper.dto.picture.ImageUploadResult;
+import me.jsu.springbootdeveloper.service.cloudinary.CloudinaryService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +40,7 @@ public class uploadImageTest {
         );
 
         // when
-        me.jsu.springbootdeveloper.dto.ImageUploadResult imageUploadResult = cloudinaryService.uploadImage(file);
+        ImageUploadResult imageUploadResult = cloudinaryService.uploadImage(file);
 
         // then
         assertNotNull(imageUploadResult);  // 업로드된 이미지 URL이 반환되는지 확인
@@ -52,7 +52,7 @@ public class uploadImageTest {
         // given
 
         // when
-        me.jsu.springbootdeveloper.dto.ImageUploadResult imageUploadResult = cloudinaryService.uploadImage(null);
+        ImageUploadResult imageUploadResult = cloudinaryService.uploadImage(null);
 
         // then
         assertNull(imageUploadResult);  // 업로드 되지 않고 비어있는지 확인

@@ -2,12 +2,13 @@
 
 package me.jsu.springbootdeveloper.controller;
 
-import lombok.Builder;
-import me.jsu.springbootdeveloper.domain.*;
-import me.jsu.springbootdeveloper.repository.ChallengeParticipantRepository;
-import me.jsu.springbootdeveloper.repository.ChallengeRepository;
-import me.jsu.springbootdeveloper.repository.UserRepository;
-import me.jsu.springbootdeveloper.service.CloudinaryService;
+import me.jsu.springbootdeveloper.domain.challenge.Challenge;
+import me.jsu.springbootdeveloper.domain.challenge.ChallengeParticipant;
+import me.jsu.springbootdeveloper.domain.challenge.ChallengeVisibility;
+import me.jsu.springbootdeveloper.domain.user.User;
+import me.jsu.springbootdeveloper.repository.challenge.ChallengeParticipantRepository;
+import me.jsu.springbootdeveloper.repository.challenge.ChallengeRepository;
+import me.jsu.springbootdeveloper.repository.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,12 +21,11 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 import java.time.LocalDate;
 
-import static me.jsu.springbootdeveloper.domain.Role.ROLE_USER;
+import static me.jsu.springbootdeveloper.domain.user.Role.ROLE_USER;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;

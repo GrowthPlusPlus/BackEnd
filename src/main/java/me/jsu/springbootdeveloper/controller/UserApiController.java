@@ -1,10 +1,9 @@
 package me.jsu.springbootdeveloper.controller;
 
 import lombok.RequiredArgsConstructor;
-import me.jsu.springbootdeveloper.domain.User;
+import me.jsu.springbootdeveloper.domain.user.User;
 import me.jsu.springbootdeveloper.dto.UserResponse;
 import me.jsu.springbootdeveloper.service.UserService;
-import me.jsu.springbootdeveloper.service.UserNotFoundException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

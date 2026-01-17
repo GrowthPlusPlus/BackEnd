@@ -2,7 +2,7 @@
 
 package me.jsu.springbootdeveloper.repository;
 
-import me.jsu.springbootdeveloper.domain.Notification;
+import me.jsu.springbootdeveloper.domain.notification.Notification;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

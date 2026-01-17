@@ -3,11 +3,11 @@
 package me.jsu.springbootdeveloper.controller;
 
 import lombok.RequiredArgsConstructor;
-import me.jsu.springbootdeveloper.domain.Article;
-import me.jsu.springbootdeveloper.dto.AddArticleRequest;
-import me.jsu.springbootdeveloper.dto.ArticleResponse;
-import me.jsu.springbootdeveloper.dto.UpdateArticleRequest;
-import me.jsu.springbootdeveloper.service.PostService;
+import me.jsu.springbootdeveloper.domain.post.Article;
+import me.jsu.springbootdeveloper.dto.article.AddArticleRequest;
+import me.jsu.springbootdeveloper.dto.article.ArticleResponse;
+import me.jsu.springbootdeveloper.dto.article.UpdateArticleRequest;
+import me.jsu.springbootdeveloper.service.post.PostService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;

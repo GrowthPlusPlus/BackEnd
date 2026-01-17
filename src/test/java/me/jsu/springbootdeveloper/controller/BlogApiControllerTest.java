@@ -1,12 +1,12 @@
 //package me.jsu.springbootdeveloper.controller;
 //
 //import com.fasterxml.jackson.databind.ObjectMapper;
-//import me.jsu.springbootdeveloper.domain.Article;
-//import me.jsu.springbootdeveloper.domain.User;
-//import me.jsu.springbootdeveloper.dto.AddArticleRequest;
-//import me.jsu.springbootdeveloper.dto.UpdateArticleRequest;
-//import me.jsu.springbootdeveloper.repository.PostRepository;
-//import me.jsu.springbootdeveloper.repository.UserRepository;
+//import me.jsu.springbootdeveloper.domain.post.Article;
+//import me.jsu.springbootdeveloper.domain.user.User;
+//import me.jsu.springbootdeveloper.dto.article.AddArticleRequest;
+//import me.jsu.springbootdeveloper.dto.article.UpdateArticleRequest;
+//import me.jsu.springbootdeveloper.repository.post.PostRepository;
+//import me.jsu.springbootdeveloper.repository.user.UserRepository;
 //import org.junit.jupiter.api.BeforeEach;
 //import org.junit.jupiter.api.DisplayName;
 //import org.junit.jupiter.api.Test;

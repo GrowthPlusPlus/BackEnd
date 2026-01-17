@@ -1,8 +1,8 @@
 package me.jsu.springbootdeveloper.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import me.jsu.springbootdeveloper.domain.User;
-import me.jsu.springbootdeveloper.repository.UserRepository;
+import me.jsu.springbootdeveloper.domain.user.User;
+import me.jsu.springbootdeveloper.repository.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,7 +15,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-import static me.jsu.springbootdeveloper.domain.Role.ROLE_USER;
+import static me.jsu.springbootdeveloper.domain.user.Role.ROLE_USER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;

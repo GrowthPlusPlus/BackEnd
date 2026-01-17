@@ -1,7 +1,7 @@
 package me.jsu.springbootdeveloper.dto;
 
 import lombok.Getter;
-import me.jsu.springbootdeveloper.domain.User;
+import me.jsu.springbootdeveloper.domain.user.User;
 
 /*
     해당 클래스는 유저 정보를 반환할 때 사용할 DTO이다.

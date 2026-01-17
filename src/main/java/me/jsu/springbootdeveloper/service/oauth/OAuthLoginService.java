@@ -7,8 +7,7 @@ import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.config.jwt.TokenProvider;
 import me.jsu.springbootdeveloper.config.oauth.GoogleIdTokenVerifyService;
 import me.jsu.springbootdeveloper.config.oauth.GoogleOAuthTokenService;
-import me.jsu.springbootdeveloper.domain.RefreshToken;
-import me.jsu.springbootdeveloper.domain.User;
+import me.jsu.springbootdeveloper.domain.user.User;
 import me.jsu.springbootdeveloper.dto.oauth.GoogleTokenResponse;
 import me.jsu.springbootdeveloper.dto.oauth.LoginResponse;
 import me.jsu.springbootdeveloper.service.UserService;
@@ -16,7 +15,6 @@ import me.jsu.springbootdeveloper.service.token.RefreshTokenService;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
 
 /*
     해당 클래스는 Google OAuth와 PKCE 로그인 유스케이스 전체를 담당하는 Service 계층 클래스이다.
