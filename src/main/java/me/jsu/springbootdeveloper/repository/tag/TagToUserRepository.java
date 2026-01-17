@@ -21,4 +21,6 @@ public interface TagToUserRepository extends JpaRepository<TagToUser, Long> {
         where ttu.user.id = :userId
     """)
     List<TagToUser> findWithTagByUserId(@Param("userId") Long userId);  // 유저 id로 유저와 관련된 태그를 검색한다.
+
+    boolean existsByUser_IdAndTag_Id(Long userId, Long tagId);  // 태그 id와 유저 id로 해당 유저가 태그를 가지고 있는지 확인한다.
 }

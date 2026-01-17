@@ -180,6 +180,21 @@ public class GlobalExceptionHandler {
     }
 
     /*
+        DB에 태그가 존재하지 않을 경우의 핸들러이다.
+     */
+    @ExceptionHandler(TagNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateNickname(
+            TagNotFoundException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(
+                        "TAG_NOT_FOUND",
+                        e.getErrorCode()
+                ));
+    }
+
+    /*
         위에서 정의하지 않은 모든 기타 서버 오류들을 처리해준다.
         spring 기본 처리에 예외를 맡기는 것이 좋다. 따라서 비활성화 한다.
 
