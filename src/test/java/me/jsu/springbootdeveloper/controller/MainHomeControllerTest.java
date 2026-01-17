@@ -7,6 +7,7 @@ import me.jsu.springbootdeveloper.domain.*;
 import me.jsu.springbootdeveloper.repository.ChallengeParticipantRepository;
 import me.jsu.springbootdeveloper.repository.ChallengeRepository;
 import me.jsu.springbootdeveloper.repository.UserRepository;
+import me.jsu.springbootdeveloper.service.CloudinaryService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

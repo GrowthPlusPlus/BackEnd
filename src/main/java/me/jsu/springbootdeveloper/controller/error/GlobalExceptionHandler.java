@@ -3,10 +3,7 @@
 package me.jsu.springbootdeveloper.controller.error;
 
 import me.jsu.springbootdeveloper.dto.error.ErrorResponse;
-import me.jsu.springbootdeveloper.service.ArticleAccessDeniedException;
-import me.jsu.springbootdeveloper.service.ArticleNotFoundException;
-import me.jsu.springbootdeveloper.service.ChallengeNotFoundException;
-import me.jsu.springbootdeveloper.service.UserNotFoundException;
+import me.jsu.springbootdeveloper.service.*;
 import me.jsu.springbootdeveloper.service.oauth.OAuthLoginException;
 import me.jsu.springbootdeveloper.service.token.InvalidTokenException;
 import me.jsu.springbootdeveloper.service.token.TokenNotFoundException;
@@ -128,6 +125,21 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse(
                         "CHALLENGE_NOT_FOUND",
+                        e.getErrorCode()
+                ));
+    }
+
+    /*
+        클라우디너리에 사진을 업로드하지 못한 경우의 핸들러이다.
+    */
+    @ExceptionHandler(CloudinaryUploadException.class)
+    public ResponseEntity<ErrorResponse>  handleArticleNotFound(
+            CloudinaryUploadException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)  // 500
+                .body(new ErrorResponse(
+                        "CLOUDINARY_UPLOAD_ERROR",
                         e.getErrorCode()
                 ));
     }

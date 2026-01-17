@@ -43,5 +43,10 @@ jwt:
   issuer: ajufresh@gmail.com
   secret_key: test_key  # 키가 바뀔 때 마다 토큰을 재발급 해야함
 
+# 클라우디너리 설정 
+cloudinary:
+  cloud-name:
+  api-key:
+  api-secret:
 
 
