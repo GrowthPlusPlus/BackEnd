@@ -6,7 +6,9 @@ import me.jsu.springbootdeveloper.domain.user.User;
 import me.jsu.springbootdeveloper.dto.UpdateIntroductionRequest;
 import me.jsu.springbootdeveloper.dto.UpdateNicknameRequest;
 import me.jsu.springbootdeveloper.dto.UserResponse;
+import me.jsu.springbootdeveloper.service.LogoutService;
 import me.jsu.springbootdeveloper.service.UserService;
+import me.jsu.springbootdeveloper.service.UserWithdrawalService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -20,8 +22,9 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 @RestController
 public class UserApiController {
-
     private final UserService userService;
+    private final LogoutService logoutService;
+    private final UserWithdrawalService userWithdrawalService;  // 회원탈퇴 서비스이다.
 
     /*
         닉네임을 통해 유저 정보를 검색하는 GET 요청 API이다.
@@ -78,6 +81,28 @@ public class UserApiController {
             @RequestBody @Valid UpdateIntroductionRequest request  // valid 옵션으로 50자 이하만 받는다. 넘으면 http 400을 반환한다.
     ) {
         userService.updateIntroduction(userDetails.getUsername(), request.getIntroduction());
+        return ResponseEntity.noContent().build();
+    }
+
+    /*
+        유저가 로그아웃 시 호출하는 함수이다.
+     */
+    @PostMapping("/api/me/logout")
+    public ResponseEntity<Void> logout(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        logoutService.logout(userDetails.getUsername());
+        return ResponseEntity.noContent().build();
+    }
+
+    /*
+        유저가 회원탈퇴 시 호출하는 함수이다.
+     */
+    @DeleteMapping("api/me")
+    public ResponseEntity<Void> withdraw(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        userWithdrawalService.withdraw(userDetails.getUsername());
         return ResponseEntity.noContent().build();
     }
 }

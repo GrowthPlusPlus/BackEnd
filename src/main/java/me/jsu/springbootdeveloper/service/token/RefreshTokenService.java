@@ -36,8 +36,18 @@ public class RefreshTokenService {
         );
     }
 
+    /*
+        리프레시 토큰 객체로 리프레시 토큰을 삭제한다.
+     */
     public void delete(RefreshToken refreshToken) {
         refreshTokenRepository.delete(refreshToken);
+    }
+
+    /*
+        유저 id로 리프레시 토큰을 삭제한다.
+     */
+    public void deleteByUser_Id(Long userId) {
+        refreshTokenRepository.deleteByUser_Id(userId);
     }
 
     /*

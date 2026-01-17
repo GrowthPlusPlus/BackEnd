@@ -37,4 +37,18 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
           and cp.status = 'IN_PROGRESS'
     """)
     List<ChallengeParticipant> findInProgressWithChallengeByUserId(Long userId);
+
+    // 챌린지 id와 오너 id로 해당 챌린지의 참가자를 참가 순서대로 오너 제외하고 반환한다.
+    @Query("""
+        select cp
+        from ChallengeParticipant cp
+        join fetch cp.user
+        where cp.challenge.id = :challengeId
+          and cp.user.id <> :ownerId
+        order by cp.createdAt asc
+    """)
+    List<ChallengeParticipant> findParticipantsExceptOwner(
+            Long challengeId,
+            Long ownerId
+    );
 }

@@ -51,7 +51,7 @@ public class Challenge {
 
     // user DB의 값을 갖는 fk값으로, 챌린지를 생성한 유저의 id를 나타낸다.
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @Column(name = "title", nullable = false)
@@ -109,6 +109,13 @@ public class Challenge {
         if (challengeVisibility != null) {
             this.challengeVisibility = challengeVisibility;
         }
+    }
+
+    /*
+        챌린지의 오너를 위임하는 함수이다.
+     */
+    public void updateUser(User user) {
+        this.user = user;
     }
 
     /*

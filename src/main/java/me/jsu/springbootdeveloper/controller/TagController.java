@@ -5,7 +5,7 @@ package me.jsu.springbootdeveloper.controller;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.dto.TagResponse;
 import me.jsu.springbootdeveloper.dto.TagSelectRequest;
-import me.jsu.springbootdeveloper.service.TagService;
+import me.jsu.springbootdeveloper.service.tag.TagService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;

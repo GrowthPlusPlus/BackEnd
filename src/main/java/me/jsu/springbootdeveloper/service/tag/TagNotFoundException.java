@@ -1,6 +1,6 @@
 // 정성우
 
-package me.jsu.springbootdeveloper.service;
+package me.jsu.springbootdeveloper.service.tag;
 
 /*
     태그를 DB에서 찾지 못했을 경우를 위한 예외 클래스이다.

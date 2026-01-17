@@ -1,6 +1,6 @@
 // 정성우
 
-package me.jsu.springbootdeveloper.service;
+package me.jsu.springbootdeveloper.service.tag;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +10,7 @@ import me.jsu.springbootdeveloper.domain.user.User;
 import me.jsu.springbootdeveloper.dto.TagResponse;
 import me.jsu.springbootdeveloper.repository.tag.TagRepository;
 import me.jsu.springbootdeveloper.repository.tag.TagToUserRepository;
+import me.jsu.springbootdeveloper.service.UserService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

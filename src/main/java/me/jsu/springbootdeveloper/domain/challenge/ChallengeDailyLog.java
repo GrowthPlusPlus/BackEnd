@@ -46,7 +46,7 @@ public class ChallengeDailyLog {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = true)  // 유저가 계정을 탈퇴해도 로그 값은 남는다.
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)

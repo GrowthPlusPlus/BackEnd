@@ -1,0 +1,58 @@
+// 정성우
+
+package me.jsu.springbootdeveloper.service;
+
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import me.jsu.springbootdeveloper.domain.user.User;
+import me.jsu.springbootdeveloper.domain.user.UserProfilePicture;
+import me.jsu.springbootdeveloper.service.challenge.ChallengeService;
+import me.jsu.springbootdeveloper.service.cloudinary.CloudinaryService;
+import me.jsu.springbootdeveloper.service.post.PostService;
+import me.jsu.springbootdeveloper.service.token.RefreshTokenService;
+import org.springframework.stereotype.Service;
+
+import java.util.Optional;
+
+/*
+    유저가 회원탈퇴를 하는 경우, 리프레시 토큰과 유저 정보를 삭제해주는 서비스 클래스이다.
+ */
+@Service
+@RequiredArgsConstructor
+public class UserWithdrawalService {
+    private final UserService userService;
+    private final RefreshTokenService refreshTokenService;
+    private final ChallengeService challengeService;
+    private final PostService postService;
+    private final CloudinaryService cloudinaryService;
+
+    @Transactional
+    public void withdraw(String email) {
+        User user = userService.findByEmail(email);
+
+        // 유저가 챌린지 오너인 경우, 다른 사용자에게 위임한다.
+        challengeService.handleOwnerWithdrawal(user.getId());
+
+        // 게시글, 로그, 댓글, 좋아요, 유저 통계 등의 정보는 FK를 해제하여 회원이 사라져도 남겨두도록 한다.
+        challengeService.detachLogToUser(user);  // 로그 해제
+        postService.detachPostToUser(user);  // 게시글 해제
+        postService.detachCommentToUser(user);  // 댓글 해제
+        postService.detachLikeToUser(user);  // 좋아요 해제
+        userService.detachStatistics(user);  // 통계 해제
+
+        // 참여한 챌린지에서 나온다. CASCADE에 의존하지 않고 직접 구현한 챌린지 서비스의 삭제를 사용한다.
+        challengeService.deleteParticipant(user);
+
+        /*
+            클라우디너리의 사진인 외부 리소스를 삭제한다.
+            삭제를 위해 DB에서 유저 프로필 사진 객체를 검색한다.
+         */
+        Optional<UserProfilePicture> userProfilePicture = userService.findByUserIdForProfile(user.getId());
+        if (userProfilePicture.isPresent()) {  // 사진이 존재하면 삭제한다.
+            cloudinaryService.deleteImage(userProfilePicture.get().getCloudinaryPublicId());  // public id로 삭제한다.
+        }
+
+        // 유저를 삭제한다. 유저가 사라짐에 따라 필요 없는 정보들은 CASCADE로 자동으로 삭제된다.
+        userService.deleteUser(user);
+    }
+}

@@ -10,6 +10,7 @@ import me.jsu.springbootdeveloper.service.cloudinary.CloudinaryUploadException;
 import me.jsu.springbootdeveloper.service.oauth.OAuthLoginException;
 import me.jsu.springbootdeveloper.service.post.ArticleAccessDeniedException;
 import me.jsu.springbootdeveloper.service.post.ArticleNotFoundException;
+import me.jsu.springbootdeveloper.service.tag.TagNotFoundException;
 import me.jsu.springbootdeveloper.service.token.InvalidTokenException;
 import me.jsu.springbootdeveloper.service.token.TokenNotFoundException;
 import org.springframework.http.HttpStatus;

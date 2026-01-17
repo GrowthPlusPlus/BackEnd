@@ -7,6 +7,12 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import me.jsu.springbootdeveloper.domain.RefreshToken;
+import me.jsu.springbootdeveloper.domain.challenge.ChallengeInviteLink;
+import me.jsu.springbootdeveloper.domain.challenge.ChallengeParticipant;
+import me.jsu.springbootdeveloper.domain.challenge.ChallengeWeeklyStatus;
+import me.jsu.springbootdeveloper.domain.notification.Notification;
+import me.jsu.springbootdeveloper.domain.tag.TagToUser;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.security.core.GrantedAuthority;
@@ -17,6 +23,8 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import me.jsu.springbootdeveloper.dto.UserResponse;
+
+import static jakarta.persistence.CascadeType.REMOVE;
 
 /*
     DB에 저장될 유저 정보를 저장하는 클래스이다.
@@ -63,6 +71,37 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
     @CreatedDate  // 유저가 생성된 시간이다.
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    /*
+        다음 코드는 CASCADE 설정으로 User 엔티티를 fk값으로 가지고 있는 DB들을 자동으로 삭제해주는 설정이다.
+        회원탈퇴 등의로 유저 정보가 삭제될 때, 밑의 정보들도 함께 전부 삭제된다.
+     */
+    @OneToMany(mappedBy = "user", cascade = REMOVE)
+    private ChallengeInviteLink challengeInviteLink;
+
+    @OneToMany(mappedBy = "user", cascade = REMOVE)
+    private ChallengeWeeklyStatus challengeWeeklyStatus;
+
+    @OneToMany(mappedBy = "user", cascade = REMOVE)
+    private ChallengeParticipant challengeParticipant;
+
+    @OneToOne(mappedBy = "user", cascade = REMOVE)
+    private Notification notification;
+
+    @OneToMany(mappedBy = "user", cascade = REMOVE)
+    private TagToUser tagToUser;
+
+    @OneToMany(mappedBy = "user", cascade = REMOVE)
+    private FriendRequest friendRequest;
+
+    @OneToMany(mappedBy = "user", cascade = REMOVE)
+    private Friendship friendship;
+
+    @OneToOne(mappedBy = "user", cascade = REMOVE)
+    private UserProfilePicture userProfilePicture;
+
+    @OneToOne(mappedBy = "user", cascade = REMOVE)
+    private RefreshToken refreshToken;
 
     @Builder
     public User(String email, String password, Role role, String nickname) {

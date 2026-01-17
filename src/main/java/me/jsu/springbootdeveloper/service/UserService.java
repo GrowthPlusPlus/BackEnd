@@ -17,7 +17,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Map;
 import java.util.Optional;
 
 import static me.jsu.springbootdeveloper.domain.user.Role.ROLE_USER;
@@ -156,5 +155,29 @@ public class UserService {
     public void updateIntroduction(String email, String introduction) {
         User user = findByEmail(email);
         user.updateIntroduction(introduction);
+    }
+
+    /*
+        유저 정보를 삭제한다.
+     */
+    @Transactional
+    public void deleteUser(User user) {
+        userRepository.delete(user);
+    }
+
+    /*
+        유저 id로 프로필 사진 정보를 검색한다.
+        사진을 검색하지 못해도 정상 상태이다.
+     */
+    public Optional<UserProfilePicture> findByUserIdForProfile(Long userId) {
+        return userProfilePictureRepository.findByUser_Id(userId);
+    }
+
+    /*
+        유저 프로필 사진 객체로 사진 객체를 DB에서 삭제한다.
+        반드시 클라우디너리의 사진을 먼저 삭제한 뒤 호출해야 한다.
+     */
+    public void deleteProfilePicture(UserProfilePicture userProfilePicture) {
+        userProfilePictureRepository.delete(userProfilePicture);
     }
 }
