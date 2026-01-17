@@ -148,4 +148,13 @@ public class UserService {
                 .imageUrl(imageUploadResult.secureUrl())
                 .build());
     }
+
+    /*
+        유저의 한 줄 소개를 업데이트한다.
+     */
+    @Transactional
+    public void updateIntroduction(String email, String introduction) {
+        User user = findByEmail(email);
+        user.updateIntroduction(introduction);
+    }
 }

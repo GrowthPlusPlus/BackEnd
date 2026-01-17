@@ -57,6 +57,9 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
     @Column(name = "status", nullable = false)
     private UserStatus userStatus;  // 유저의 상태를 나타내기 위한 enum이다.
 
+    @Column(name = "introduction", columnDefinition = "TEXT")
+    private String introduction;  // 유저의 한 줄 소개이다.
+
     @CreatedDate  // 유저가 생성된 시간이다.
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -68,6 +71,7 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
         this.role = role;  // 회원가입 시 role(권한)이 추가된다.
         this.nickname = nickname;  //OAuth 로그인 시, 구글 프로필에 사용된 이름이 저장된다.
         this.userStatus = UserStatus.NEW;  // 처음 생성시엔 초기 설정을 위해 NEW 상태가 된다.
+        this.introduction = "";  // 초기 상태엔 소개가 비어있다.
     }
     
     /*
@@ -90,6 +94,13 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
      */
     public void userToSuspend() {
         this.userStatus = UserStatus.SUSPENDED;
+    }
+
+    /*
+        유저의 소개란을 업데이트하는 함수이다.
+     */
+    public void updateIntroduction(String introduction) {
+        this.introduction = introduction;
     }
 
     /*

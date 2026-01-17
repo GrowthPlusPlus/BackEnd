@@ -45,7 +45,7 @@ jwt:
 
 # 클라우디너리 설정 
 cloudinary:
-  cloud-name: 
+  cloud-name:
   api-key:
   api-secret:
 

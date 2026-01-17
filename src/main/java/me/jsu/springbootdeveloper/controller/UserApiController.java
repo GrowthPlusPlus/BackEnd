@@ -3,6 +3,7 @@ package me.jsu.springbootdeveloper.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.domain.user.User;
+import me.jsu.springbootdeveloper.dto.UpdateIntroductionRequest;
 import me.jsu.springbootdeveloper.dto.UpdateNicknameRequest;
 import me.jsu.springbootdeveloper.dto.UserResponse;
 import me.jsu.springbootdeveloper.service.UserService;
@@ -65,6 +66,18 @@ public class UserApiController {
             @RequestPart MultipartFile image
     ) {
         userService.updateProfileImage(userDetails.getUsername(), image);
+        return ResponseEntity.noContent().build();
+    }
+
+    /*
+        해당 함수로 유저의 한 줄 소개를 업데이트 한다.
+     */
+    @PatchMapping("/api/users/me/introduction")
+    public ResponseEntity<Void> updateIntroduction(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody @Valid UpdateIntroductionRequest request  // valid 옵션으로 50자 이하만 받는다. 넘으면 http 400을 반환한다.
+    ) {
+        userService.updateIntroduction(userDetails.getUsername(), request.getIntroduction());
         return ResponseEntity.noContent().build();
     }
 }
