@@ -10,6 +10,7 @@ import me.jsu.springbootdeveloper.domain.challenge.ChallengeVisibility;
 import me.jsu.springbootdeveloper.domain.user.User;
 import me.jsu.springbootdeveloper.dto.article.AddArticleRequest;
 import me.jsu.springbootdeveloper.dto.article.UpdateArticleRequest;
+import me.jsu.springbootdeveloper.dto.challengeCalendar.ChallengeCalendarPhotoResponse;
 import me.jsu.springbootdeveloper.repository.post.CommentRepository;
 import me.jsu.springbootdeveloper.repository.post.PostLikeRepository;
 import me.jsu.springbootdeveloper.repository.post.PostRepository;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.List;
 
 @RequiredArgsConstructor  // final 또는 notNull이 있는 맴버변수만 생성자에서 초기화 한다.
 @Service
@@ -149,5 +151,13 @@ public class PostService {
     @Transactional
     public void detachLikeToUser(User user) {
         postLikeRepository.detachUser(user);
+    }
+
+    /*
+        캘린더를 조회하기 위해 사용하는 함수이다.
+        DB 검색에서 자동으로 DTO를 생성하여 반환한다.
+     */
+    public List<ChallengeCalendarPhotoResponse> findCalendarPhotos(Long userId, Long challengeId, LocalDate start, LocalDate end) {
+        return postRepository.findCalendarPhotos(userId, challengeId, start, end);
     }
 }
