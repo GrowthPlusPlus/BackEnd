@@ -5,6 +5,7 @@ package me.jsu.springbootdeveloper.repository.post;
 import me.jsu.springbootdeveloper.domain.post.Article;
 import me.jsu.springbootdeveloper.domain.challenge.ChallengeVisibility;
 import me.jsu.springbootdeveloper.domain.user.User;
+import me.jsu.springbootdeveloper.dto.challengeCalendar.ChallengeCalendarPhotoResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -46,4 +47,24 @@ public interface PostRepository extends JpaRepository<Article, Long> {
         where p.user = :user
     """)
     void detachUser(@Param("user") User user);
+
+    // 유저 id, 챌린지 id로 날짜 2개 사이의 인증글의 id, 날짜, 사진을 검색해준다. 캘린더를 조회할때 사용한다.
+    @Query("""
+        select new me.jsu.springbootdeveloper.dto.challengeCalendar.ChallengeCalendarPostResponse(
+            p.id,
+            p.postDate,
+            i.imageUrl
+        )
+        from ChallengePost p
+        left join p.images i
+        where p.user.id = :userId
+          and p.challenge.id = :challengeId
+          and p.postDate between :start and :end
+    """)
+    List<ChallengeCalendarPhotoResponse> findCalendarPhotos(
+            Long userId,
+            Long challengeId,
+            LocalDate start,
+            LocalDate end
+    );
 }

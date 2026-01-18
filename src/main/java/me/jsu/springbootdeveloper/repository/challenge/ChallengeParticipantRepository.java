@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
+import java.util.Optional;
 
 /*
     챌린지 참여자를 관리하는 DB로, 테이블에 매핑되는 엔티티 타입은 ChallengeParticipant, 엔티티의 pk 타입은 Long이다.
@@ -51,4 +52,7 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
             Long challengeId,
             Long ownerId
     );
+
+    // 챌린지 id와 유저 id로 챌린지 참여 DB를 검색한다. 챌린지 참여 DB 정보만 필요하므로 쿼리문은 사용하지 않는다.
+    Optional<ChallengeParticipant> findByUser_IdAndChallenge_Id(Long userId, Long challengeId);
 }

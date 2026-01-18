@@ -2,7 +2,6 @@
 
 package me.jsu.springbootdeveloper.controller.error;
 
-import me.jsu.springbootdeveloper.domain.challenge.ParticipantNumberException;
 import me.jsu.springbootdeveloper.dto.error.ErrorResponse;
 import me.jsu.springbootdeveloper.service.*;
 import me.jsu.springbootdeveloper.service.challenge.ChallengeNotFoundException;
@@ -125,7 +124,7 @@ public class GlobalExceptionHandler {
         DB에서 챌린지를 검색하지 못한 경우의 핸들러이다.
     */
     @ExceptionHandler(ChallengeNotFoundException.class)
-    public ResponseEntity<ErrorResponse>  handleArticleNotFound(
+    public ResponseEntity<ErrorResponse>  handleChallengeNotFound(
             ChallengeNotFoundException e
     ) {
         return ResponseEntity
@@ -140,7 +139,7 @@ public class GlobalExceptionHandler {
         클라우디너리에 사진을 업로드하지 못한 경우의 핸들러이다.
     */
     @ExceptionHandler(CloudinaryUploadException.class)
-    public ResponseEntity<ErrorResponse>  handleArticleNotFound(
+    public ResponseEntity<ErrorResponse>  handleCloudinaryError(
             CloudinaryUploadException e
     ) {
         return ResponseEntity
@@ -185,7 +184,7 @@ public class GlobalExceptionHandler {
         DB에 태그가 존재하지 않을 경우의 핸들러이다.
      */
     @ExceptionHandler(TagNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleDuplicateNickname(
+    public ResponseEntity<ErrorResponse> handleTagNotFound(
             TagNotFoundException e
     ) {
         return ResponseEntity
