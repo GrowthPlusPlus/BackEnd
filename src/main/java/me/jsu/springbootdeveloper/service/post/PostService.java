@@ -7,15 +7,22 @@ import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.domain.post.Article;
 import me.jsu.springbootdeveloper.domain.challenge.Challenge;
 import me.jsu.springbootdeveloper.domain.challenge.ChallengeVisibility;
+import me.jsu.springbootdeveloper.domain.post.PostPicture;
 import me.jsu.springbootdeveloper.domain.user.User;
+import me.jsu.springbootdeveloper.domain.user.UserProfilePicture;
 import me.jsu.springbootdeveloper.dto.article.AddArticleRequest;
+import me.jsu.springbootdeveloper.dto.article.ArticleDetailResponse;
+import me.jsu.springbootdeveloper.dto.article.ArticleResponse;
 import me.jsu.springbootdeveloper.dto.article.UpdateArticleRequest;
 import me.jsu.springbootdeveloper.dto.challengeCalendar.ChallengeCalendarPhotoResponse;
+import me.jsu.springbootdeveloper.dto.challengeCalendar.ChallengeCalendarPostResponse;
 import me.jsu.springbootdeveloper.repository.post.CommentRepository;
 import me.jsu.springbootdeveloper.repository.post.PostLikeRepository;
+import me.jsu.springbootdeveloper.repository.post.PostPictureRepository;
 import me.jsu.springbootdeveloper.repository.post.PostRepository;
 import me.jsu.springbootdeveloper.service.UserService;
 import me.jsu.springbootdeveloper.service.challenge.ChallengeService;
+import me.jsu.springbootdeveloper.service.cloudinary.CloudinaryService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -33,6 +40,8 @@ public class PostService {
     private final ChallengeService challengeService;
     private final CommentRepository commentRepository;
     private final PostLikeRepository postLikeRepository;
+    private final PostPictureRepository postPictureRepository;
+    private final CloudinaryService cloudinaryService;
 
     /*
         게시글을 추가하는 함수이다.
@@ -67,11 +76,49 @@ public class PostService {
     }
 
     /*
-        게시글을 게시글 id로 조회하는 함수이다.
+        게시글 단일 정보를 게시글 id로 조회하는 함수이다.
      */
-    public Article findById(Long id) {
-        return postRepository.findById(id)
+    public Article findById(Long postId) {
+        return postRepository.findById(postId)
                 .orElseThrow(() -> new ArticleNotFoundException("ARTICLE_NOT_FOUND_FOR_ID"));
+    }
+
+    /*
+        게시글 상제 정보를 게시글 id로 조회하는 함수이다.
+     */
+    public ArticleDetailResponse getPost(String email, Long postId) {
+        User user = userService.findByEmail(email);
+
+        Article article = postRepository.findWithUserAndProfileById(postId)  // 인증글과 작성자 정보, 사진을 함께 조회한다.
+                .orElseThrow(() -> new ArticleNotFoundException("ARTICLE_NOT_FOUND_FOR_ID"));
+
+        // 작성자의 프로필 사진이 없는 경우를 대비한다.
+        String userImageUrl;
+        UserProfilePicture userProfilePicture = article.getUser().getUserProfilePicture();
+        if (userProfilePicture == null) {
+            userImageUrl = null;
+        }
+        else {
+            userImageUrl = userProfilePicture.getImageUrl();
+        }
+
+        // 인증글 id로 인증글의 사진을 검색한다.
+        List<String> articlePicture = postPictureRepository.findImageUrlsByPostId(postId);
+
+        // 게시글을 조회한 유저가 해당 게시글에 좋아요를 눌렀는지에 대한 여부를 검색한다.
+        boolean liked = postLikeRepository.existsByArticle_IdAndUser_Id(postId, user.getId());
+
+        return ArticleDetailResponse.builder()
+                .title(article.getTitle())
+                .content(article.getContent())
+                .articleImageUrl(articlePicture)  // 게시글의 사진이다.
+                .userNickname(article.getUser().getNickname())
+                .userImageUrl(userImageUrl)  // 게시글 작성자의 사진이다.
+                .createdAt(article.getCreatedAt())
+                .likeNumber(article.getLikeNumber())  // 좋아요 개수이다.
+                .commentNumber(article.getCommentNumber())  // 댓글 개수이다.
+                .liked(liked)
+                .build();
     }
 
     /*
@@ -91,11 +138,19 @@ public class PostService {
         따라서 @Transactional는 DB 작업의 원자성, 일관성, 격리성, 지속성을 보장한다.
      */
     @Transactional
-    public void delete(Long id) {
-        Article article = postRepository.findById(id)  // 삭제할 글을 DB에서 찾는다.
+    public void delete(Long postId) {
+        Article article = postRepository.findByIdWithImages(postId)  // 삭제할 글과 사진을 DB에서 찾는다.
                 .orElseThrow(() -> new ArticleNotFoundException("ARTICLE_NOT_FOUND_FOR_ID"));
+
         authorizeArticleAuthor(article);  // 글 작성자인지 확인한다.
-        postRepository.deleteById(id);  // 맞다면 DB에서 삭제한다.
+        challengeService.detachLogToArticle(article);  // 챌린지 데일리 로그 정보는 게시글이 삭제되도 남아있도록 한다
+
+        // 인증글에 저장된 사진들을 클라우디너리에서 삭제한다.
+        for (PostPicture postPicture : article.getPostPictures())
+        {
+            cloudinaryService.deleteImage(postPicture.getCloudinaryPublicId());
+        }
+        postRepository.delete(article);  // DB에서 게시글을 삭제한다. 댓글이나 좋아요 등의 정보도 함께 삭제된다.
     }
 
     /*
@@ -124,6 +179,22 @@ public class PostService {
         if (!article.getUser().getEmail().equals(userName)) {  // 유저의 이메일과 게시글 작성자의 이메일을 비교한다.
             throw new ArticleAccessDeniedException("ARTICLE_ACCESS_DENIED");
         }
+    }
+
+    /*
+        게시글의 댓글 수를 증가시키는 함수이다.
+     */
+    @Transactional
+    public void plusCommentNumber(Article article) {
+        article.plusCommentNumber();
+    }
+
+    /*
+        게시글의 댓글 수를 감소시키는 함수이다.
+     */
+    @Transactional
+    public void minusCommentNumber(Article article) {
+        article.minusCommentNumber();
     }
 
     /*
@@ -159,5 +230,13 @@ public class PostService {
      */
     public List<ChallengeCalendarPhotoResponse> findCalendarPhotos(Long userId, Long challengeId, LocalDate start, LocalDate end) {
         return postRepository.findCalendarPhotos(userId, challengeId, start, end);
+    }
+
+    /*
+        특정 챌린지의 내가 올린 인증글을 최신순으로 조회하여 반환한다.
+        캘린더 뷰 화면에 필요한 정보이다.
+     */
+    public Page<ChallengeCalendarPostResponse> findCalendarPosts(Long userId, Long challengeId, Pageable pageable) {
+        return postRepository.findCalendarPosts(userId, challengeId, pageable);
     }
 }

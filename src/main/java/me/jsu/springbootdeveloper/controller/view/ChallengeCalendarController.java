@@ -66,6 +66,9 @@ public class ChallengeCalendarController {
 
     /*
         인증글 목록을 page로 가져온다.
+        클라이언트는 페이징된 값들 뿐만아니라 여러 정보를 함께 알 수 있다.
+        totalElements: 총 게시글 개수, totalPages: 총 페이지 개수, last: 해당 페이지가 마지막 페이지인가? 등의 정보이다.
+        GET /api/challenges/{challengeId}/calendar/posts?page={page} 로 호출힌다.
      */
     @GetMapping("/api/challenges/{challengeId}/calendar/posts")
     public ResponseEntity<Page<ChallengeCalendarPostResponse>> getPost(

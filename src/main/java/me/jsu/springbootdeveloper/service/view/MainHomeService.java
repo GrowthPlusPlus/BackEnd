@@ -124,7 +124,7 @@ public class MainHomeService {
             }
 
             // 유저가 챌린지를 시작한 경과일을 계산한다.
-            LocalDate joinedDate = challengeParticipant.getJoinedAt().toLocalDate();  // 참여일에서 시간을 제거한다.
+            LocalDate joinedDate = challengeParticipant.getCreatedAt().toLocalDate();  // 참여일에서 시간을 제거한다.
             long elapsedDaysRaw = ChronoUnit.DAYS.between(joinedDate, targetDate) + 1;  // 시작일로부터 며칠 지났는지 일수로 계산한다.
             long elapsedDays = Math.max(0, elapsedDaysRaw);  // 경과일이 음수가 나오는 것을 방지한다.
 

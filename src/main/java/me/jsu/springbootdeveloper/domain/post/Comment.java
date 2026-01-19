@@ -74,4 +74,11 @@ public class Comment {
         this.article = article;
         this.contents = contents;
     }
+
+    /*
+        댓글 내용을 업데이트하는 함수이다.
+     */
+    public void updateContents(String contents) {
+        this.contents = contents;
+    }
 }

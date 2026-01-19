@@ -77,25 +77,33 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
         회원탈퇴 등의로 유저 정보가 삭제될 때, 밑의 정보들도 함께 전부 삭제된다.
      */
     @OneToMany(mappedBy = "user", cascade = REMOVE)
-    private ChallengeInviteLink challengeInviteLink;
+    private List<ChallengeInviteLink> challengeInviteLinks;
 
     @OneToMany(mappedBy = "user", cascade = REMOVE)
-    private ChallengeWeeklyStatus challengeWeeklyStatus;
+    private List<ChallengeWeeklyStatus> challengeWeeklyStatus;
 
     @OneToMany(mappedBy = "user", cascade = REMOVE)
-    private ChallengeParticipant challengeParticipant;
-
-    @OneToOne(mappedBy = "user", cascade = REMOVE)
-    private Notification notification;
+    private List<ChallengeParticipant> challengeParticipants;
 
     @OneToMany(mappedBy = "user", cascade = REMOVE)
-    private TagToUser tagToUser;
+    private List<Notification> notifications;
 
     @OneToMany(mappedBy = "user", cascade = REMOVE)
-    private FriendRequest friendRequest;
+    private List<TagToUser> tagToUsers;
 
-    @OneToMany(mappedBy = "user", cascade = REMOVE)
-    private Friendship friendship;
+    // 친구 요청을 양방향으로 매핑한다.
+    @OneToMany(mappedBy = "fromUser", cascade = REMOVE)
+    private List<FriendRequest> sentRequests;
+
+    @OneToMany(mappedBy = "toUser", cascade = REMOVE)
+    private List<FriendRequest> receivedRequests;
+
+    // 친구 관계를 양방향으로 매핑한다.
+    @OneToMany(mappedBy = "user1", cascade = REMOVE)
+    private List<Friendship> friendshipsAsUser1;
+
+    @OneToMany(mappedBy = "user2", cascade = REMOVE)
+    private List<Friendship> friendshipsAsUser2;
 
     @OneToOne(mappedBy = "user", cascade = REMOVE)
     private UserProfilePicture userProfilePicture;

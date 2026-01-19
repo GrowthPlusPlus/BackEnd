@@ -12,7 +12,9 @@ import me.jsu.springbootdeveloper.service.UserService;
 import me.jsu.springbootdeveloper.service.challenge.ChallengeService;
 import me.jsu.springbootdeveloper.service.post.PostService;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,8 +61,21 @@ public class ChallengeCalendarService {
 
     /*
         인증글들을 불러온다.
+        페이지 단위로 지금까지 한 유저의 인증글을 최신 순서대로 15개 단위로 불러온다.
      */
     public Page<ChallengeCalendarPostResponse> getPostPhotos(String email, Long challengeId, int page) {
+        User user = userService.findByEmail(email);
 
+        // 참여를 검증하여 참여자가 아니라면 예외처리 한다.
+        challengeService.findByUser_IdAndChallenge_IdForParticipant(user.getId(), challengeId);
+
+        // 유저가 생성한 인증글을 한 번에 15개까지만 조회한다.
+        Pageable pageable = PageRequest.of(
+                page,           // page
+                15,             // 한 페이지 당 읽을 인증글 개수
+                Sort.by("createdAt").descending()  // 생성일을 기준으로 내림차순으로 검색한다.
+        );
+
+        return postService.findCalendarPosts(user.getId(), challengeId, pageable);
     }
 }
