@@ -54,8 +54,8 @@ public class ChallengeParticipant {
     private User user;
 
     @CreatedDate
-    @Column(name = "joined_at", nullable = false)
-    private LocalDateTime joinedAt;  // 유저가 챌린지에 참여한 시간이다.
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;  // 유저가 챌린지에 참여한 시간이다.
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)

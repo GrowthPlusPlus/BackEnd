@@ -91,11 +91,19 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
     @OneToMany(mappedBy = "user", cascade = REMOVE)
     private List<TagToUser> tagToUsers;
 
-    @OneToMany(mappedBy = "user", cascade = REMOVE)
-    private List<FriendRequest> friendRequests;
+    // 친구 요청을 양방향으로 매핑한다.
+    @OneToMany(mappedBy = "fromUser", cascade = REMOVE)
+    private List<FriendRequest> sentRequests;
 
-    @OneToMany(mappedBy = "user", cascade = REMOVE)
-    private List<Friendship> friendships;
+    @OneToMany(mappedBy = "toUser", cascade = REMOVE)
+    private List<FriendRequest> receivedRequests;
+
+    // 친구 관계를 양방향으로 매핑한다.
+    @OneToMany(mappedBy = "user1", cascade = REMOVE)
+    private List<Friendship> friendshipsAsUser1;
+
+    @OneToMany(mappedBy = "user2", cascade = REMOVE)
+    private List<Friendship> friendshipsAsUser2;
 
     @OneToOne(mappedBy = "user", cascade = REMOVE)
     private UserProfilePicture userProfilePicture;

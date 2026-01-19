@@ -106,7 +106,7 @@ public class PostService {
         List<String> articlePicture = postPictureRepository.findImageUrlsByPostId(postId);
 
         // 게시글을 조회한 유저가 해당 게시글에 좋아요를 눌렀는지에 대한 여부를 검색한다.
-        boolean liked = postLikeRepository.existsByPost_IdAndUser_Id(postId, user.getId());
+        boolean liked = postLikeRepository.existsByArticle_IdAndUser_Id(postId, user.getId());
 
         return ArticleDetailResponse.builder()
                 .title(article.getTitle())
