@@ -6,6 +6,7 @@ import me.jsu.springbootdeveloper.domain.post.Article;
 import me.jsu.springbootdeveloper.domain.challenge.ChallengeVisibility;
 import me.jsu.springbootdeveloper.domain.user.User;
 import me.jsu.springbootdeveloper.dto.challengeCalendar.ChallengeCalendarPhotoResponse;
+import me.jsu.springbootdeveloper.dto.challengeCalendar.ChallengeCalendarPostResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -50,7 +51,7 @@ public interface PostRepository extends JpaRepository<Article, Long> {
 
     // 유저 id, 챌린지 id로 날짜 2개 사이의 인증글의 id, 날짜, 사진을 검색해준다. 캘린더를 조회할때 사용한다.
     @Query("""
-        select new me.jsu.springbootdeveloper.dto.challengeCalendar.ChallengeCalendarPostResponse(
+        select new me.jsu.springbootdeveloper.dto.challengeCalendar.ChallengeCalendarPhotoResponse(
             p.id,
             p.postDate,
             i.imageUrl
@@ -66,5 +67,36 @@ public interface PostRepository extends JpaRepository<Article, Long> {
             Long challengeId,
             LocalDate start,
             LocalDate end
+    );
+
+    /*
+        유저 id, 챌린지 id로 유저의 인증글을 검색한다.
+        페이지 형태로 dto가공해 반환하여 해당 유저의 최신 인증글을 볼 수 있도록 한다.
+        countQuery는 다른 테이블과 join하면서 page형태로 반환하는 경우에 정확한 page 계산을 위하여 사용한다.
+     */
+    @Query(
+            value = """
+            select new me.jsu.springbootdeveloper.dto.challengeCalendar.ChallengeCalendarPostResponse(
+                p.id,
+                p.postDate,
+                i.imageUrl,
+                p.content
+            )
+            from ChallengePost p
+            left join p.images i
+            where p.user.id = :userId
+              and p.challenge.id = :challengeId
+        """,
+        countQuery = """
+            select count(p)
+            from ChallengePost p
+            where p.user.id = :userId
+              and p.challenge.id = :challengeId
+        """
+    )
+    Page<ChallengeCalendarPostResponse> findCalendarPosts(
+            Long userId,
+            Long challengeId,
+            Pageable pageable
     );
 }

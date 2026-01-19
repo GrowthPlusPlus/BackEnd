@@ -38,6 +38,10 @@ import java.time.LocalDateTime;
                 @Index(
                         name = "idx_created_at",
                         columnList = "created_at"  // 최신순으로 post 피드를 보여주기 위한 인덱싱이다.
+                ),
+                @Index(
+                        name = "idx_user_challenge_for_post",
+                        columnList = "user_id, challenge_id"  // 유저 id와 챌린지 id로 인증글을 찾기 위한 인덱싱이다.
                 )
         }
 )

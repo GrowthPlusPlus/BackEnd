@@ -11,6 +11,7 @@ import me.jsu.springbootdeveloper.domain.user.User;
 import me.jsu.springbootdeveloper.dto.article.AddArticleRequest;
 import me.jsu.springbootdeveloper.dto.article.UpdateArticleRequest;
 import me.jsu.springbootdeveloper.dto.challengeCalendar.ChallengeCalendarPhotoResponse;
+import me.jsu.springbootdeveloper.dto.challengeCalendar.ChallengeCalendarPostResponse;
 import me.jsu.springbootdeveloper.repository.post.CommentRepository;
 import me.jsu.springbootdeveloper.repository.post.PostLikeRepository;
 import me.jsu.springbootdeveloper.repository.post.PostRepository;
@@ -159,5 +160,13 @@ public class PostService {
      */
     public List<ChallengeCalendarPhotoResponse> findCalendarPhotos(Long userId, Long challengeId, LocalDate start, LocalDate end) {
         return postRepository.findCalendarPhotos(userId, challengeId, start, end);
+    }
+
+    /*
+        특정 챌린지의 내가 올린 인증글을 최신순으로 조회하여 반환한다.
+        캘린더 뷰 화면에 필요한 정보이다.
+     */
+    public Page<ChallengeCalendarPostResponse> findCalendarPosts(Long userId, Long challengeId, Pageable pageable) {
+        return postRepository.findCalendarPosts(userId, challengeId, pageable);
     }
 }
