@@ -28,6 +28,35 @@ public class ChallengeService {
     private final ChallengeParticipantRepository challengeParticipantRepository;
     private final ChallengeDailyLogRepository challengeDailyLogRepository;
     private final ChallengeWeeklyStatusRepository challengeWeeklyStatusRepository;
+    private final UserService userService;
+    private final UserRepository userRepository;
+
+    //챌린지 생성
+    @Transactional
+    public Challenge save(String email, ChallengeRequestDto dto) {
+        // 1. 로그인한 유저 정보 조회 (인증 객체에서 넘어온 email 사용)
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("해당 유저를 찾을 수 없습니다: " + email));
+
+        // 2. 종료일 계산 로직 (시작일 + 인증 기간)
+        // 화면에서 '30일'을 선택했다면 startDate로부터 30일 뒤를 계산합니다.
+        LocalDate endDate = dto.getStartDate().plusDays(dto.getDurationDays());
+
+        // 3. 엔티티 생성 (Builder 패턴 사용)
+        Challenge challenge = Challenge.builder()
+                .title(dto.getTitle())
+                .content(dto.getContent())
+                .user(user)
+                .maxParticipantNumber(dto.getMaxParticipantNumber())
+                .challengeVisibility(dto.getChallengeVisibility())
+                .startDate(dto.getStartDate())
+                .endDate(endDate)
+                .requiredWeeklyCount(dto.getRequiredWeeklyCount())
+                .build();
+
+        // 4. DB 저장 및 반환
+        return challengeRepository.save(challenge);
+    }
 
     /*
         챌린지 id로 챌린지를 검색해주는 함수이다.
