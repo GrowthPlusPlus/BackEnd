@@ -77,25 +77,25 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
         회원탈퇴 등의로 유저 정보가 삭제될 때, 밑의 정보들도 함께 전부 삭제된다.
      */
     @OneToMany(mappedBy = "user", cascade = REMOVE)
-    private ChallengeInviteLink challengeInviteLink;
+    private List<ChallengeInviteLink> challengeInviteLinks;
 
     @OneToMany(mappedBy = "user", cascade = REMOVE)
-    private ChallengeWeeklyStatus challengeWeeklyStatus;
+    private List<ChallengeWeeklyStatus> challengeWeeklyStatus;
 
     @OneToMany(mappedBy = "user", cascade = REMOVE)
-    private ChallengeParticipant challengeParticipant;
-
-    @OneToOne(mappedBy = "user", cascade = REMOVE)
-    private Notification notification;
+    private List<ChallengeParticipant> challengeParticipants;
 
     @OneToMany(mappedBy = "user", cascade = REMOVE)
-    private TagToUser tagToUser;
+    private List<Notification> notifications;
 
     @OneToMany(mappedBy = "user", cascade = REMOVE)
-    private FriendRequest friendRequest;
+    private List<TagToUser> tagToUsers;
 
     @OneToMany(mappedBy = "user", cascade = REMOVE)
-    private Friendship friendship;
+    private List<FriendRequest> friendRequests;
+
+    @OneToMany(mappedBy = "user", cascade = REMOVE)
+    private List<Friendship> friendships;
 
     @OneToOne(mappedBy = "user", cascade = REMOVE)
     private UserProfilePicture userProfilePicture;

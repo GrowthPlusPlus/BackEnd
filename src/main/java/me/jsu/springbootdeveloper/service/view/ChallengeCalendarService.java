@@ -8,8 +8,6 @@ import me.jsu.springbootdeveloper.domain.user.User;
 import me.jsu.springbootdeveloper.dto.challengeCalendar.ChallengeCalendarPhotoResponse;
 import me.jsu.springbootdeveloper.dto.challengeCalendar.ChallengeCalendarPostResponse;
 import me.jsu.springbootdeveloper.dto.challengeCalendar.ChallengeCalendarResponse;
-import me.jsu.springbootdeveloper.dto.mainHome.MyNotification;
-import me.jsu.springbootdeveloper.dto.mainHome.MyNotificationResponse;
 import me.jsu.springbootdeveloper.service.UserService;
 import me.jsu.springbootdeveloper.service.challenge.ChallengeService;
 import me.jsu.springbootdeveloper.service.post.PostService;
@@ -71,7 +69,7 @@ public class ChallengeCalendarService {
         // 참여를 검증하여 참여자가 아니라면 예외처리 한다.
         challengeService.findByUser_IdAndChallenge_IdForParticipant(user.getId(), challengeId);
 
-        // 유저가 생성한 인증글을 한 번에 20개까지만 조회한다.
+        // 유저가 생성한 인증글을 한 번에 15개까지만 조회한다.
         Pageable pageable = PageRequest.of(
                 page,           // page
                 15,             // 한 페이지 당 읽을 인증글 개수

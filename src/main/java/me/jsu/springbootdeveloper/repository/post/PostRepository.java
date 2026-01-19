@@ -16,6 +16,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 /*
     게시글을 저장하는 DB로, 테이블에 매핑되는 엔티티 타입은 Article, 엔티티의 pk 타입은 Long이다.
@@ -41,7 +42,7 @@ public interface PostRepository extends JpaRepository<Article, Long> {
     );
 
     // post 테이블에서 user가 특정 유저인 모든 행에 대해 user_id 칼럼을 null로 바꾸는 쿼리문이다.
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
         update Article p
         set p.user = null
@@ -56,17 +57,17 @@ public interface PostRepository extends JpaRepository<Article, Long> {
             p.postDate,
             i.imageUrl
         )
-        from ChallengePost p
-        left join p.images i
+        from Article p
+        left join PostPicture i on i.article = p
         where p.user.id = :userId
           and p.challenge.id = :challengeId
           and p.postDate between :start and :end
     """)
     List<ChallengeCalendarPhotoResponse> findCalendarPhotos(
-            Long userId,
-            Long challengeId,
-            LocalDate start,
-            LocalDate end
+            @Param("userId") Long userId,
+            @Param("challengeId") Long challengeId,
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end
     );
 
     /*
@@ -82,21 +83,40 @@ public interface PostRepository extends JpaRepository<Article, Long> {
                 i.imageUrl,
                 p.content
             )
-            from ChallengePost p
-            left join p.images i
+            from Article p
+            left join PostPicture i on i.article = p
             where p.user.id = :userId
               and p.challenge.id = :challengeId
         """,
         countQuery = """
             select count(p)
-            from ChallengePost p
+            from Article p
             where p.user.id = :userId
               and p.challenge.id = :challengeId
         """
     )
     Page<ChallengeCalendarPostResponse> findCalendarPosts(
-            Long userId,
-            Long challengeId,
+            @Param("userId") Long userId,
+            @Param("challengeId") Long challengeId,
             Pageable pageable
     );
+
+    // 인증글 id로 인증글 정보 뿐만 아니라 작성자 정보, 작성자의 프로필 사진까지 한 번에 조회하는 쿼리문이다.
+    @Query("""
+        select p
+        from Article p
+        join fetch p.user u
+        left join fetch u.userProfilePicture
+        where p.id = :articleId
+    """)
+    Optional<Article> findWithUserAndProfileById(@Param("articleId") Long postId);
+
+    // 인증글과 인증글 사진을 함께 조회한다.
+    @Query("""
+        select distinct a
+        from Article a
+        left join fetch a.postPictures
+        where a.id = :articleId
+    """)
+    Optional<Article> findByIdWithImages(@Param("articleId") Long postId);
 }

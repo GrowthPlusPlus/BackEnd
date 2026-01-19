@@ -60,11 +60,11 @@ public class Challenge {
     @Column(name = "content", nullable = false)
     private String content;
 
-    @Column(name = "maxParticipantNumber", nullable = false)
+    @Column(name = "max_participant_number", nullable = false)
     private int maxParticipantNumber;
 
     // 현재 참여하고 있는 참가자 수이다. 파생 데이터지만 캐싱을 위해 사용한다
-    @Column(name = "participantNumber", nullable = false)
+    @Column(name = "participant_number", nullable = false)
     private int participantNumber;
 
     @Enumerated(EnumType.STRING)
@@ -87,7 +87,7 @@ public class Challenge {
     private LocalDateTime createdAt;
 
     @Builder
-    public Challenge(String title, String content, User user, int maxParticipantNumber, ChallengeVisibility challengeVisibility, 
+    public Challenge(String title, String content, User user, int maxParticipantNumber, ChallengeVisibility challengeVisibility,
                      LocalDate startDate, LocalDate endDate, int requiredWeeklyCount, boolean photoRequired) {
         this.title = title;
         this.content = content;

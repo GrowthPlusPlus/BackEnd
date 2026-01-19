@@ -8,6 +8,7 @@ import me.jsu.springbootdeveloper.domain.challenge.Challenge;
 import me.jsu.springbootdeveloper.domain.challenge.ChallengeDailyLog;
 import me.jsu.springbootdeveloper.domain.challenge.ChallengeParticipant;
 import me.jsu.springbootdeveloper.domain.challenge.ChallengeWeeklyStatus;
+import me.jsu.springbootdeveloper.domain.post.Article;
 import me.jsu.springbootdeveloper.domain.user.User;
 import me.jsu.springbootdeveloper.repository.challenge.ChallengeDailyLogRepository;
 import me.jsu.springbootdeveloper.repository.challenge.ChallengeParticipantRepository;
@@ -120,6 +121,15 @@ public class ChallengeService {
     }
 
     /*
+        챌린지 데일리 로그의 인증글 fk값을 null로 바꿔주는 함수이다.
+        인증글 삭제 시에 사용한다.
+     */
+    @Transactional
+    public void detachLogToArticle(Article article) {
+        challengeDailyLogRepository.detachArticle(article);
+    }
+
+    /*
         특정 챌린지를 완수한 경우, 연속 챌린지 달성 일수와 총 챌린지 일수를 업데이트하기 위해 호출하는 함수이다.
         반드시 하루에 최대 한 번만 수행한다.
      */
@@ -131,7 +141,7 @@ public class ChallengeService {
     }
 
     /*
-        챌린지 참여자 DB를 챌린지 id, 유저 id로 검새한다.
+        챌린지 참여자 DB를 챌린지 id, 유저 id로 검색한다.
      */
     public ChallengeParticipant findByUser_IdAndChallenge_IdForParticipant(Long userId, Long challengeId) {
         return challengeParticipantRepository.findByUser_IdAndChallenge_Id(userId, challengeId)
