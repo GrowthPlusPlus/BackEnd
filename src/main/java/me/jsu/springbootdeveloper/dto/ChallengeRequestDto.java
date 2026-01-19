@@ -3,6 +3,8 @@ package me.jsu.springbootdeveloper.dto;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import me.jsu.springbootdeveloper.domain.challenge.ChallengeVisibility;
+
 import java.time.LocalDate;
 import java.util.List;
 
@@ -36,6 +38,9 @@ public class ChallengeRequestDto {
     //인증 사진 필수 -> 체크박스
     private boolean photoRequired; 
     
-    // 챌린지 공개 여부 -> 임시로 기본값을 PUBLIC으로 설정
-    private ChallengeVisibility challengeVisibility = ChallengeVisibility.PUBLIC;
+    // 챌린지 공개 여부 -> 현재 필드 없음, 기본값 PUBLIC으로 설정
+    private ChallengeVisibility challengeVisibility;
+
+    //최대 참여자 수 -> 현재 필드 없음, 기본값 50으로 설정
+    private Integer maxParticipantNumber;
 }

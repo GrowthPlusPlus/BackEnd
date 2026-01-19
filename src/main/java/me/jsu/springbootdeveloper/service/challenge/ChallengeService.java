@@ -4,15 +4,15 @@ package me.jsu.springbootdeveloper.service.challenge;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import me.jsu.springbootdeveloper.domain.challenge.Challenge;
-import me.jsu.springbootdeveloper.domain.challenge.ChallengeDailyLog;
-import me.jsu.springbootdeveloper.domain.challenge.ChallengeParticipant;
-import me.jsu.springbootdeveloper.domain.challenge.ChallengeWeeklyStatus;
+import me.jsu.springbootdeveloper.domain.challenge.*;
 import me.jsu.springbootdeveloper.domain.user.User;
+import me.jsu.springbootdeveloper.dto.ChallengeRequestDto;
 import me.jsu.springbootdeveloper.repository.challenge.ChallengeDailyLogRepository;
 import me.jsu.springbootdeveloper.repository.challenge.ChallengeParticipantRepository;
 import me.jsu.springbootdeveloper.repository.challenge.ChallengeRepository;
 import me.jsu.springbootdeveloper.repository.challenge.ChallengeWeeklyStatusRepository;
+import me.jsu.springbootdeveloper.repository.user.UserRepository;
+import me.jsu.springbootdeveloper.service.UserService;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -40,18 +40,20 @@ public class ChallengeService {
 
         // 2. 종료일 계산 로직 (시작일 + 인증 기간)
         // 화면에서 '30일'을 선택했다면 startDate로부터 30일 뒤를 계산합니다.
-        LocalDate endDate = dto.getStartDate().plusDays(dto.getDurationDays());
+        LocalDate endDate = dto.getStartDate().plusDays(Long.parseLong(dto.getDuration()));
 
         // 3. 엔티티 생성 (Builder 패턴 사용)
         Challenge challenge = Challenge.builder()
                 .title(dto.getTitle())
-                .content(dto.getContent())
+                .content(dto.getDescription())
                 .user(user)
-                .maxParticipantNumber(dto.getMaxParticipantNumber())
-                .challengeVisibility(dto.getChallengeVisibility())
+                // 화면에 필드가 없으므로 디폴트 50
+                .maxParticipantNumber((dto.getMaxParticipantNumber() != null) ? dto.getMaxParticipantNumber() : 50)
+                // 화면에 필드가 없으므로 디폴트 PUBLIC
+                .challengeVisibility((dto.getChallengeVisibility() != null) ? dto.getChallengeVisibility() : ChallengeVisibility.PUBLIC)
                 .startDate(dto.getStartDate())
                 .endDate(endDate)
-                .requiredWeeklyCount(dto.getRequiredWeeklyCount())
+                .requiredWeeklyCount(Integer.parseInt(dto.getFrequency()))
                 .build();
 
         // 4. DB 저장 및 반환

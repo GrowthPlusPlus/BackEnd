@@ -16,6 +16,8 @@ import me.jsu.springbootdeveloper.domain.challenge.Challenge;
 import me.jsu.springbootdeveloper.domain.challenge.ChallengeParticipant;
 import me.jsu.springbootdeveloper.domain.challenge.ChallengeVisibility;
 import me.jsu.springbootdeveloper.domain.user.User;
+import me.jsu.springbootdeveloper.dto.ChallengeRequestDto;
+import me.jsu.springbootdeveloper.dto.ChallengeResponseDto;
 import me.jsu.springbootdeveloper.repository.challenge.ChallengeParticipantRepository;
 import me.jsu.springbootdeveloper.repository.challenge.ChallengeRepository;
 import me.jsu.springbootdeveloper.service.UserService;
@@ -34,7 +36,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-
+import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 
 /*
@@ -59,39 +61,18 @@ public class ChallengeApiController {
         @return 생성된 챌린지 상세 정보(ChallengeDetailResponse)
      */
     @Transactional
-    @PostMapping("/api/challenges")
-    public ResponseEntity<ChallengeDetailResponse> createChallenge(
-            @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody @Valid CreateChallengeRequest request
-        ) 
-    {
-        validateCreateRequest(request);
-
-        User user = userService.findByEmail(userDetails.getUsername());
-        ChallengeVisibility visibility = ChallengeVisibility.valueOf(request.getChallengeVisibility());
-        LocalDate startDate = LocalDate.parse(request.getStartDate());
-        LocalDate endDate = LocalDate.parse(request.getEndDate());
-
-        Challenge challenge = challengeRepository.save(Challenge.builder()
-                .title(request.getTitle())
-                .content(request.getContent())
-                .user(user)
-                .maxParticipantNumber(request.getMaxParticipantNumber())
-                .challengeVisibility(visibility)
-                .startDate(startDate)
-                .endDate(endDate)
-                .requiredWeeklyCount(request.getRequiredWeeklyCount())
-                .build());
-
-        // 생성자는 자동으로 참여자 1명으로 설정하지만, 참가자 테이블도 초기 엔트리를 생성한다.
-        challengeParticipantRepository.save(ChallengeParticipant.builder()
-                .challenge(challenge)
-                .user(user)
-                .build());
-
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(new ChallengeDetailResponse(challenge));
+    @PostMapping("/api/challenges/create")
+    public ResponseEntity<ChallengeResponseDto> createChallenge (@AuthenticationPrincipal UserDetails userDetails,
+                                                                 @Valid @RequestBody ChallengeRequestDto dto)
+        
+        {
+            // 1. 서비스를 통해 엔티티 저장
+            Challenge savedChallenge = challengeService.save(userDetails.getUsername(), dto);
+            
+            // 2. 엔티티를 응답용 DTO로 변환하여 반환
+            ChallengeResponseDto response = new ChallengeResponseDto(savedChallenge);
+            
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     /*
