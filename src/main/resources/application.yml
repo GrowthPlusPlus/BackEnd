@@ -18,25 +18,15 @@ spring:
   sql:
     init:
       mode: never
-
-# 웹 기반 OAUTH 설정으로 비활성화
-#  security:
-#    oauth2:
-#      client:
-#        registration:
-#          google:
-#            client-id: test_id            # 고유한 값으로 바꾸지 않으면 OAuth 인증 시 문제 발생
-#            client-secret: test_secret
-#            scope:
-#              - email
-#              - profile
       
 # 앱 PKCE 기반 설정
   oauth:
     google:
-      client-id: test_id
-      client-secret: test_secret
-      redirect-uri: com.example.app:/oauth2redirect  # 예시
+      client-id: 433865217738-5gr9oq66ef2bffc1r8ik065oc45iopg5.apps.googleusercontent.com
+      client-secret: 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
+      redirect-uri: com.example.app:/oauth2redirect  # 예시로 추후에 교체해야 한다.
+      # com.example.app → 앱의 패키지명 / 번들 ID
+      # /oauth2redirect → 개발자가 정하는 경로 (고정 문자열)
 
 # 페이징 기능으로 클라이언트가 요청하여 한 번에 최대 검색 가능한 게시글 수를 50개로 제한한다.
   data:
@@ -44,9 +34,10 @@ spring:
       pageable:
         max-page-size: 50
 
+# 임의로 설정할 수 있는 값
 jwt:
-  issuer: ajufresh@gmail.com
-  secret_key: test_key  # 키가 바뀔 때 마다 토큰을 재발급 해야함
+  issuer: ajufresh-backend
+  secret_key: 8f3c9a1d7b6e4a2f9c5e0d1a4b8f6c7e3a9d2e5b1c4f7a6e8d0b9c2a1f  # 키가 바뀔 때 마다 토큰을 재발급 해야함
 
 # 클라우디너리 설정 
 cloudinary:
