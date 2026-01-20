@@ -6,6 +6,9 @@ import me.jsu.springbootdeveloper.domain.user.User;
 import me.jsu.springbootdeveloper.dto.UpdateIntroductionRequest;
 import me.jsu.springbootdeveloper.dto.UpdateNicknameRequest;
 import me.jsu.springbootdeveloper.dto.UserResponse;
+import me.jsu.springbootdeveloper.dto.UserSearchResponse;
+import me.jsu.springbootdeveloper.repository.user.UserFriendshipSearchProjection;
+import me.jsu.springbootdeveloper.repository.user.UserRepository;
 import me.jsu.springbootdeveloper.service.LogoutService;
 import me.jsu.springbootdeveloper.service.UserService;
 import me.jsu.springbootdeveloper.service.UserWithdrawalService;
@@ -14,6 +17,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 /*
     해당 클래스는 REST API 방식으로 유저 정보를 검색하는 기능을 제공한다.
@@ -25,7 +31,25 @@ public class UserApiController {
     private final UserService userService;
     private final LogoutService logoutService;
     private final UserWithdrawalService userWithdrawalService;  // 회원탈퇴 서비스이다.
+    private final UserRepository userRepository;
 
+    //유저 검색-> 나와 해당 유저와의 관계 상태도 같이 반환
+    @GetMapping("/api/users/search")
+    public ResponseEntity<List<UserSearchResponse>> searchUsers(
+            @RequestParam String nickname,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        User currentUser = userRepository.findByEmail(userDetails.getUsername()).orElseThrow(() -> new IllegalArgumentException("현재 유저를 찾을 수 없습니다."));
+
+        List<UserFriendshipSearchProjection> results =
+                userRepository.searchAllUsersWithRelationship(nickname, currentUser.getId());
+
+        List<UserSearchResponse> response = results.stream()
+                .map(UserSearchResponse::new)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(response);
+    }
     /*
         닉네임을 통해 유저 정보를 검색하는 GET 요청 API이다.
         @param nickname 검색할 유저의 닉네임

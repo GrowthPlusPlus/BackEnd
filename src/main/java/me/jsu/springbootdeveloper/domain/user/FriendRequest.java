@@ -75,21 +75,21 @@ public class FriendRequest {
         친구 요청을 받은 경우 실행하는 함수이다.
         REQUESTED 상태에서만 ACCEPTED로 전이가 가능하므로 서비스 레벨에서 예외처리를 해야한다.
      */
-    void friendRequestAccepted() {
+    public void friendRequestAccepted() {
         this.status = FriendRequestStatus.ACCEPTED;
     }
 
     /*
         친구 요청을 거부한 경우 실행하는 함수이다.
      */
-    void friendRequestRejected() {
+    public void friendRequestRejected() {
         this.status = FriendRequestStatus.REJECTED;
     }
 
     /*
         친구 요청을 취소한 경우 실행하는 함수이다.
      */
-    void friendRequestCanceled() {
+    public void friendRequestCanceled() {
         this.status = FriendRequestStatus.CANCELED;
     }
 }
