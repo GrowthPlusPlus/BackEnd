@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import me.jsu.springbootdeveloper.domain.challenge.Challenge;
+import me.jsu.springbootdeveloper.domain.tag.TagToUser;
 import me.jsu.springbootdeveloper.domain.user.User;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -15,6 +16,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
+
+import static jakarta.persistence.CascadeType.REMOVE;
 
 /*
     DB에 관리될 post에 관한 정보가 저장되는 클래스이다.
@@ -38,6 +42,10 @@ import java.time.LocalDateTime;
                 @Index(
                         name = "idx_created_at",
                         columnList = "created_at"  // 최신순으로 post 피드를 보여주기 위한 인덱싱이다.
+                ),
+                @Index(
+                        name = "idx_user_challenge_for_post",
+                        columnList = "user_id, challenge_id"  // 유저 id와 챌린지 id로 인증글을 찾기 위한 인덱싱이다.
                 )
         }
 )
@@ -80,10 +88,23 @@ public class Article {
     private LocalDate postDate;
 
     @Column(name = "like_number")
-    private int likeNumber;  // 게시글의 좋아요 수이다.
+    private long likeNumber;  // 게시글의 좋아요 수이다.
 
     @Column(name = "comment_number")
-    private int commentNumber;  // 게시글의 댓글 수이다.
+    private long commentNumber;  // 게시글의 댓글 수이다.
+
+    /*
+        다음 코드는 CASCADE 설정으로 User 엔티티를 fk값으로 가지고 있는 DB들을 자동으로 삭제해주는 설정이다.
+        게시글 삭제 시, 밑의 정보들도 함께 전부 삭제된다.
+     */
+    @OneToMany(mappedBy = "article", cascade = REMOVE)
+    private List<Comment> comments;
+
+    @OneToMany(mappedBy = "article", cascade = REMOVE)
+    private List<PostLike> postLikes;
+
+    @OneToMany(mappedBy = "article", cascade = REMOVE)
+    private List<PostPicture> postPictures;
 
     /*
         @Builder로 빌더 패턴으로 객체를 생성할 수 있게 해준다.

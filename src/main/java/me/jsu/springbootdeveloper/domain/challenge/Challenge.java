@@ -60,11 +60,11 @@ public class Challenge {
     @Column(name = "content", nullable = false)
     private String content;
 
-    @Column(name = "maxParticipantNumber", nullable = false)
+    @Column(name = "max_participant_number", nullable = false)
     private int maxParticipantNumber;
 
     // 현재 참여하고 있는 참가자 수이다. 파생 데이터지만 캐싱을 위해 사용한다
-    @Column(name = "participantNumber", nullable = false)
+    @Column(name = "participant_number", nullable = false)
     private int participantNumber;
 
     @Enumerated(EnumType.STRING)
@@ -79,13 +79,16 @@ public class Challenge {
     @Column(name = "requiredWeeklyCount", nullable = false)
     private int requiredWeeklyCount;  // 주당 최소 인증 횟수이다.
 
+    @Column(name = "photo_required", nullable = false)
+    private boolean photoRequired;  // 사진 여부가 필수인지 정하는 값이다.
+
     @CreatedDate
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     @Builder
-    public Challenge(String title, String content, User user, int maxParticipantNumber, ChallengeVisibility challengeVisibility, 
-                     LocalDate startDate, LocalDate endDate, int requiredWeeklyCount) {
+    public Challenge(String title, String content, User user, int maxParticipantNumber, ChallengeVisibility challengeVisibility,
+                     LocalDate startDate, LocalDate endDate, int requiredWeeklyCount, boolean photoRequired) {
         this.title = title;
         this.content = content;
         this.user = user;
@@ -95,6 +98,7 @@ public class Challenge {
         this.startDate = startDate;
         this.endDate = endDate;
         this.requiredWeeklyCount = requiredWeeklyCount;
+        this.photoRequired = photoRequired;
     }
 
     /*

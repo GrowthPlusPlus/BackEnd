@@ -3,6 +3,7 @@
 package me.jsu.springbootdeveloper.repository.challenge;
 
 import me.jsu.springbootdeveloper.domain.challenge.ChallengeDailyLog;
+import me.jsu.springbootdeveloper.domain.post.Article;
 import me.jsu.springbootdeveloper.domain.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -33,11 +34,23 @@ public interface ChallengeDailyLogRepository extends JpaRepository<ChallengeDail
         즉 회원탈퇴 시에 데일리 로그 정보가 삭제되지 않도록 fk값을 null로 만드는 역할을 한다.
         쿼리문은 기본적으로 조회문이기 때문에 update를 하기 위해 @Modifying을 사용한다.
      */
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
         update ChallengeDailyLog log
         set log.user = null
         where log.user = :user
     """)
     void detachUser(@Param("user") User user);
+
+    /*
+        챌린지 데일리 로그 테이블에서 특정 article인 행의 article_id 칼럼을 null로 바꾸는 쿼리문이다.
+        게시글 삭제 시에 로그 정보가 삭제되지 않도록 fk 값을 null로 만드는 역할을 한다.
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+        update ChallengeDailyLog log
+        set log.article = null
+        where log.article = :article
+    """)
+    void detachArticle(@Param("article") Article article);
 }

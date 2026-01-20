@@ -2,7 +2,6 @@
 
 package me.jsu.springbootdeveloper.controller.error;
 
-//import me.jsu.springbootdeveloper.domain.challenge.ParticipantNumberException;
 import me.jsu.springbootdeveloper.dto.error.ErrorResponse;
 import me.jsu.springbootdeveloper.service.*;
 import me.jsu.springbootdeveloper.service.challenge.ChallengeNotFoundException;
@@ -11,6 +10,8 @@ import me.jsu.springbootdeveloper.service.cloudinary.CloudinaryUploadException;
 import me.jsu.springbootdeveloper.service.oauth.OAuthLoginException;
 import me.jsu.springbootdeveloper.service.post.ArticleAccessDeniedException;
 import me.jsu.springbootdeveloper.service.post.ArticleNotFoundException;
+import me.jsu.springbootdeveloper.service.post.CommentAccessDeniedException;
+import me.jsu.springbootdeveloper.service.post.CommentNotFoundException;
 import me.jsu.springbootdeveloper.service.tag.TagNotFoundException;
 import me.jsu.springbootdeveloper.service.token.InvalidTokenException;
 import me.jsu.springbootdeveloper.service.token.TokenNotFoundException;
@@ -125,7 +126,7 @@ public class GlobalExceptionHandler {
         DB에서 챌린지를 검색하지 못한 경우의 핸들러이다.
     */
     @ExceptionHandler(ChallengeNotFoundException.class)
-    public ResponseEntity<ErrorResponse>  handleArticleNotFound(
+    public ResponseEntity<ErrorResponse>  handleChallengeNotFound(
             ChallengeNotFoundException e
     ) {
         return ResponseEntity
@@ -140,7 +141,7 @@ public class GlobalExceptionHandler {
         클라우디너리에 사진을 업로드하지 못한 경우의 핸들러이다.
     */
     @ExceptionHandler(CloudinaryUploadException.class)
-    public ResponseEntity<ErrorResponse>  handleArticleNotFound(
+    public ResponseEntity<ErrorResponse>  handleCloudinaryError(
             CloudinaryUploadException e
     ) {
         return ResponseEntity
@@ -185,13 +186,43 @@ public class GlobalExceptionHandler {
         DB에 태그가 존재하지 않을 경우의 핸들러이다.
      */
     @ExceptionHandler(TagNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleDuplicateNickname(
+    public ResponseEntity<ErrorResponse> handleTagNotFound(
             TagNotFoundException e
     ) {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse(
                         "TAG_NOT_FOUND",
+                        e.getErrorCode()
+                ));
+    }
+
+    /*
+        DB에 댓글이 존재하지 않을 경우의 핸들러이다.
+     */
+    @ExceptionHandler(CommentNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleTagNotFound(
+            CommentNotFoundException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(
+                        "COMMENT_NOT_FOUND",
+                        e.getErrorCode()
+                ));
+    }
+
+    /*
+        올바르지 않은 유저가 댓글 수정/삭제를 시도하는 경우의 핸들러이다.
+     */
+    @ExceptionHandler(CommentAccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleTagNotFound(
+            CommentAccessDeniedException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(new ErrorResponse(
+                        "COMMENT_ACCESS_DENIED",
                         e.getErrorCode()
                 ));
     }

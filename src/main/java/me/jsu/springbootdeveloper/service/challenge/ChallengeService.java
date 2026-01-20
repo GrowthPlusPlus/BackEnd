@@ -4,6 +4,11 @@ package me.jsu.springbootdeveloper.service.challenge;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import me.jsu.springbootdeveloper.domain.challenge.Challenge;
+import me.jsu.springbootdeveloper.domain.challenge.ChallengeDailyLog;
+import me.jsu.springbootdeveloper.domain.challenge.ChallengeParticipant;
+import me.jsu.springbootdeveloper.domain.challenge.ChallengeWeeklyStatus;
+import me.jsu.springbootdeveloper.domain.post.Article;
 import me.jsu.springbootdeveloper.domain.challenge.*;
 import me.jsu.springbootdeveloper.domain.user.User;
 import me.jsu.springbootdeveloper.dto.ChallengeRequestDto;
@@ -17,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 /*
     챌린지와 관련된 일을 처리하는 클래스이다.
@@ -147,5 +153,33 @@ public class ChallengeService {
     @Transactional
     public void detachLogToUser(User user) {
         challengeDailyLogRepository.detachUser(user);
+    }
+
+    /*
+        챌린지 데일리 로그의 인증글 fk값을 null로 바꿔주는 함수이다.
+        인증글 삭제 시에 사용한다.
+     */
+    @Transactional
+    public void detachLogToArticle(Article article) {
+        challengeDailyLogRepository.detachArticle(article);
+    }
+
+    /*
+        특정 챌린지를 완수한 경우, 연속 챌린지 달성 일수와 총 챌린지 일수를 업데이트하기 위해 호출하는 함수이다.
+        반드시 하루에 최대 한 번만 수행한다.
+     */
+    @Transactional
+    public void succeedChallenge(Long userId, Long challengeId) {
+        // 챌린지 참여 DB를 검색한다.
+        ChallengeParticipant challengeParticipant = findByUser_IdAndChallenge_IdForParticipant(userId, challengeId);
+        challengeParticipant.recordDailySuccess(LocalDate.now());  // 챌린지 참여 DB를 업데이트 한다.
+    }
+
+    /*
+        챌린지 참여자 DB를 챌린지 id, 유저 id로 검색한다.
+     */
+    public ChallengeParticipant findByUser_IdAndChallenge_IdForParticipant(Long userId, Long challengeId) {
+        return challengeParticipantRepository.findByUser_IdAndChallenge_Id(userId, challengeId)
+                .orElseThrow(() -> new ChallengeNotFoundException("CHALLENGE_PARTICIPANT_NOT_FOUND"));
     }
 }

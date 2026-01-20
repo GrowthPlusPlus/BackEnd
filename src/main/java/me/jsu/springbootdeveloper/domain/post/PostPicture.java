@@ -36,7 +36,7 @@ public class PostPicture {
     @JoinColumn(name = "article_id", nullable = false)
     private Article article;  // 사진이 저장될 게시글
 
-    @Column(name = "cloudinary_public_id", nullable = false)
+    @Column(name = "cloudinary_public_id")
     private String cloudinaryPublicId;
 
     @Column(name = "image_url", columnDefinition = "TEXT")

@@ -11,6 +11,7 @@ import me.jsu.springbootdeveloper.domain.user.User;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Table(
@@ -53,17 +54,70 @@ public class ChallengeParticipant {
     private User user;
 
     @CreatedDate
-    @Column(name = "joined_at", nullable = false)
-    private LocalDateTime joinedAt;  // 유저가 챌린지에 참여한 시간이다.
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;  // 유저가 챌린지에 참여한 시간이다.
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private Status status;  // 현재 유저가 참여한 해당 챌린지의 상태이다. 진행중, 실패, 완료 상태가 있다.
+
+    @Column(name = "total_success_days", nullable = false)
+    private int totalSuccessDays;  // 해당 챌린지의 총 달성 일수이다.
+
+    @Column(name = "current_streak_days", nullable = false)
+    private int currentStreakDays;  // 해당 챌린지의 연속 달성 일수이다.
+
+    // 연속 달성 일수를 계산하기 위해 사용한다.
+    @Column(name = "current_streak_start_date")
+    private LocalDate currentStreakStartDate;
+
+    @Column(name = "current_streak_end_date")
+    private LocalDate currentStreakEndDate;
+
+    @Column(name = "max_streak_days", nullable = false)
+    private int maxStreakDays;  // 해당 챌린지의 최고 연속 달성 일수이다.
+
+    // 연속 최고 달성 일수를 계산하기 위해 사용한다.
+    @Column(name = "max_streak_start_date")
+    private LocalDate maxStreakStartDate;
+
+    @Column(name = "max_streak_end_date")
+    private LocalDate maxStreakEndDate;
 
     @Builder
     public ChallengeParticipant(Challenge challenge, User user) {
         this.challenge = challenge;
         this.user = user;
         this.status = Status.IN_PROGRESS;  // 처음 챌린지에 참여하면 진행중인 상태가 된다.
+        this.totalSuccessDays = 0;  // 초기엔 전부 0이다.
+        this.currentStreakDays = 0;
+        this.maxStreakDays = 0;
+    }
+
+    /*
+        해당 챌린지의 달성 일수, 연속 일수, 최대 연속 일수를 업데이트 하는 함수로, 하루에 한 번 인증글을 올렸을 때 수행된다.
+        하루에 무조건 한 번만 수행 되어야 한다.
+     */
+    public void recordDailySuccess(LocalDate today) {
+        // 총 완료 일수를 증가시킨다.
+        totalSuccessDays++;
+
+        // 현재 연속 달성 일수를 처리한다.
+        if (currentStreakEndDate == null ||  // 첫 성공인 경우이다.
+                !currentStreakEndDate.plusDays(1).equals(today)) {  // 연속이 끊긴 경우이다.
+            currentStreakStartDate = today;  // 날짜를 초기화 한다.
+            currentStreakEndDate = today;
+            currentStreakDays = 1;
+        } else {  // 연속 성공 중인 경우이다.
+            currentStreakEndDate = today;
+            currentStreakDays++;
+        }
+
+        // 최대 연속 달성 일수를 처리한다.
+        if (maxStreakStartDate == null || currentStreakDays > maxStreakDays) {  // 처음이거나, 기존 연속 기록보다 높아진 경우이다.
+            maxStreakStartDate = currentStreakStartDate;  // 현재 연속 달성 일수를 최대 인증 달성 횟수에 대입한다.
+            maxStreakEndDate = currentStreakEndDate;
+            maxStreakDays = currentStreakDays;
+        }
     }
 }

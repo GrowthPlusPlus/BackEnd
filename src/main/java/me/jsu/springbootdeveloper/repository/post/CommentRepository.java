@@ -4,10 +4,13 @@ package me.jsu.springbootdeveloper.repository.post;
 
 import me.jsu.springbootdeveloper.domain.post.Comment;
 import me.jsu.springbootdeveloper.domain.user.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+
 
 import java.util.List;
 
@@ -20,11 +23,24 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     /*
         댓글 테이블에서 user가 특정 유저인 모든 행에 대해 user_id 칼럼을 null로 바꾸는 쿼리문이다.
      */
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
         update Comment c
         set c.user = null
         where c.user = :user
     """)
     void detachUser(@Param("user") User user);
+
+    // 댓글과 댓글을 작성한 유저, 유저의 프로필 사진을 함께 조회하는 쿼리문이다.
+    @Query("""
+        select c
+        from Comment c
+        join fetch c.user u
+        left join fetch u.userProfilePicture upp
+        where c.article.id = :postId
+    """)
+    Page<Comment> findByArticleIdWithUser(
+            @Param("postId") Long postId,
+            Pageable pageable
+    );
 }
