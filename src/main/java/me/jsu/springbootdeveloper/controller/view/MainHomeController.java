@@ -2,6 +2,10 @@
 
 package me.jsu.springbootdeveloper.controller.view;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.dto.mainHome.MainHomeResponse;
 import me.jsu.springbootdeveloper.service.view.MainHomeService;
@@ -26,9 +30,27 @@ import java.time.LocalDate;
 public class MainHomeController {
     private final MainHomeService mainHomeService;
 
+    @Operation(
+            summary = "메인 홈 화면 데이터 조회",
+            description = """
+        메인 홈 화면에 필요한 정보를 조회한다.
+        기준 날짜(date)를 받아 해당 날짜가 포함된 주간 데이터와 당일 상태 정보를 함께 반환한다.
+        ex) GET /api/mainHome?date=2025-07-21
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "메인 홈 데이터 조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "404", description = "유저 또는 관련 데이터 없음")
+    })
     @GetMapping("/api/mainHome")
     public ResponseEntity<MainHomeResponse> getMainHome(
             @AuthenticationPrincipal UserDetails userDetails,
+            @Parameter(
+                    description = "기준 날짜 (ISO-8601 형식, yyyy-MM-dd)",
+                    required = true,
+                    example = "2025-07-21"
+            )
             @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate targetDate  // 날짜를 받는다.
     ) {
 

@@ -2,6 +2,9 @@
 
 package me.jsu.springbootdeveloper.controller.oauth;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.dto.oauth.GoogleCodeExchangeRequest;
 import me.jsu.springbootdeveloper.dto.oauth.LoginResponse;
@@ -32,6 +35,25 @@ public class GoogleOAuthController {
 
         함수의 @RequestBody 파라미터는 모바일 앱이 전달한 json 요청 바디로, code (인증 코드), codeVerifier (PKCE 검증용 값)가 들어있다.
      */
+    @Operation(
+            summary = "Google OAuth 로그인 (PKCE)",
+            description = """
+        모바일 앱에서 전달된 Google OAuth authorization code와 PKCE code_verifier를 이용하여 로그인 처리한다.
+        위 값은 모바일 -> 구글 서버로 거치면서서 만든 값이다.
+        해당 값을 우리 서버에서 받아 값을 만들어준 구글 서버와 다시 비교하는 작업을 거친다.
+        따라서 클라이언트는 GoogleCodeExchangeRequest dto를 보내야 한다.
+        
+        로그인 성공 시 Access Token과 Refresh Token, 최초 로그인 사용자 인지에 대한 여부를 반환한다.
+        최초 사용자라면 회원 초기 설정으로 화면을 띄우는데 도움을 준다.
+        ex) POST /api/oauth/google/token
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "OAuth 로그인 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @ApiResponse(responseCode = "401", description = "OAuth 로그인 실패"),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+    })
     @PostMapping("/token")
     public ResponseEntity<LoginResponse> login(@RequestBody GoogleCodeExchangeRequest request) {
         /*
