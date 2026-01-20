@@ -2,6 +2,10 @@
 
 package me.jsu.springbootdeveloper.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.domain.post.Article;
@@ -36,6 +40,19 @@ public class PostApiController {
 
        해당 함수로 챌린지를 인증하기 위해 게시글을 만드는 역할을 한다.
      */
+    @Operation(
+            summary = "인증글 생성",
+            description = """
+        챌린지 인증을 위한 게시글을 생성한다.
+        베이스 코드를 정리하여 만든 함수로, Sprint 1에 해당하지 않아 사진 올리기 기능 등이 없으므로 추후에 수정될 예정으로 참고 X
+        ex) POST /api/articles
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "게시글 생성 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "400", description = "요청 값 검증 실패")
+    })
     @PostMapping("/api/articles")  // post형태는 REST API에서는 생성하는 경우에 사용한다.
     /*
         AddArticleRequest 맴버변수에 맞지 않는 request값이 들어오면 무시한다.
@@ -63,6 +80,18 @@ public class PostApiController {
 
         GET /api/articles?page=0&size=5 를 수정하여 클라이언트가 원하면 검색할 게시글 수를 조절할 수 있다.
      */
+    @Operation(
+            summary = "전체 인증글 조회 (공개 피드 검색 피드 기능)",
+            description = """
+        전체 인증글을 최신순으로 페이징 조회하여 인증글 리스트를 20개씩 페이지 형태로 반환한다.
+        베이스 코드를 정리하여 만든 함수로, Sprint 1에 해당하지 않아 추후에 수정될 수 있으므로 참고 X
+        ex) GET /api/articles?page=0&size=5
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "게시글 목록 조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
+    })
     @GetMapping("/api/articles")
     public ResponseEntity<Page<ArticleResponse>> findAllArticles(
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
@@ -76,8 +105,23 @@ public class PostApiController {
         article id로 인증글 하나를 검색하여 반환하는 함수이다.
         url 경로에서 id값을 추출하여 사용한다.
      */
+    @Operation(
+            summary = "인증글 상세 조회",
+            description = """
+        게시글 ID로 인증글 상세 정보를 조회하여 반환한다.
+        ex) GET /api/articles/1
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "게시글 조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음")
+    })
     @GetMapping("/api/articles/{postId}")
-    public ResponseEntity<ArticleDetailResponse> findArticle(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long postId) {
+    public ResponseEntity<ArticleDetailResponse> findArticle(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Parameter(description = "게시글 ID", required = true, example = "1")
+            @PathVariable Long postId) {
         ArticleDetailResponse response = postService.getPost(userDetails.getUsername(), postId);
 
         return ResponseEntity.ok(response);
@@ -87,8 +131,23 @@ public class PostApiController {
     /*
         게시글 id로 글을 삭제하는 함수이다.
      */
+    @Operation(
+            summary = "인증글 삭제",
+            description = """
+        게시글 ID로 인증글을 삭제한다.
+        ex) DELETE /api/articles/1
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "게시글 삭제 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "삭제 권한 없음"),
+            @ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음")
+    })
     @DeleteMapping("/api/articles/{postId}")
-    public ResponseEntity<Void> deleteArticle(@PathVariable Long postId) {
+    public ResponseEntity<Void> deleteArticle(
+            @Parameter(description = "게시글 ID", required = true, example = "1")
+            @PathVariable Long postId) {
         postService.delete(postId);
 
         return ResponseEntity.noContent().build();  // 삭제에 성공하면 204를 반환한다.
@@ -98,8 +157,24 @@ public class PostApiController {
         url에서 게시글 id를 받고, dto형태의 request를 받아 블로그 글을 수정한다.
         들어올 때는 json형태지만, 스프링이 자동으로 dto형태로 변환해준다.
      */
+    @Operation(
+            summary = "인증글 수정",
+            description = """
+        게시글 ID로 인증글 내용을 수정한다.
+        ex) PATCH /api/articles/1
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "게시글 수정 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "수정 권한 없음"),
+            @ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음")
+    })
     @PatchMapping("/api/articles/{id}")
-    public ResponseEntity<ArticleResponse> updateArticle(@PathVariable Long id, @RequestBody UpdateArticleRequest request) {
+    public ResponseEntity<ArticleResponse> updateArticle(
+            @Parameter(description = "게시글 ID", required = true, example = "1")
+            @PathVariable Long id,
+            @RequestBody UpdateArticleRequest request) {
         Article updataArticle = postService.update(id, request);
 
         return ResponseEntity.ok(
@@ -110,8 +185,25 @@ public class PostApiController {
         article id로 인증글의 댓글 목록을 조회해주는 컨트롤러이다.
         GET /api/articles/{postId}/comments?page={page} 와 같이 클라이언트가 요청한다.
      */
+    @Operation(
+            summary = "댓글 목록 조회",
+            description = """
+        게시글의 댓글 목록을 페이지 단위로 20개씩 조회하여 반환한다.
+        ex) GET /api/articles/1/comments?page=0
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "댓글 목록 조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음")
+    })
     @GetMapping("/api/articles/{postId}/comments")
-    public ResponseEntity<Page<CommentResponse>> getComments(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long postId, @RequestParam int page) {
+    public ResponseEntity<Page<CommentResponse>> getComments(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Parameter(description = "게시글 ID", required = true, example = "1")
+            @PathVariable Long postId,
+            @Parameter(description = "페이지 번호 (0부터 시작)", required = true, example = "0")
+            @RequestParam int page) {
         Page<CommentResponse> responses = commentService.getComments(userDetails.getUsername(), postId, page);
 
         return ResponseEntity.ok(responses);
@@ -119,11 +211,26 @@ public class PostApiController {
 
     /*
         인증글에 댓글을 작성해주는 컨트롤러이다.
-        인증글 작성 후 화면 업데이트를 위해서 앱이 조회 컨트톨러를 다시 호출해야 한다.
+        댓글 작성 후 화면 업데이트를 위해서 앱이 조회 컨트톨러를 다시 호출해야 한다.
      */
+    @Operation(
+            summary = "댓글 생성",
+            description = """
+        게시글에 댓글을 작성한다.
+        댓글 작성 후에 화면 업데이트를 위해 앱이 전체 댓글을 다시 조회해야 한다.
+        ex) POST /api/articles/1/comments
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "댓글 생성 성공"),
+            @ApiResponse(responseCode = "400", description = "댓글 내용 검증 실패"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음")
+    })
     @PostMapping("/api/articles/{postId}/comments")
     public ResponseEntity<Void> createComment(
             @AuthenticationPrincipal UserDetails userDetails,
+            @Parameter(description = "게시글 ID", required = true, example = "1")
             @PathVariable Long postId,
             @RequestBody @Valid CommentCreateRequest request  // 해당 요청이 NotBlank 조건을 만족하는지 검사한다.
     ) {
@@ -135,9 +242,24 @@ public class PostApiController {
     /*
         인증글의 댓글을 수정하는 컨트롤러이다.
      */
+    @Operation(
+            summary = "댓글 수정",
+            description = """
+        댓글 ID로 댓글 내용을 수정한다.
+        ex) PATCH /api/comments/1
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "댓글 수정 성공"),
+            @ApiResponse(responseCode = "400", description = "댓글 내용 검증 실패"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "수정 권한 없음"),
+            @ApiResponse(responseCode = "404", description = "댓글을 찾을 수 없음")
+    })
     @PatchMapping("/api/comments/{commentId}")
     public ResponseEntity<Void> updateComment(
             @AuthenticationPrincipal UserDetails userDetails,
+            @Parameter(description = "댓글 ID", required = true, example = "1")
             @PathVariable Long commentId,
             @RequestBody @Valid CommentUpdateRequest request
     ) {
@@ -149,9 +271,23 @@ public class PostApiController {
     /*
         인증글의 댓글을 삭제하는 컨트롤러이다. 댓글 id로 삭제한다.
      */
+    @Operation(
+            summary = "댓글 삭제",
+            description = """
+        댓글 ID로 댓글을 삭제한다.
+        ex) DELETE /api/comments/1
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "댓글 삭제 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "삭제 권한 없음"),
+            @ApiResponse(responseCode = "404", description = "댓글을 찾을 수 없음")
+    })
     @DeleteMapping("/api/comments/{commentId}")
     public ResponseEntity<Void> deleteComment(
             @AuthenticationPrincipal UserDetails userDetails,
+            @Parameter(description = "댓글 ID", required = true, example = "1")
             @PathVariable Long commentId
     ) {
         commentService.deleteComment(userDetails.getUsername(), commentId);
