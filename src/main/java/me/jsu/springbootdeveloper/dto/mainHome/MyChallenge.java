@@ -11,6 +11,7 @@ import lombok.Getter;
 @Builder
 @Getter
 public class MyChallenge {
+    private Long challengeId;
     private String title;
     private String content;  // 챌린지 설명이다.
     private int maxParticipantNumber;

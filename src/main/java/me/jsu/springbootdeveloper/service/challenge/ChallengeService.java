@@ -4,21 +4,23 @@ package me.jsu.springbootdeveloper.service.challenge;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import me.jsu.springbootdeveloper.domain.challenge.Challenge;
-import me.jsu.springbootdeveloper.domain.challenge.ChallengeDailyLog;
-import me.jsu.springbootdeveloper.domain.challenge.ChallengeParticipant;
-import me.jsu.springbootdeveloper.domain.challenge.ChallengeWeeklyStatus;
+import me.jsu.springbootdeveloper.domain.challenge.*;
 import me.jsu.springbootdeveloper.domain.post.Article;
 import me.jsu.springbootdeveloper.domain.user.User;
-import me.jsu.springbootdeveloper.repository.challenge.ChallengeDailyLogRepository;
-import me.jsu.springbootdeveloper.repository.challenge.ChallengeParticipantRepository;
-import me.jsu.springbootdeveloper.repository.challenge.ChallengeRepository;
-import me.jsu.springbootdeveloper.repository.challenge.ChallengeWeeklyStatusRepository;
+import me.jsu.springbootdeveloper.domain.user.UserProfilePicture;
+import me.jsu.springbootdeveloper.dto.challenge.ChallengeMemberResponse;
+import me.jsu.springbootdeveloper.repository.challenge.*;
+import me.jsu.springbootdeveloper.repository.post.PostRepository;
+import me.jsu.springbootdeveloper.service.UserService;
+import me.jsu.springbootdeveloper.service.post.PostService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 /*
     챌린지와 관련된 일을 처리하는 클래스이다.
@@ -30,6 +32,9 @@ public class ChallengeService {
     private final ChallengeParticipantRepository challengeParticipantRepository;
     private final ChallengeDailyLogRepository challengeDailyLogRepository;
     private final ChallengeWeeklyStatusRepository challengeWeeklyStatusRepository;
+    private final ChallengeInviteLinkRepository challengeInviteLinkRepository;
+    private final UserService userService;
+    private final PostRepository postRepository;
 
     /*
         챌린지 id로 챌린지를 검색해주는 함수이다.
@@ -83,7 +88,7 @@ public class ChallengeService {
                 단 챌린지를 삭제하는 행위는 또한 챌린지 CASCADE 설정이나 예외처리를 해야한다.
              */
             if (participants.isEmpty()) {
-                challengeRepository.delete(challenge);
+                deleteChallengeInternal(challenge.getId());
                 continue;  // 다음 챌린지를 검색한다.
             }
 
@@ -94,8 +99,8 @@ public class ChallengeService {
     }
 
     /*
-        챌린지에서 유저가 나올때 사용하는 함수이다.
-        회원탈퇴의 경우, 방장 위임이 끝난 뒤에 사용해야 한다.
+        모든 챌린지에서 유저가 나올때 사용하는 함수이다. 회원탈퇴 시에 사용된다.
+        해당 함수는 방장 위임이 끝난 뒤에 사용해야 한다.
      */
     @Transactional
     public void deleteParticipant(Long userId) {
@@ -146,5 +151,171 @@ public class ChallengeService {
     public ChallengeParticipant findByUser_IdAndChallenge_IdForParticipant(Long userId, Long challengeId) {
         return challengeParticipantRepository.findByUser_IdAndChallenge_Id(userId, challengeId)
                 .orElseThrow(() -> new ChallengeNotFoundException("CHALLENGE_PARTICIPANT_NOT_FOUND"));
+    }
+
+    /*
+        해당 챌린지에 대해 유저가 방장인지 검사한다.
+     */
+    public boolean isOwner(Long userId, Long challengeId) {
+        return challengeRepository.existsByIdAndUser_Id(challengeId, userId);
+    }
+
+    /*
+        isOwner에서 검사한 값을 바탕으로 해당 사용자가 방장인지 검사한다.
+     */
+    public void validateOwner(boolean challengeOwner) {
+        if (!challengeOwner) {
+            throw new NotAllowedChallengeActionException("NOT_CHALLENGE_OWNER");
+        }
+    }
+
+    /*
+        컨트롤러와 연결된 챌린지에서 유저가 나갈 수 있도록 하는 함수이다.
+        컨트롤러-서비스 구조의 일관성을 위해 실제 처리 함수랑 분리한다.
+     */
+    @Transactional
+    public void leaveChallenge(String email, Long challengeId) {
+        User user = userService.findByEmail(email);
+        leaveChallengeInternal(user.getId(), challengeId);
+    }
+
+    /*
+        챌린지에서 유저가 나갈 수 있도록 하는 함수이다.
+        방장은 나가기가 불가능하며, 관련된 종속 데이터를 정리한다.
+        서비스 내부에서 사용하기 위해 유저 id로 삭제한다.
+     */
+    public void leaveChallengeInternal(Long userId, Long challengeId) {
+        Challenge challenge = findById(challengeId);
+
+        // 해당 챌린자 참여자를 검색한다.
+        ChallengeParticipant challengeParticipant = findByUser_IdAndChallenge_IdForParticipant(userId, challengeId);
+
+        // 방장 여부를 판단한다.
+        boolean ChallengeOwner = isOwner(userId, challengeId);
+
+        // 방장은 나가기가 불가하다는 예외를 던진다.
+        if (ChallengeOwner) {
+            throw new ChallengeOwnerCannotLeaveException("CHALLENGE_OWNER_CANNOT_LEAVE");
+        }
+
+        /*
+            챌린지에서 나가면 의미 없는 종속 DB 값들을 유저 id와 챌린지 id로 삭제한다.
+            챌린지 초대 링크, 챌린지 위크 스테이터스 DB가 이에 해당한다.
+         */
+        challengeInviteLinkRepository.deleteByUser_IdAndChallenge_Id(userId, challengeId);
+        challengeWeeklyStatusRepository.deleteByUser_IdAndChallenge_Id(userId, challengeId);
+
+        // 참여자 정보를 실제로 삭제한다.
+        challengeParticipantRepository.delete(challengeParticipant);
+
+        // 챌린지의 전체 참여자 수를 감소시킨다.
+        challenge.updateLeave();
+    }
+
+    /*
+        챌린지에 참여한 유저를 검색하는 함수이다.
+     */
+    public Page<ChallengeMemberResponse> getMembers(String email, Long challengeId, int page, String nickname) {
+        User user = userService.findByEmail(email);
+
+        Pageable pageable = PageRequest.of(
+                page,           // page
+                20,             // 한 페이지 당 읽을 인증글 개수
+                Sort.by(Sort.Order.asc("user.nickname"))  // 닉네임을 기준으로 오름차순 검색한다.
+        );
+
+        // 방장이 챌린지 참여자인지 확인한다.
+        findByUser_IdAndChallenge_IdForParticipant(user.getId(), challengeId);
+
+        Page<ChallengeParticipant> challengeParticipants =
+                challengeParticipantRepository.findMembersWithUserAndPicture(
+                        challengeId, (nickname == null || nickname.isBlank()) ? null : nickname, pageable
+                );
+
+        // 검색한 맴버를 ChallengeMemberResponse에 매핑하여 반환한다.
+        return challengeParticipants.map(challengeParticipant -> {
+            User userEntity = challengeParticipant.getUser();
+            UserProfilePicture picture = userEntity.getUserProfilePicture();
+
+            return new ChallengeMemberResponse(
+                    userEntity.getId(),
+                    userEntity.getNickname(),
+                    picture != null ? picture.getImageUrl() : null  // 프로필 사진이 null값인지 아닌지 검사한다.
+            );
+        });
+    }
+
+    /*
+        챌린지의 방장을 위임하기 위한 함수이다.
+     */
+    @Transactional
+    public void delegateOwner(String email, Long challengeId, Long targetUserId, boolean leaveAfterDelegate) {
+        User user = userService.findByEmail(email);
+
+        // 챌린지를 조회한다.
+        Challenge challenge = findById(challengeId);
+
+        // 방장 권한을 검증한다.
+        validateOwner(isOwner(user.getId(), challengeId));
+
+        // 위임 대상자가 참여자가 맞는지 검증하고 검색한다.
+        ChallengeParticipant targetParticipant = findByUser_IdAndChallenge_IdForParticipant(targetUserId, challengeId);
+
+        // 방장을 변경한다.
+        challenge.updateUser(targetParticipant.getUser());
+
+        // 이전의 방장이 챌린지에 남을지, 나갈지 선택한다.
+        if (leaveAfterDelegate) {
+            leaveChallengeInternal(user.getId(), challengeId);
+        }
+    }
+
+    /*
+        챌린지에서 유저를 추방하기 위한 함수이다.
+     */
+    @Transactional
+    public void kickMember(String email, Long challengeId, Long targetUserId) {
+        User user = userService.findByEmail(email);
+
+        // 추방하려는 사용자가 방장인지 검증한다.
+        validateOwner(isOwner(user.getId(), challengeId));
+
+        // 자기 자신을 추방하는 것을 방지한다.
+        if (user.getId().equals(targetUserId)) {
+            throw new NotAllowedChallengeActionException("CANNOT_KICK_OWNER");
+        }
+
+        // 대상 유저를 추방한다.
+        leaveChallengeInternal(targetUserId, challengeId);
+    }
+
+    /*
+        챌린지를 삭제하는 서비스 클래스이다.
+        컨트롤러-서비스 구조를 유지하기 위해 사용한다.
+     */
+    @Transactional
+    public void deleteChallenge(String email, Long challengeId) {
+        User user = userService.findByEmail(email);
+
+        // 방장 권한을 검증한다.
+        validateOwner(isOwner(user.getId(), challengeId));
+
+        // 챌린지를 삭제한다.
+        deleteChallengeInternal(challengeId);
+    }
+
+    /*
+        챌린지를 실제로 삭제하는 서비스 클래스이다. 내부적으로 재사용하기 위해 분리하여 사용한다.
+        데일리 로그, 인증글은 FK만 null 처리하고, 나머지 종속된 DB값들은 cascade 옵션으로 자동 삭제한다.
+     */
+    public void deleteChallengeInternal(Long challengeId) {
+        Challenge challenge = findById(challengeId);
+
+        // 데일리 로그, 인증글의 fK값을 null 처리한다.
+        challengeDailyLogRepository.detachChallenge(challenge);
+        postRepository.detachChallenge(challenge);  // 순환참조 방지를 위해 서비스를 사용하지 않고 직접 사용한다.
+
+        // 챌린지를 삭제한다. 나머지 종속된 값들은 cascade REMOVE 옵션으로 자동 삭제된다.
+        challengeRepository.delete(challenge);
     }
 }

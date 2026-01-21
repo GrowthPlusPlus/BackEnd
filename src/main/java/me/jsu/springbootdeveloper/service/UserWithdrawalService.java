@@ -8,6 +8,8 @@ import me.jsu.springbootdeveloper.domain.user.User;
 import me.jsu.springbootdeveloper.domain.user.UserProfilePicture;
 import me.jsu.springbootdeveloper.service.challenge.ChallengeService;
 import me.jsu.springbootdeveloper.service.cloudinary.CloudinaryService;
+import me.jsu.springbootdeveloper.service.post.CommentService;
+import me.jsu.springbootdeveloper.service.post.PostLikeService;
 import me.jsu.springbootdeveloper.service.post.PostService;
 import me.jsu.springbootdeveloper.service.token.RefreshTokenService;
 import org.springframework.stereotype.Service;
@@ -24,6 +26,8 @@ public class UserWithdrawalService {
     private final RefreshTokenService refreshTokenService;
     private final ChallengeService challengeService;
     private final PostService postService;
+    private final CommentService commentService;
+    private final PostLikeService postLikeService;
     private final CloudinaryService cloudinaryService;
 
     @Transactional
@@ -36,8 +40,8 @@ public class UserWithdrawalService {
         // 게시글, 로그, 댓글, 좋아요, 유저 통계 등의 정보는 FK를 해제하여 회원이 사라져도 남겨두도록 한다.
         challengeService.detachLogToUser(user);  // 로그 해제
         postService.detachPostToUser(user);  // 게시글 해제
-        postService.detachCommentToUser(user);  // 댓글 해제
-        postService.detachLikeToUser(user);  // 좋아요 해제
+        commentService.detachCommentToUser(user);  // 댓글 해제
+        postLikeService.detachLikeToUser(user);  // 좋아요 해제
         userService.detachStatistics(user);  // 통계 해제
 
         // 참여한 챌린지에서 나온다. CASCADE에 의존하지 않고 직접 구현한 챌린지 서비스의 삭제를 사용한다.

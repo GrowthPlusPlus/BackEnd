@@ -130,6 +130,7 @@ public class MainHomeService {
 
             // 챌린지에 관한 정보를 종합하여 List에 넣는다.
             myChallenges.add(MyChallenge.builder()
+                    .challengeId(challengeId)
                     .title(challenge.getTitle())
                     .content(challenge.getContent())
                     .maxParticipantNumber(challenge.getMaxParticipantNumber())

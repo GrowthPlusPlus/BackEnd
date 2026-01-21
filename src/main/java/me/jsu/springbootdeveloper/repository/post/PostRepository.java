@@ -2,6 +2,7 @@
 
 package me.jsu.springbootdeveloper.repository.post;
 
+import me.jsu.springbootdeveloper.domain.challenge.Challenge;
 import me.jsu.springbootdeveloper.domain.post.Article;
 import me.jsu.springbootdeveloper.domain.challenge.ChallengeVisibility;
 import me.jsu.springbootdeveloper.domain.user.User;
@@ -87,17 +88,21 @@ public interface PostRepository extends JpaRepository<Article, Long> {
             left join PostPicture i on i.article = p
             where p.user.id = :userId
               and p.challenge.id = :challengeId
+              and p.postDate between :start and :end
         """,
         countQuery = """
             select count(p)
             from Article p
             where p.user.id = :userId
               and p.challenge.id = :challengeId
+              and p.postDate between :start and :end
         """
     )
     Page<ChallengeCalendarPostResponse> findCalendarPosts(
             @Param("userId") Long userId,
             @Param("challengeId") Long challengeId,
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end,
             Pageable pageable
     );
 
@@ -119,4 +124,16 @@ public interface PostRepository extends JpaRepository<Article, Long> {
         where a.id = :articleId
     """)
     Optional<Article> findByIdWithImages(@Param("articleId") Long postId);
+
+    /*
+        인증글 테이블에서 특정 challenge인 행의 challenge_id 칼럼을 null로 바꾸는 쿼리문이다.
+        챌린지 삭제 시에 인증글이 삭제되지 않도록 fk 값을 null로 만드는 역할을 한다.
+     */
+    @Modifying
+    @Query("""
+        update Article a
+        set a.challenge = null
+        where a.challenge = :challenge
+    """)
+    void detachChallenge(@Param("challenge") Challenge challenge);
 }

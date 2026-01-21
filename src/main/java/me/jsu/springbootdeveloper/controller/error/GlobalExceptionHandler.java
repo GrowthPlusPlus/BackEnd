@@ -5,6 +5,8 @@ package me.jsu.springbootdeveloper.controller.error;
 import me.jsu.springbootdeveloper.dto.error.ErrorResponse;
 import me.jsu.springbootdeveloper.service.*;
 import me.jsu.springbootdeveloper.service.challenge.ChallengeNotFoundException;
+import me.jsu.springbootdeveloper.service.challenge.ChallengeOwnerCannotLeaveException;
+import me.jsu.springbootdeveloper.service.challenge.NotAllowedChallengeActionException;
 import me.jsu.springbootdeveloper.service.cloudinary.CloudinaryDeleteException;
 import me.jsu.springbootdeveloper.service.cloudinary.CloudinaryUploadException;
 import me.jsu.springbootdeveloper.service.oauth.OAuthLoginException;
@@ -223,6 +225,36 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.FORBIDDEN)
                 .body(new ErrorResponse(
                         "COMMENT_ACCESS_DENIED",
+                        e.getErrorCode()
+                ));
+    }
+
+    /*
+        챌린지 방장이 챌린지에서 나가기를 시도하는 경우의 핸들러이다.
+     */
+    @ExceptionHandler(ChallengeOwnerCannotLeaveException.class)
+    public ResponseEntity<ErrorResponse> handleTagNotFound(
+            ChallengeOwnerCannotLeaveException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(
+                        "CHALLENGE_OWNER_CANNOT_LEAVE",
+                        e.getErrorCode()
+                ));
+    }
+
+    /*
+        챌린지에 관한 행동 중, 허용되지 않은 행위를 수행할 때 발생하는 경우를 처리하는 핸들러이다.
+     */
+    @ExceptionHandler(NotAllowedChallengeActionException.class)
+    public ResponseEntity<ErrorResponse> handleTagNotFound(
+            NotAllowedChallengeActionException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(new ErrorResponse(
+                        "NOT_ALLOWED_CHALLENGE_ACTION",
                         e.getErrorCode()
                 ));
     }

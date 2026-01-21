@@ -50,7 +50,7 @@ public class ChallengeDailyLog {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "challenge_id", nullable = false)
+    @JoinColumn(name = "challenge_id", nullable = true)
     private Challenge challenge;
 
     @OneToOne(fetch = FetchType.LAZY)  // 하루에 한 게시글 당 하나의 로그만 생성되므로 OneToOne 관계이다.
