@@ -59,7 +59,7 @@ public class Challenge {
     @Column(name = "title", nullable = false)
     private String title;
 
-    @Column(name = "content", nullable = false)
+    @Column(name = "content")
     private String content;
 
     @Column(name = "max_participant_number", nullable = false)
@@ -120,17 +120,14 @@ public class Challenge {
     }
 
     /*
-        챌린지의 내용을 업데이트하는 함수이다.
-        챌린지의 이름, 마스터 유저, 최대 참여자 수, 참여자 수를 제외하고 수정이 가능하다.
+        챌린지 설을 변경하는 함수이다. 챌린지 이름, 챌린지 시작일을 제외하고 수정이 가능하다.
      */
-    public void update(String content, ChallengeVisibility challengeVisibility) {
-        if (content != null) {
-            this.content = content;
-        }
-
-        if (challengeVisibility != null) {
-            this.challengeVisibility = challengeVisibility;
-        }
+    public void updateSettings(LocalDate endDate, int requiredWeeklyCount, String content, Boolean photoRequired, ChallengeVisibility challengeVisibility) {
+        this.endDate = endDate;
+        this.requiredWeeklyCount = requiredWeeklyCount;
+        this.content = content;
+        this.photoRequired =  photoRequired;
+        this.challengeVisibility = challengeVisibility;
     }
 
     /*

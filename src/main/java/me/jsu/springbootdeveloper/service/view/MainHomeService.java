@@ -102,8 +102,12 @@ public class MainHomeService {
             /*
                 이번 주 챌린지가 실패에 임박했는지 판단한다. 오늘만 판단하고 과거나 미래는 판단하지 않는다.
                 또한 오늘 안 했고, 실패에 임박하면 경고한다. 오늘 이미 했다면 실패 위험 경고를 줄 이유가 없다.
+                만약 챌린지를 시작한 첫 주라면 해당 경고를 보여주지 않는다. 물리적으로 불가능할 수 있기 때문이다.
+
+                즉 요청받은 날짜가 오늘이며, 오늘 챌린지를 안했고, 챌린지의 시작이 첫 주가 아니라면 if문에 진입한다.
              */
-            if (isToday && !isDoIt) {
+            boolean isFirstWeek = !challengeParticipant.getCreatedAt().toLocalDate().isBefore(weekStartDate);  // 챌린지 시작이 첫 주인지 확인한다.
+            if (isToday && !isDoIt && !isFirstWeek) {
                 ChallengeWeeklyStatus weeklyStatus = weeklyStatusMap.get(challengeId);
 
                 // 이번 주 성공 횟수를 계산한다. weeklyStatus 값 자체가 존재하지 않으면 0회로 간주한다.

@@ -6,13 +6,18 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.domain.challenge.*;
 import me.jsu.springbootdeveloper.domain.post.Article;
+import me.jsu.springbootdeveloper.domain.tag.Tag;
+import me.jsu.springbootdeveloper.domain.tag.TagToChallenge;
 import me.jsu.springbootdeveloper.domain.user.User;
 import me.jsu.springbootdeveloper.domain.user.UserProfilePicture;
 import me.jsu.springbootdeveloper.dto.challenge.ChallengeMemberResponse;
+import me.jsu.springbootdeveloper.dto.tag.TagResponse;
 import me.jsu.springbootdeveloper.repository.challenge.*;
 import me.jsu.springbootdeveloper.repository.post.PostRepository;
+import me.jsu.springbootdeveloper.repository.tag.TagToChallengeRepository;
 import me.jsu.springbootdeveloper.service.UserService;
-import me.jsu.springbootdeveloper.service.post.PostService;
+import me.jsu.springbootdeveloper.dto.challenge.*;
+import me.jsu.springbootdeveloper.service.tag.TagService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,6 +25,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /*
@@ -33,6 +39,7 @@ public class ChallengeService {
     private final ChallengeDailyLogRepository challengeDailyLogRepository;
     private final ChallengeWeeklyStatusRepository challengeWeeklyStatusRepository;
     private final ChallengeInviteLinkRepository challengeInviteLinkRepository;
+    private final TagService tagService;
     private final UserService userService;
     private final PostRepository postRepository;
 
@@ -317,5 +324,57 @@ public class ChallengeService {
 
         // 챌린지를 삭제한다. 나머지 종속된 값들은 cascade REMOVE 옵션으로 자동 삭제된다.
         challengeRepository.delete(challenge);
+    }
+
+    /*
+        사용자에게 기존 챌린지 설정 정보를 반환하는 함수이다.
+     */
+    public ChallengeSettingsResponse getSettings(Long challengeId) {
+        Challenge challenge = findById(challengeId);
+
+        // 챌린지 인증 기간을 int로 구한다.
+        int endDate = (int) ChronoUnit.DAYS.between(challenge.getStartDate(), challenge.getEndDate());
+
+        // 챌린지 id로 연관된 태그들을 검색한다.
+        List<TagResponse> tagChallenge = tagService.getChallengeTags(challengeId);
+
+        // 서버의 모든 태그를 검색한다.
+        List<TagResponse> tags = tagService.getAllTags();
+
+        return ChallengeSettingsResponse.builder()
+                .title(challenge.getTitle())
+                .startDate(challenge.getStartDate())
+                .endDate(endDate)
+                .requiredWeeklyCount(challenge.getRequiredWeeklyCount())
+                .challengeTags(tagChallenge)
+                .allTags(tags)
+                .content(challenge.getContent())
+                .photoRequired(challenge.isPhotoRequired())
+                .challengeVisibility(challenge.getChallengeVisibility())
+                .build();
+    }
+
+    /*
+        챌린지 설정을 바꾸는 함수이다.
+     */
+    @Transactional
+    public void updateSettings(String email, Long challengeId, int endDateInteger, int requiredWeeklyCount, List<Long> tagIds,
+                String content, boolean photoRequired, ChallengeVisibility challengeVisibility) {
+        User user = userService.findByEmail(email);
+        Challenge challenge = findById(challengeId);
+
+        // 방장인지 검증한다.
+        validateOwner(isOwner(user.getId(), challengeId));
+
+        // int로 들어온 종료일을 LocalDate 형식으로 변환한다.
+        LocalDate endDate = challenge.getStartDate().plusDays(endDateInteger);
+        
+        tagService.deleteAllChallenge_Id(challengeId);  // 기존 챌린지-태그 매핑을 모두 삭제한다.
+
+        // 요청 태그로 업데이트 한다.
+        tagService.updateChallengeTags(tagIds, challenge);
+
+        // 설정 값을 업데이트 한다. content값은 null이 될 수 있다.
+        challenge.updateSettings(endDate, requiredWeeklyCount, content, photoRequired, challengeVisibility);
     }
 }

@@ -4,11 +4,14 @@ package me.jsu.springbootdeveloper.service.tag;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import me.jsu.springbootdeveloper.domain.challenge.Challenge;
 import me.jsu.springbootdeveloper.domain.tag.Tag;
+import me.jsu.springbootdeveloper.domain.tag.TagToChallenge;
 import me.jsu.springbootdeveloper.domain.tag.TagToUser;
 import me.jsu.springbootdeveloper.domain.user.User;
-import me.jsu.springbootdeveloper.dto.TagResponse;
+import me.jsu.springbootdeveloper.dto.tag.TagResponse;
 import me.jsu.springbootdeveloper.repository.tag.TagRepository;
+import me.jsu.springbootdeveloper.repository.tag.TagToChallengeRepository;
 import me.jsu.springbootdeveloper.repository.tag.TagToUserRepository;
 import me.jsu.springbootdeveloper.service.UserService;
 import org.springframework.stereotype.Service;
@@ -23,6 +26,7 @@ import java.util.List;
 public class TagService {
     private final TagRepository tagRepository;
     private final TagToUserRepository tagToUserRepository;
+    private final TagToChallengeRepository tagToChallengeRepository;
     private final UserService userService;
 
     /*
@@ -64,5 +68,49 @@ public class TagService {
                     .user(user)
                     .build());
         }
+    }
+
+    /*
+        해당 챌린지와 관련된 태그를 반환한다.
+     */
+    public List<TagResponse> getChallengeTags(Long challengeId) {
+        return tagToChallengeRepository.findWithTagByChallengeId(challengeId)
+                .stream()
+                .map(tagToChallenge -> {
+                    Tag tag = tagToChallenge.getTag();
+                    return new TagResponse(tag.getId(), tag.getTagName(), tag.getTagCategory());
+                })
+                .toList();
+    }
+
+    /*
+        유저가 선택한 태그들을 챌린지의 태그로 저장한다.
+     */
+    @Transactional
+    public void updateChallengeTags(List<Long> tagIds, Challenge challenge) {
+        if (tagIds == null || tagIds.isEmpty()) {  // 빈 리스트가 들어온 경우 리턴한다.
+            return;
+        }
+
+        for (Long tagId : tagIds) {  // 태그 id로 하나씩 찾아가며 DB에 관계를 저장한다.
+            if (tagToChallengeRepository.existsByChallenge_IdAndTag_Id(challenge.getId(), tagId)) {
+                continue;  // 태그가 두 번 저장되지 않도록 중복을 방지한다.
+            }
+
+            Tag tag = tagRepository.findById(tagId)
+                    .orElseThrow(() -> new TagNotFoundException("TAG_NOT_FOUND_FOR_ID"));
+
+            tagToChallengeRepository.save(TagToChallenge.builder()  // 챌린지와 태그 관계를 DB에 저장한다.
+                    .tag(tag)
+                    .challenge(challenge)
+                    .build());
+        }
+    }
+
+    /*
+        해당 챌린지와 관련된 모든 태그를 삭제한다.
+     */
+    public void deleteAllChallenge_Id(Long challengeId) {
+        tagToChallengeRepository.deleteByChallenge_Id(challengeId);  // 모든 태그 삭제
     }
 }

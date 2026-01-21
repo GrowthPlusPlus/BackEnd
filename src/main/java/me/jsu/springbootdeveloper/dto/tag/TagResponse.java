@@ -1,6 +1,6 @@
 // 정성우
 
-package me.jsu.springbootdeveloper.dto;
+package me.jsu.springbootdeveloper.dto.tag;
 
 import lombok.Getter;
 import me.jsu.springbootdeveloper.domain.tag.TagCategory;

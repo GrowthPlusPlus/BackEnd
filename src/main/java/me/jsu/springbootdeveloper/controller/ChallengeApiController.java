@@ -4,12 +4,9 @@ package me.jsu.springbootdeveloper.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import me.jsu.springbootdeveloper.dto.challenge.ChallengeMemberResponse;
-import me.jsu.springbootdeveloper.dto.challenge.ChallengeOwnerDelegateRequest;
-import me.jsu.springbootdeveloper.dto.challenge.KickMemberRequest;
+import me.jsu.springbootdeveloper.dto.challenge.*;
 import me.jsu.springbootdeveloper.service.challenge.ChallengeService;
 import org.springframework.data.domain.Page;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -95,6 +92,34 @@ public class ChallengeApiController {
             @PathVariable Long challengeId
     ) {
         challengeService.deleteChallenge(userDetails.getUsername(), challengeId);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    /*
+        수정 화면 진입 시 기존 설정 값을 내려주기 위한 컨트롤러다.
+     */
+    @GetMapping("/api/challenges/{challengeId}/settings")
+    public ResponseEntity<ChallengeSettingsResponse> getSettings(
+            @PathVariable Long challengeId
+    ) {
+        ChallengeSettingsResponse response = challengeService.getSettings(challengeId);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /*
+        클라이언트가 보낸 챌린지 설정을 반영(덮어쓰기)하는 컨트롤러이다.
+     */
+    @PutMapping("/api/challenges/{challengeId}/settings")
+    public ResponseEntity<Void> updateSettings(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long challengeId,
+            @RequestBody @Valid ChallengeSettingsUpdateRequest request
+    ) {
+        challengeService.updateSettings(
+                userDetails.getUsername(), challengeId, request.getEndDate(), request.getRequiredWeeklyCount(), request.getTagIds(),
+                request.getContent(), request.getPhotoRequired(), request.getChallengeVisibility());
 
         return ResponseEntity.noContent().build();
     }
