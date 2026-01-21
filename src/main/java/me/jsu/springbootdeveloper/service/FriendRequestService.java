@@ -133,4 +133,18 @@ public class FriendRequestService {
             request.friendRequestCanceled();
         }
     }
+
+    /**
+     * 친구 삭제
+     */
+    @Transactional
+    public void deleteFriend(String currentUserEmail, String friendNickname) {
+        User user = userRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+        User friend = userRepository.findByNickname(friendNickname)
+                .orElseThrow(() -> new IllegalArgumentException("삭제할 친구를 찾을 수 없습니다."));
+
+        friendshipRepository.deleteFriendship(user, friend);
+    }
+
 }

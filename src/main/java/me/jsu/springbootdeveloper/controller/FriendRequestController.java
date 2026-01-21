@@ -85,4 +85,15 @@ public class FriendRequestController {
 
         return ResponseEntity.ok("친구 신청을 취소했습니다.");
     }
+    // 친구 삭제
+    @DeleteMapping("/delete/{friendNickname}")
+    public ResponseEntity<Void> deleteFriend(
+            @PathVariable String friendNickname,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        friendRequestService.deleteFriend(userDetails.getUsername(), friendNickname);
+
+        return ResponseEntity.noContent().build();
+    }
+
 }
