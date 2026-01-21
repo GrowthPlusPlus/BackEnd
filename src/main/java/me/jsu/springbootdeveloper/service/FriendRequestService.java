@@ -2,7 +2,8 @@ package me.jsu.springbootdeveloper.service;
 
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.domain.user.*;
-import me.jsu.springbootdeveloper.dto.FriendRequestResponse;
+import me.jsu.springbootdeveloper.dto.FriendRequestResponse_Received;
+import me.jsu.springbootdeveloper.dto.FriendRequestResponse_Sent;
 import me.jsu.springbootdeveloper.repository.user.FriendRequestRepository;
 import me.jsu.springbootdeveloper.repository.user.FriendshipRepository;
 import me.jsu.springbootdeveloper.repository.user.UserProfilePictureRepository;
@@ -34,7 +35,7 @@ public class FriendRequestService {
             throw new IllegalStateException("자기 자신에게는 친구 신청을 할 수 없습니다.");
         }
 
-        // 중복 신청 방지 (성우님의 existsRequested 활용)
+        // 중복 신청 방지 (existsRequested 활용)
         if (friendRequestRepository.existsRequested(fromUser, toUser)) {
             throw new IllegalStateException("이미 대기 중인 신청이 있습니다.");
         }
@@ -50,7 +51,7 @@ public class FriendRequestService {
      * 나에게 온 친구 요청 목록 조회 (PENDING 상태)
      */
     @Transactional(readOnly = true)
-    public List<FriendRequestResponse> getReceivedRequests(String email) {
+    public List<FriendRequestResponse_Received> getReceivedRequests(String email) {
         User currentUser = userRepository.findByEmail(email).orElseThrow();
 
         List<FriendRequest> requests = friendRequestRepository
@@ -63,17 +64,17 @@ public class FriendRequestService {
                             .map(UserProfilePicture::getImageUrl)
                             .orElse(null); // 사진이 없을 경우 기본값 처리
 
-                    return new FriendRequestResponse(request, profileUrl);
+                    return new FriendRequestResponse_Received(request, profileUrl);
                 })
                 .collect(Collectors.toList());
     }
 
     //내가 보낸 친구 요청 조회
     @Transactional(readOnly = true)
-    public List<FriendRequestResponse> getSentRequests(String email) {
+    public List<FriendRequestResponse_Sent> getSentRequests(String email) {
         User currentUser = userRepository.findByEmail(email).orElseThrow();
 
-        // 성우님이 만든 Repository 메서드 활용
+        //Repository 메서드 활용
         List<FriendRequest> requests = friendRequestRepository
                 .findAllByFromUser_IdAndStatus(currentUser.getId(), FriendRequestStatus.REQUESTED);
 
@@ -84,7 +85,7 @@ public class FriendRequestService {
                             .map(UserProfilePicture::getImageUrl)
                             .orElse(null); // 사진이 없을 경우 기본값 처리
 
-                    return new FriendRequestResponse(request, profileUrl);
+                    return new FriendRequestResponse_Sent(request, profileUrl);
                 })
                 .collect(Collectors.toList());
     }

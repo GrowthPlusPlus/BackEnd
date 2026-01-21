@@ -1,7 +1,8 @@
 package me.jsu.springbootdeveloper.controller;
 
 import lombok.RequiredArgsConstructor;
-import me.jsu.springbootdeveloper.dto.FriendRequestResponse;
+import me.jsu.springbootdeveloper.dto.FriendRequestResponse_Sent;
+import me.jsu.springbootdeveloper.dto.FriendRequestResponse_Received;
 import me.jsu.springbootdeveloper.repository.user.UserRepository;
 import me.jsu.springbootdeveloper.service.FriendRequestService;
 import org.springframework.http.HttpStatus;
@@ -33,10 +34,10 @@ public class FriendRequestController {
 
     //받은 요청 목록 조회
     @GetMapping("/request/received")
-    public ResponseEntity<List<FriendRequestResponse>> getReceivedRequests(
+    public ResponseEntity<List<FriendRequestResponse_Received>> getReceivedRequests(
             @AuthenticationPrincipal UserDetails userDetails) {
 
-        List<FriendRequestResponse> responses =
+        List<FriendRequestResponse_Received> responses =
                 friendRequestService.getReceivedRequests(userDetails.getUsername());
 
         return ResponseEntity.ok(responses);
@@ -65,11 +66,11 @@ public class FriendRequestController {
     }
     //보낸 요청 목록 조회
     @GetMapping("/request/sent")
-    public ResponseEntity<List<FriendRequestResponse>> getSentRequests(
+    public ResponseEntity<List<FriendRequestResponse_Sent>> getSentRequests(
             @AuthenticationPrincipal UserDetails userDetails) {
 
         // getReceivedRequests 대신 getSentRequests 호출
-        List<FriendRequestResponse> responses =
+        List<FriendRequestResponse_Sent> responses =
                 friendRequestService.getSentRequests(userDetails.getUsername());
 
         return ResponseEntity.ok(responses);

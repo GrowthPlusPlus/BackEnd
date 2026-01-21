@@ -1,4 +1,3 @@
-// 정성우
 
 package me.jsu.springbootdeveloper.domain.user;
 
