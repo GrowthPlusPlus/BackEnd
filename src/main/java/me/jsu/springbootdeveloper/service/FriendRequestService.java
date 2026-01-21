@@ -112,6 +112,10 @@ public class FriendRequestService {
         if (!friendshipRepository.existsByUser1AndUser2(user1, user2)) {
             friendshipRepository.save(Friendship.builder().user1(user1).user2(user2).build());
         }
+        // 2. 친구가 되었으므로 기존의 친구 요청(FriendRequest)은 삭제
+        // 삭제를 하면 '받은 요청'이나 '보낸 요청' 목록 조회 시 더 이상 나타나지 않습니다.
+        friendRequestRepository.delete(request);
+
     }
 
     /**
