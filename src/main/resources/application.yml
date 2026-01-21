@@ -5,6 +5,8 @@ spring:
 
   jpa:
     show-sql: true
+    hibernate:
+      ddl-auto: create
     properties:
       hibernate:
         format_sql: true
@@ -17,7 +19,7 @@ spring:
 # data.sql을 실행하지 않는다.
   sql:
     init:
-      mode: never
+      mode: always
 
 # 웹 기반 OAUTH 설정으로 비활성화
 #  security:
@@ -46,7 +48,8 @@ spring:
 
 jwt:
   issuer: ajufresh@gmail.com
-  secret_key: test_key  # 키가 바뀔 때 마다 토큰을 재발급 해야함
+  secret_key: your-very-long-and-secure-random-secret-key-at-least-32-characters-long
+# 키가 바뀔 때 마다 토큰을 재발급 해야함
 
 # 클라우디너리 설정 
 cloudinary:

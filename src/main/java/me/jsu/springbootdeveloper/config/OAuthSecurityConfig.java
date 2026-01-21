@@ -70,8 +70,9 @@ public class OAuthSecurityConfig {
                 .addFilterBefore(tokenAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
                 // URL에 따라 보안 인증 여부에 따른 접근 권한을 설정한다.
                 .authorizeHttpRequests(auth -> auth
+                        // 테스트용 토큰 발급 API는 인증 없이 접근 가능하도록 허용
+                        .requestMatchers(new AntPathRequestMatcher("/api/test/token")).permitAll()
                         // 리프레시 토큰 기반으로 엑세스 토큰을 재발급 해주기도 한다.
-                        // 리프레시 토큰이 만료되면 사용되지 않는다.
                         .requestMatchers(new AntPathRequestMatcher("/api/token")).permitAll()
                         // 사용자가 Google OAuth(PKCE)로 로그인할 때 이다.
                         // OAuth 로그인/토큰 교환 엔드포인트이다. 즉 jwt인 엑세스 토큰, 리프레시 토큰이 아직 없는 상황이다.

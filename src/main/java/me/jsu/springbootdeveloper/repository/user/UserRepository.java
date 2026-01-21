@@ -21,7 +21,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     //친구 신청 시 검색 결과 보여주기
     @Query("""
-    SELECT u.id AS id, u.nickname AS nickname, u.profileImage AS profileImage,
+    SELECT u.id AS id, u.nickname AS nickname, up.imageUrl AS profileImage,
            CASE 
                WHEN (SELECT COUNT(f) FROM Friendship f 
                      WHERE (f.user1 = u AND f.user2.id = :myId) 
@@ -35,6 +35,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
                ELSE 'NONE'
            END AS status
     FROM User u
+    LEFT JOIN u.userProfilePicture up
     WHERE u.nickname LIKE %:nickname%
       AND u.id <> :myId
 """)
