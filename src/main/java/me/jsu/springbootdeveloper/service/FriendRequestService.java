@@ -2,6 +2,7 @@ package me.jsu.springbootdeveloper.service;
 
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.domain.user.*;
+import me.jsu.springbootdeveloper.dto.FriendListResponse;
 import me.jsu.springbootdeveloper.dto.FriendRequestResponse_Received;
 import me.jsu.springbootdeveloper.dto.FriendRequestResponse_Sent;
 import me.jsu.springbootdeveloper.repository.user.FriendRequestRepository;
@@ -145,6 +146,28 @@ public class FriendRequestService {
                 .orElseThrow(() -> new IllegalArgumentException("삭제할 친구를 찾을 수 없습니다."));
 
         friendshipRepository.deleteFriendship(user, friend);
+    }
+
+    /**
+     * 친구 목록 조회
+     */
+    @Transactional(readOnly = true)
+    public List<FriendListResponse> getFriendList(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        List<User> friends = friendshipRepository.findAllFriendsByUserId(user.getId());
+
+        return friends.stream()
+                .map(friend -> {
+                    // 신청한 유저(fromUser)의 프로필 사진을 조회
+                    String profileUrl = userProfilePictureRepository.findByUser_Id(friend.getId())
+                            .map(UserProfilePicture::getImageUrl)
+                            .orElse(null); // 사진이 없을 경우 기본값 처리
+
+                    return new FriendListResponse(friend, profileUrl);
+                })
+                .collect(Collectors.toList());
     }
 
 }

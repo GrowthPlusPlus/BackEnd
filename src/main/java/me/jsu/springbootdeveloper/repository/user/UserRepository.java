@@ -19,18 +19,18 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByNickname(String nickname);  // 닉네임 정보로 사용자 정보를 가져온다.
     boolean existsByNickname(String nickname);  // 닉네임이 이미 존재하는지 검사한다.
 
-    //친구 신청 시 검색 결과 보여주기
+    //유저 닉네임 검색 시 해당 유저와 나의 관계 보여주기
     @Query("""
     SELECT u.id AS id, u.nickname AS nickname, up.imageUrl AS profileImage,
            CASE 
                WHEN (SELECT COUNT(f) FROM Friendship f 
-                     WHERE (f.user1 = u AND f.user2.id = :myId) 
-                        OR (f.user1.id = :myId AND f.user2 = u)) > 0 THEN 'FRIEND'
+                     WHERE (f.user1.id = u.id AND f.user2.id = :myId) 
+                        OR (f.user1.id = :myId AND f.user2.id = u.id)) > 0 THEN 'FRIEND'
                WHEN (SELECT COUNT(fr) FROM FriendRequest fr 
-                     WHERE fr.fromUser.id = :myId AND fr.toUser = u 
+                     WHERE fr.fromUser.id = :myId AND fr.toUser.id = u.id 
                        AND fr.status = 'REQUESTED') > 0 THEN 'PENDING_SENT'
                WHEN (SELECT COUNT(fr) FROM FriendRequest fr 
-                     WHERE fr.fromUser = u AND fr.toUser.id = :myId 
+                     WHERE fr.fromUser.id = u.id AND fr.toUser.id = :myId 
                        AND fr.status = 'REQUESTED') > 0 THEN 'PENDING_RECEIVED'
                ELSE 'NONE'
            END AS status

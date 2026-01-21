@@ -21,7 +21,9 @@ public class UserResponse {
         this.email = user.getEmail();
         this.nickname = user.getNickname();
         this.role = user.getRole().name(); // Enum을 String으로 변환
+
     }
+
 }
 
 

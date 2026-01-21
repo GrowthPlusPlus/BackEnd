@@ -1,6 +1,7 @@
 package me.jsu.springbootdeveloper.controller;
 
 import lombok.RequiredArgsConstructor;
+import me.jsu.springbootdeveloper.dto.FriendListResponse;
 import me.jsu.springbootdeveloper.dto.FriendRequestResponse_Sent;
 import me.jsu.springbootdeveloper.dto.FriendRequestResponse_Received;
 import me.jsu.springbootdeveloper.repository.user.UserRepository;
@@ -94,6 +95,16 @@ public class FriendRequestController {
         friendRequestService.deleteFriend(userDetails.getUsername(), friendNickname);
 
         return ResponseEntity.noContent().build();
+    }
+
+    //친구 목록 조회
+    @GetMapping("/list")
+    public ResponseEntity<List<FriendListResponse>> getFriendList(
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        List<FriendListResponse> friends = friendRequestService.getFriendList(userDetails.getUsername());
+
+        return ResponseEntity.ok(friends);
     }
 
 }

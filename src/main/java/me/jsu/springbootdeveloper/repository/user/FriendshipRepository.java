@@ -30,8 +30,21 @@ public interface FriendshipRepository extends JpaRepository<Friendship, Long> {
      */
     boolean existsByUser1AndUser2(User user1, User user2);
 
+    //친구 삭제
     @Modifying
     @Query("DELETE FROM Friendship f WHERE (f.user1 = :user AND f.user2 = :friend) OR (f.user1 = :friend AND f.user2 = :user)")
     void deleteFriendship(@Param("user") User user, @Param("friend") User friend);
+
+    // 나와 친구인 상대방 유저들 가져오기 (Hibernate 6 호환 버전)
+    @Query("""
+        SELECT u FROM User u 
+        WHERE u.id IN (
+            SELECT CASE WHEN f.user1.id = :userId THEN f.user2.id ELSE f.user1.id END 
+            FROM Friendship f 
+            WHERE f.user1.id = :userId OR f.user2.id = :userId
+        )
+    """)
+
+    List<User> findAllFriendsByUserId(@Param("userId") Long userId);
 
 }
