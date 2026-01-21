@@ -80,7 +80,7 @@ public class Article {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "challenge_id")
+    @JoinColumn(name = "challenge_id", nullable = true)
     private Challenge challenge;
 
     // 서버 시각과는 다르게 인증글이 정확히 그 날짜에 올라왔는지 판단하기 위한 값이다.

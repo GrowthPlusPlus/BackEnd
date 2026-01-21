@@ -154,7 +154,8 @@ public class PostService {
     }
 
     /*
-        게시글을 수정하는 함수로, 게시글 작성자 id가 요청자 id와 다르면 삭제하지 않는다.
+        게시글을 수정하는 함수로, 게시글 작성자 id가 요청자 id와 다르면 수정하지 않는다.
+        해당 함수는 수정이 필요하다.
      */
     @Transactional
     public Article update(long id, UpdateArticleRequest request) {
@@ -206,23 +207,6 @@ public class PostService {
         postRepository.detachUser(user);
     }
 
-    /*
-        댓글의 유저 fk값을 null로 바꿔주는 함수이다.
-        회원 탈퇴 시에 사용한다.
-     */
-    @Transactional
-    public void detachCommentToUser(User user) {
-        commentRepository.detachUser(user);
-    }
-
-    /*
-        게시글 좋아요의 유저 fk값을 null로 바꿔주는 함수이다.
-        회원 탈퇴 시에 사용한다.
-     */
-    @Transactional
-    public void detachLikeToUser(User user) {
-        postLikeRepository.detachUser(user);
-    }
 
     /*
         캘린더를 조회하기 위해 사용하는 함수이다.
@@ -233,10 +217,10 @@ public class PostService {
     }
 
     /*
-        특정 챌린지의 내가 올린 인증글을 최신순으로 조회하여 반환한다.
+        특정 챌린지의 해당 연 월에 내가 올린 인증글을 최신순으로 조회하여 반환한다.
         캘린더 뷰 화면에 필요한 정보이다.
      */
-    public Page<ChallengeCalendarPostResponse> findCalendarPosts(Long userId, Long challengeId, Pageable pageable) {
-        return postRepository.findCalendarPosts(userId, challengeId, pageable);
+    public Page<ChallengeCalendarPostResponse> findCalendarPosts(Long userId, Long challengeId, LocalDate start, LocalDate end, Pageable pageable) {
+        return postRepository.findCalendarPosts(userId, challengeId, start, end, pageable);
     }
 }

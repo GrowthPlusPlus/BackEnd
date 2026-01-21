@@ -7,12 +7,14 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import me.jsu.springbootdeveloper.domain.tag.TagToChallenge;
 import me.jsu.springbootdeveloper.domain.user.User;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /*
     DB에 저장될 챌린지 정보이다.
@@ -57,7 +59,7 @@ public class Challenge {
     @Column(name = "title", nullable = false)
     private String title;
 
-    @Column(name = "content", nullable = false)
+    @Column(name = "content")
     private String content;
 
     @Column(name = "max_participant_number", nullable = false)
@@ -86,6 +88,22 @@ public class Challenge {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    /*
+        다음 코드는 CASCADE 설정으로 Challenge 엔티티를 fk값으로 가지고 있는 DB들을 자동으로 삭제해주는 설정이다.
+        챌린지 삭제 시, 밑의 정보들도 함께 전부 삭제된다. (챌린지 참여자, 챌린지 초대 링크, 챌린지 주간 상태, 챌린지 태그)
+     */
+    @OneToMany(mappedBy = "challenge", cascade = CascadeType.REMOVE)
+    private List<ChallengeParticipant> challengeParticipants;
+
+    @OneToMany(mappedBy = "challenge", cascade = CascadeType.REMOVE)
+    private List<ChallengeInviteLink> challengeInviteLinks;
+
+    @OneToMany(mappedBy = "challenge", cascade = CascadeType.REMOVE)
+    private List<ChallengeWeeklyStatus>challengeWeeklyStatuses;
+
+    @OneToMany(mappedBy = "challenge", cascade = CascadeType.REMOVE)
+    private List<TagToChallenge> tagMappings;
+
     @Builder
     public Challenge(String title, String content, User user, int maxParticipantNumber, ChallengeVisibility challengeVisibility,
                      LocalDate startDate, LocalDate endDate, int requiredWeeklyCount, boolean photoRequired) {
@@ -102,17 +120,14 @@ public class Challenge {
     }
 
     /*
-        챌린지의 내용을 업데이트하는 함수이다.
-        챌린지의 이름, 마스터 유저, 최대 참여자 수, 참여자 수를 제외하고 수정이 가능하다.
+        챌린지 설을 변경하는 함수이다. 챌린지 이름, 챌린지 시작일을 제외하고 수정이 가능하다.
      */
-    public void update(String content, ChallengeVisibility challengeVisibility) {
-        if (content != null) {
-            this.content = content;
-        }
-
-        if (challengeVisibility != null) {
-            this.challengeVisibility = challengeVisibility;
-        }
+    public void updateSettings(LocalDate endDate, int requiredWeeklyCount, String content, Boolean photoRequired, ChallengeVisibility challengeVisibility) {
+        this.endDate = endDate;
+        this.requiredWeeklyCount = requiredWeeklyCount;
+        this.content = content;
+        this.photoRequired =  photoRequired;
+        this.challengeVisibility = challengeVisibility;
     }
 
     /*

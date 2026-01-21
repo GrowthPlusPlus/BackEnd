@@ -120,4 +120,13 @@ public class CommentService {
             throw new CommentAccessDeniedException("COMMENT_ACCESS_DENIED");
         }
     }
+
+    /*
+        댓글의 유저 fk값을 null로 바꿔주는 함수이다.
+        회원 탈퇴 시에 사용한다.
+     */
+    @Transactional
+    public void detachCommentToUser(User user) {
+        commentRepository.detachUser(user);
+    }
 }

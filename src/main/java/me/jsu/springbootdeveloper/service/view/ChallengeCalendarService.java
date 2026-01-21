@@ -34,12 +34,18 @@ public class ChallengeCalendarService {
 
     /*
         캘린더의 제일 상단의 완료 일수와 연속 일수를 찾아 반환해주는 함수이다.
+        또한 챌린지 방장 여부를 반환한다.
      */
     public ChallengeCalendarResponse getCalendar(String email, Long challengeId) {
         User user = userService.findByEmail(email);
 
+        // 유저 id와 챌린지 id로 챌린지 참여 DB의 정보를 가져온다. 전체 완료 일수와 연속 일수를 가져오기 위함이다.
         ChallengeParticipant challengeParticipant = challengeService.findByUser_IdAndChallenge_IdForParticipant(user.getId(), challengeId);
-        return new ChallengeCalendarResponse(challengeParticipant.getTotalSuccessDays(), challengeParticipant.getCurrentStreakDays());
+
+        // 유저가 챌린지의 방장인지 검사한다.
+        boolean challengeOwner = challengeService.isOwner(user.getId(), challengeId);
+
+        return new ChallengeCalendarResponse(challengeParticipant.getTotalSuccessDays(), challengeParticipant.getCurrentStreakDays(), challengeOwner);
     }
 
     /*
@@ -61,21 +67,23 @@ public class ChallengeCalendarService {
 
     /*
         인증글들을 불러온다.
-        페이지 단위로 지금까지 한 유저의 인증글을 최신 순서대로 15개 단위로 불러온다.
+        페이지 단위로 연 월에 따라 유저의 인증글을 최신 순서대로 불러온다.
      */
-    public Page<ChallengeCalendarPostResponse> getPostPhotos(String email, Long challengeId, int page) {
+    public Page<ChallengeCalendarPostResponse> getPostPhotos(String email, Long challengeId, int year, int month, int page) {
         User user = userService.findByEmail(email);
 
         // 참여를 검증하여 참여자가 아니라면 예외처리 한다.
         challengeService.findByUser_IdAndChallenge_IdForParticipant(user.getId(), challengeId);
 
-        // 유저가 생성한 인증글을 한 번에 15개까지만 조회한다.
         Pageable pageable = PageRequest.of(
                 page,           // page
-                15,             // 한 페이지 당 읽을 인증글 개수
+                40,             // 한 페이지 당 읽을 인증글 개수
                 Sort.by("createdAt").descending()  // 생성일을 기준으로 내림차순으로 검색한다.
         );
 
-        return postService.findCalendarPosts(user.getId(), challengeId, pageable);
+        LocalDate start = LocalDate.of(year, month, 1);  // 받은 연, 월로 해당 월의 1일 날짜를 만든다.
+        LocalDate end = start.withDayOfMonth(start.lengthOfMonth());  // start가 속한 연, 월을 유지한 채 day만 마지막 날로 변경한다.
+
+        return postService.findCalendarPosts(user.getId(), challengeId, start, end, pageable);
     }
 }

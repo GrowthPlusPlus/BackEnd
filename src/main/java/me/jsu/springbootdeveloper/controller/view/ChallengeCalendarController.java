@@ -32,13 +32,14 @@ public class ChallengeCalendarController {
 
     /*
         상단의 기본 정보를 보여준다. 한 번만 조회한다.
-        챌린지 총 완료 일수, 연속 일수를 조회한다.
+        챌린지 총 완료 일수, 연속 일수를 조회한다. 또한 챌린지 방장인지 아닌지에 대한 여부도 반환한다.
      */
     @Operation(
             summary = "챌린지 달력 상단 정보 조회",
             description = """
-        챌린지 달력 상단에 표시되는 기본 정보를 조회한다.
-        총 완료 일수와 연속 완료 일수를 반환한다.
+        챌린지 달력 상단에 표시되는 기본 정보를 조회한다. 총 완료 일수와 연속 완료 일수를 반환한다.
+        또한 챌린지의 방장인지 아닌지에 대한 정보를 반환한다.
+        해당 정보로 사용자가 설정을 눌렀을 때, 방장이면 챌린지 설정이 보이도록 한다.
         ex) GET /api/challenges/1/calendar
         """
     )
@@ -102,15 +103,15 @@ public class ChallengeCalendarController {
         인증글 목록을 page로 가져온다.
         클라이언트는 페이징된 값들 뿐만아니라 여러 정보를 함께 알 수 있다.
         totalElements: 총 게시글 개수, totalPages: 총 페이지 개수, last: 해당 페이지가 마지막 페이지인가? 등의 정보이다.
-        GET /api/challenges/{challengeId}/calendar/posts?page={page} 로 호출힌다.
      */
     @Operation(
-            summary = "챌린지 달력 하단의 인증글 목록 조회 (페이징)",
+            summary = "챌린지 달력 하단의 인증글 목록 조회",
             description = """
-        챌린지 인증글 목록을 페이지 단위로 조회한다.
-        현재는 지금까지 해당 챌린지에 대해 수행한 모든 인증글을 작성 순서대로 조회하여 반환한다.
+        해당 챌린지 인증글 목록을 페이지로 조회한다.
+        연 월에 따라 해당 챌린지에 대해 수행한 인증글을 작성 순서대로 조회하여 반환한다.
         Page 객체를 반환하며, totalElements, totalPages, last 등의 정보를 포함한다.
-        ex) GET /api/challenges/1/calendar/posts?page=0
+        사용 편의를 위해 page를 사용하므로 page는 항상 0이다.
+        ex) /api/challenges/1/calendar/posts?year=2025&month=7&page=0
         """
     )
     @ApiResponses({
@@ -123,12 +124,18 @@ public class ChallengeCalendarController {
             @AuthenticationPrincipal UserDetails userDetails,
             @Parameter(description = "현재 조회하는 챌린지 ID", required = true)
             @PathVariable Long challengeId,
-            @Parameter(description = "페이지 번호 (0부터 시작)", required = true, example = "0")
+            @Parameter(description = "조회할 연도", required = true, example = "2025")
+            @RequestParam int year,
+            @Parameter(description = "조회할 월 (1~12)", required = true, example = "7")
+            @RequestParam int month,
+            @Parameter(description = "페이지 번호 (현재는 0만 사용)", required = true, example = "0")
             @RequestParam int page
     ) {
         Page<ChallengeCalendarPostResponse> response = challengeCalendarService.getPostPhotos(
                         userDetails.getUsername(),
                         challengeId,
+                        year,
+                        month,
                         page
                 );
 

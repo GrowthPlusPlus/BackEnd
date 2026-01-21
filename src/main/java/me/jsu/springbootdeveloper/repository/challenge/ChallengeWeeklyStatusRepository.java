@@ -24,4 +24,7 @@ public interface ChallengeWeeklyStatusRepository extends JpaRepository<Challenge
             Long userId,
             LocalDate weekStartDate
     );
+
+    // 유저 id와 챌린지 id로 이번주 상태를 삭제한다.
+    void deleteByUser_IdAndChallenge_Id(Long userId, Long challengeId);
 }
