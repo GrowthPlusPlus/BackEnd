@@ -95,7 +95,7 @@ public class PostApiController {
             @Parameter(description = "업로드할 인증 이미지 파일 목록", required = true)
             @RequestPart("image") List<MultipartFile> images
     ) {
-        ArticleDetailResponse response = postService.save(userDetails.getUsername(), request.getTitle(), request.getContent(), request.getChallengeId(), images);
+        ArticleDetailResponse response = postService.save(userDetails.getUsername(), request.getContent(), request.getChallengeId(), images);
 
         // post가 성공하면, 게시글 정보를 응답 객체에 담아 JSON으로 반환하여 클라이언트가 바로 게시글 화면으로 넘어갈 수 있도록 한다.
         return ResponseEntity

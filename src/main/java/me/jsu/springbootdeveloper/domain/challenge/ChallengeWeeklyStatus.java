@@ -80,7 +80,7 @@ public class ChallengeWeeklyStatus {
         this.user = user;
         this.challenge = challenge;
         this.weekStartDate = weekStartDate;
-        this.successCount = 1;  // 해당 엔트리가 생성되는 조건은 최소 한 번은 인증을 했을때 이므로 초기값은 1이다.
+        this.successCount = 0;  // 처음 생성될 때는 0 이다.
         this.status = Status.IN_PROGRESS;
     }
 

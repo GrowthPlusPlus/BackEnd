@@ -136,4 +136,7 @@ public interface PostRepository extends JpaRepository<Article, Long> {
         where a.challenge = :challenge
     """)
     void detachChallenge(@Param("challenge") Challenge challenge);
+
+    // 유저 id, 챌린지 id, 인증 날짜로 같은 날에 두 번 인증하는지 검사한다.
+    boolean existsByUser_IdAndChallenge_IdAndPostDate(Long userId, Long challengeId, LocalDate postDate);
 }

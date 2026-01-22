@@ -13,7 +13,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor  // 인자를 요구하지 않는 기본 생성자를 만들어주는 기능이다.
 @Getter
 public class AddArticleRequest {
-    private String title;  // null값이 올 수 있다.
     @NotBlank
     @Size(max = 500)  // 최대 댓글 길이이다.
     private String content;
