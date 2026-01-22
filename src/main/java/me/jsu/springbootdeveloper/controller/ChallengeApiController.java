@@ -2,6 +2,10 @@
 
 package me.jsu.springbootdeveloper.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.dto.challenge.*;
@@ -25,9 +29,24 @@ public class ChallengeApiController {
         챌린지에서 나가면 의미 없는 챌린지 초대 링크, 챌린지 위크 스테이터스 DB 값도 삭제한다.
         인증글, 챌린지 데일리 로그 등은 그대로 둔다.
      */
+    @Operation(
+            summary = "챌린지 나가기",
+            description = """
+        챌린지 id로 로그인한 유저가 나가도록 한다.
+        ex) DELETE /api/challenges/1/leaveChallenge
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "챌린지 탈퇴 성공"),
+            @ApiResponse(responseCode = "401", description = "토큰 인증 실패"),
+            @ApiResponse(responseCode = "404", description = "유저 또는 챌린지를 찾을 수 없음"),
+            @ApiResponse(responseCode = "409", description = "챌린지 방장은 나갈 수 없음"),
+            @ApiResponse(responseCode = "403", description = "허용되지 않은 챌린지 행동"),
+    })
     @DeleteMapping("/api/challenges/{challengeId}/leaveChallenge")
     public ResponseEntity<Void> leaveChallenge(
             @AuthenticationPrincipal UserDetails userDetails,
+            @Parameter(description = "챌린지 ID", required = true, example = "1")
             @PathVariable Long challengeId
     ) {
         challengeService.leaveChallenge(userDetails.getUsername(), challengeId);
@@ -41,11 +60,29 @@ public class ChallengeApiController {
         닉네임 부분 검색 없이 검색하는 경우: GET /api/challenges/5/members?page=0
         닉네임 부분 검색으로 검색하는 경우:  GET /api/challenges/5/members?page=0&nickname=김
      */
+    @Operation(
+            summary = "챌린지 멤버 목록 조회",
+            description = """
+        챌린지 멤버 목록을 페이징 조회하며 닉네임 부분 검색을 지원한다.
+        해당 정보를 바탕으로 방장 위임, 추방 대상을 정할 수 있다.
+        ex1) GET /api/challenges/5/members?page=0
+        ex2) GET /api/challenges/5/members?page=0&nickname=김
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "멤버 목록 조회 성공"),
+            @ApiResponse(responseCode = "401", description = "토큰 인증 실패"),
+            @ApiResponse(responseCode = "404", description = "유저 또는 챌린지를 찾을 수 없음"),
+            @ApiResponse(responseCode = "403", description = "조회 권한 없음")
+    })
     @GetMapping("/api/challenges/{challengeId}/members")
     public ResponseEntity<Page<ChallengeMemberResponse>> getMembers(
             @AuthenticationPrincipal UserDetails userDetails,
+            @Parameter(description = "챌린지 ID", required = true, example = "5")
             @PathVariable Long challengeId,
+            @Parameter(description = "페이지 번호 (0부터 시작)", required = true, example = "0")
             @RequestParam int page,
+            @Parameter(description = "닉네임 부분 검색 (미입력 시 전체 조회)", required = false, example = "김")
             @RequestParam(required = false) String nickname  // 필수가 아니다.
     ) {
         Page<ChallengeMemberResponse> response = challengeService.getMembers(userDetails.getUsername(), challengeId, page, nickname);
@@ -57,9 +94,23 @@ public class ChallengeApiController {
         챌린지 방장을 위임할때 사용하는 컨트롤러이다.
         ex) /api/challenges/1/owner/delegate
      */
+    @Operation(
+            summary = "챌린지 방장 위임",
+            description = """
+        현재 방장이 다른 멤버에게 방장 권한을 위임한다.
+        ex) POST /api/challenges/1/owner/delegate
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "방장 위임 성공"),
+            @ApiResponse(responseCode = "401", description = "토큰 인증 실패"),
+            @ApiResponse(responseCode = "404", description = "유저 또는 챌린지를 찾을 수 없음"),
+            @ApiResponse(responseCode = "403", description = "방장 권한 없음")
+    })
     @PostMapping("/api/challenges/{challengeId}/owner/delegate")
     public ResponseEntity<Void> delegateOwner(
             @AuthenticationPrincipal UserDetails userDetails,
+            @Parameter(description = "챌린지 ID", required = true, example = "1")
             @PathVariable Long challengeId,
             @RequestBody @Valid ChallengeOwnerDelegateRequest request
     ) {
@@ -72,9 +123,23 @@ public class ChallengeApiController {
         챌린지에서 유저를 추방할 때 사용하는 컨트롤러이다.
         ex) /api/challenges/1/members/kick
      */
+    @Operation(
+            summary = "챌린지 멤버 추방",
+            description = """
+        챌린지 방장이 특정 멤버를 추방한다.
+        ex) /api/challenges/1/members/kick
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "멤버 추방 성공"),
+            @ApiResponse(responseCode = "401", description = "토큰 인증 실패"),
+            @ApiResponse(responseCode = "404", description = "유저 또는 챌린지를 찾을 수 없음"),
+            @ApiResponse(responseCode = "403", description = "방장 권한 없음")
+    })
     @PostMapping("/api/challenges/{challengeId}/members/kick")
     public ResponseEntity<Void> kickMember(
             @AuthenticationPrincipal UserDetails userDetails,
+            @Parameter(description = "챌린지 ID", required = true, example = "3")
             @PathVariable Long challengeId,
             @RequestBody @Valid KickMemberRequest request
     ) {
@@ -86,9 +151,23 @@ public class ChallengeApiController {
     /*
         챌린지를 삭제할 때 사용하는 컨트롤러이다.
      */
+    @Operation(
+            summary = "챌린지 삭제",
+            description = """
+        챌린지를 완전히 삭제한다. 데일리 로그, 인증글 등을 제외한 나머지 종속 정보도 삭제한다.
+        ex) DELETE /api/challenges/1
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "챌린지 삭제 성공"),
+            @ApiResponse(responseCode = "401", description = "토큰 인증 실패"),
+            @ApiResponse(responseCode = "404", description = "유저 또는 챌린지를 찾을 수 없음"),
+            @ApiResponse(responseCode = "403", description = "삭제 권한 없음")
+    })
     @DeleteMapping("/api/challenges/{challengeId}")
     public ResponseEntity<Void> deleteChallenge(
             @AuthenticationPrincipal UserDetails userDetails,
+            @Parameter(description = "챌린지 ID", required = true, example = "10")
             @PathVariable Long challengeId
     ) {
         challengeService.deleteChallenge(userDetails.getUsername(), challengeId);
@@ -99,8 +178,20 @@ public class ChallengeApiController {
     /*
         수정 화면 진입 시 기존 설정 값을 내려주기 위한 컨트롤러다.
      */
+    @Operation(
+            summary = "챌린지 설정 조회",
+            description = """
+        챌린지 수정 화면 진입 시 기존 설정 값을 조회한다.
+        ex) GET /api/challenges/1/settings
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "챌린지 설정 조회 성공"),
+            @ApiResponse(responseCode = "404", description = "챌린지를 찾을 수 없음")
+    })
     @GetMapping("/api/challenges/{challengeId}/settings")
     public ResponseEntity<ChallengeSettingsResponse> getSettings(
+            @Parameter(description = "챌린지 ID", required = true, example = "2")
             @PathVariable Long challengeId
     ) {
         ChallengeSettingsResponse response = challengeService.getSettings(challengeId);
@@ -111,9 +202,24 @@ public class ChallengeApiController {
     /*
         클라이언트가 보낸 챌린지 설정을 반영(덮어쓰기)하는 컨트롤러이다.
      */
+    @Operation(
+            summary = "챌린지 설정 수정",
+            description = """
+        클라이언트가 보낸 챌린지 설정으로 기존 설정을 덮어쓴다.
+        챌린지 설명 부분을 제외하고 null값이 올 수 없다.
+        ex) PUT /api/challenges/1/settings
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "챌린지 설정 수정 성공"),
+            @ApiResponse(responseCode = "401", description = "토큰 인증 실패"),
+            @ApiResponse(responseCode = "404", description = "챌린지 또는 태그를 찾을 수 없음"),
+            @ApiResponse(responseCode = "403", description = "수정 권한 없음")
+    })
     @PutMapping("/api/challenges/{challengeId}/settings")
     public ResponseEntity<Void> updateSettings(
             @AuthenticationPrincipal UserDetails userDetails,
+            @Parameter(description = "챌린지 ID", required = true, example = "2")
             @PathVariable Long challengeId,
             @RequestBody @Valid ChallengeSettingsUpdateRequest request
     ) {
