@@ -10,10 +10,7 @@ import me.jsu.springbootdeveloper.service.challenge.NotAllowedChallengeActionExc
 import me.jsu.springbootdeveloper.service.cloudinary.CloudinaryDeleteException;
 import me.jsu.springbootdeveloper.service.cloudinary.CloudinaryUploadException;
 import me.jsu.springbootdeveloper.service.oauth.OAuthLoginException;
-import me.jsu.springbootdeveloper.service.post.ArticleAccessDeniedException;
-import me.jsu.springbootdeveloper.service.post.ArticleNotFoundException;
-import me.jsu.springbootdeveloper.service.post.CommentAccessDeniedException;
-import me.jsu.springbootdeveloper.service.post.CommentNotFoundException;
+import me.jsu.springbootdeveloper.service.post.*;
 import me.jsu.springbootdeveloper.service.tag.TagNotFoundException;
 import me.jsu.springbootdeveloper.service.token.InvalidTokenException;
 import me.jsu.springbootdeveloper.service.token.TokenNotFoundException;
@@ -257,6 +254,22 @@ public class GlobalExceptionHandler {
                         "NOT_ALLOWED_CHALLENGE_ACTION",
                         e.getErrorCode()
                 ));
+    }
+
+    /*
+        이미지에 관한 처리 중, 검증에 실패하거나 최대 이미지 개수를 초과하는 등의 클라이언트의 요청 오류가 발생하는 경우를 처리하는 핸들러이다.
+     */
+    @ExceptionHandler(InvalidImageException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidImage(
+                InvalidImageException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(
+                        "INVALID_IMAGE",
+                        e.getErrorCode()
+                ));
+
     }
 
     /*

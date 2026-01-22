@@ -60,7 +60,7 @@ public class Article {
     @Column(name = "id", updatable = false)
     private Long id;
 
-    @Column(name = "title", nullable = false)
+    @Column(name = "title", nullable = true)
     private String title;
 
     @Column(columnDefinition = "TEXT", nullable = false)
