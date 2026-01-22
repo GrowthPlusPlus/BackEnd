@@ -4,6 +4,7 @@ package me.jsu.springbootdeveloper.service.post;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import me.jsu.springbootdeveloper.domain.challenge.ChallengeParticipant;
 import me.jsu.springbootdeveloper.domain.post.Article;
 import me.jsu.springbootdeveloper.domain.challenge.Challenge;
 import me.jsu.springbootdeveloper.domain.challenge.ChallengeVisibility;
@@ -29,8 +30,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.Optional;
 
@@ -50,7 +53,7 @@ public class PostService {
         유저로부터 받은 이미지는 검증 서비스를 거치고 왔다고 가정하고 수행한다.
      */
     @Transactional
-    public ArticleDetailResponse save(String email, String title, String content, Long challengeId, List<MultipartFile> images) {
+    public ArticleDetailResponse save(String email, String content, Long challengeId, List<MultipartFile> images) {
         // 유저 이메일로 user 객체를 검색한다.
         User user = userService.findByEmail(email);
 
@@ -60,18 +63,15 @@ public class PostService {
         // 챌린지 인증 시각을 정확하게 보기 위해 생성 시각과는 다른 인증 날짜 도메인을 생성한다.
         LocalDate postDate = LocalDate.now(ZoneId.of("Asia/Seoul"));
 
-        // 서버에 글을 저장한다.
-        Article article = postRepository.save(Article.builder()
-                .title(title)
-                .content(content)
-                .user(user)
-                .challenge(challenge)
-                .postDate(postDate)
-                .build());
+        // 하루 1회로 인증을 제한한다.
+        boolean alreadyPosted = postRepository.existsByUser_IdAndChallenge_IdAndPostDate(user.getId(), challenge.getId(), postDate);
+        if (alreadyPosted) {
+            throw new DuplicateDailyPostException("DAILY_POST_ALREADY_EXISTS");
+        }
 
         // 챌린지의 이미지 필수 여부를 확인한다.
         boolean photoRequired = challenge.isPhotoRequired();
-        if (photoRequired && images.isEmpty()) {  
+        if (photoRequired && images.isEmpty()) {
             throw new InvalidImageException("IMAGE_REQUIRED");  // 사진이 필수 인증인데 이미지가 없다면 예외처리 한다.
         }
 
@@ -79,6 +79,14 @@ public class PostService {
         if (images.size() > MAX_IMAGE_COUNT) {
             throw new InvalidImageException("MAX_IMAGE_COUNT_EXCEEDED");
         }
+
+        // 서버에 글을 저장한다.
+        Article article = postRepository.save(Article.builder()
+                .content(content)
+                .user(user)
+                .challenge(challenge)
+                .postDate(postDate)
+                .build());
 
         // 검증된 사진을 DB와 클라우디너리에 저장한다. 이미지가 없는 경우엔 if문을 실행하지 않는다.
         if (!images.isEmpty()) {
@@ -94,6 +102,18 @@ public class PostService {
                         .build());
             }
         }
+
+        // 인증글을 업데이트 했으므로 총 인증 횟수와 연속 인증 횟수를 업데이트 한다.
+        challengeService.succeedChallenge(article.getId(), challengeId);
+
+        // 인증글을 업데이트 했으므로 챌린지 데일리 로그도 업데이트 한다.
+        challengeService.createDailyLog(user, challenge, article, postDate);
+
+        // 주의 시작인 월요일을 계산한다.
+        LocalDate weekStartDate = postDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+
+        // 인증글을 업데이트 했으므로 챌린지 주간 상태도 업데이트 한다.
+        challengeService.updateWeeklyStatus(user, challenge, weekStartDate, challenge.getRequiredWeeklyCount());
 
         // 저장한 인증글 id로 검색하여 인증글 상세 정보를 반환한다.
         return getPost(email, article.getId());
@@ -124,6 +144,11 @@ public class PostService {
         Article article = postRepository.findWithUserAndProfileById(postId)  // 인증글과 작성자 정보, 사진을 함께 조회한다.
                 .orElseThrow(() -> new ArticleNotFoundException("ARTICLE_NOT_FOUND_FOR_ID"));
 
+        // 해당 챌린지의 총 인증 횟수를 구한다.
+        ChallengeParticipant challengeParticipant = challengeService.findByUser_IdAndChallenge_IdForParticipant(
+                article.getUser().getId(), article.getChallenge().getId());
+        int totalSuccessDays = challengeParticipant.getTotalSuccessDays();
+
         // 작성자의 프로필 사진이 없는 경우를 대비한다.
         String userImageUrl;
         UserProfilePicture userProfilePicture = article.getUser().getUserProfilePicture();
@@ -141,7 +166,8 @@ public class PostService {
         boolean liked = postLikeRepository.existsByArticle_IdAndUser_Id(postId, user.getId());
 
         return ArticleDetailResponse.builder()
-                .title(article.getTitle())
+                .challengeTitle(article.getChallenge().getTitle())
+                .totalSuccessDays(totalSuccessDays)  // 총 성공 일수이다.
                 .content(article.getContent())
                 .articleImageUrl(articlePicture)  // 게시글의 사진이다.
                 .userNickname(article.getUser().getNickname())

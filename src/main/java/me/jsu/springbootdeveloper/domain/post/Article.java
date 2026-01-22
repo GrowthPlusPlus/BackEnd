@@ -116,8 +116,7 @@ public class Article {
             .build();
      */
     @Builder
-    public Article(String title, String content, User user, Challenge challenge, LocalDate postDate) {
-        this.title = title;
+    public Article(String content, User user, Challenge challenge, LocalDate postDate) {
         this.content = content;
         this.user = user;
         this.challenge = challenge;

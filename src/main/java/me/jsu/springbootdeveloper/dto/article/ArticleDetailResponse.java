@@ -14,7 +14,8 @@ import java.util.List;
 @Getter
 @Builder
 public class ArticleDetailResponse {
-    private String title;
+    private String challengeTitle;
+    private int totalSuccessDays;
     private String content;
     private List<String> articleImageUrl;
     private String userNickname;

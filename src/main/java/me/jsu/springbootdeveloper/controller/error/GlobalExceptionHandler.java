@@ -273,6 +273,21 @@ public class GlobalExceptionHandler {
     }
 
     /*
+        같은 챌린지에 대해 하루에 두 번 중복하여 인증하는 경우를 처리하는 핸들러이다.
+    */
+    @ExceptionHandler(DuplicateDailyPostException.class)
+    public ResponseEntity<ErrorResponse>  handleCloudinaryError(
+            DuplicateDailyPostException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)  // 409
+                .body(new ErrorResponse(
+                        "DUPLICATION_UPLOAD_ERROR",
+                        e.getErrorCode()
+                ));
+    }
+
+    /*
         위에서 정의하지 않은 모든 기타 서버 오류들을 처리해준다.
         spring 기본 처리에 예외를 맡기는 것이 좋다. 따라서 비활성화 한다.
 

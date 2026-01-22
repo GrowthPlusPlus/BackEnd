@@ -6,15 +6,12 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.domain.challenge.*;
 import me.jsu.springbootdeveloper.domain.post.Article;
-import me.jsu.springbootdeveloper.domain.tag.Tag;
-import me.jsu.springbootdeveloper.domain.tag.TagToChallenge;
 import me.jsu.springbootdeveloper.domain.user.User;
 import me.jsu.springbootdeveloper.domain.user.UserProfilePicture;
 import me.jsu.springbootdeveloper.dto.challenge.ChallengeMemberResponse;
 import me.jsu.springbootdeveloper.dto.tag.TagResponse;
 import me.jsu.springbootdeveloper.repository.challenge.*;
 import me.jsu.springbootdeveloper.repository.post.PostRepository;
-import me.jsu.springbootdeveloper.repository.tag.TagToChallengeRepository;
 import me.jsu.springbootdeveloper.service.UserService;
 import me.jsu.springbootdeveloper.dto.challenge.*;
 import me.jsu.springbootdeveloper.service.tag.TagService;
@@ -27,6 +24,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 
 /*
     챌린지와 관련된 일을 처리하는 클래스이다.
@@ -376,5 +374,45 @@ public class ChallengeService {
 
         // 설정 값을 업데이트 한다. content값은 null이 될 수 있다.
         challenge.updateSettings(endDate, requiredWeeklyCount, content, photoRequired, challengeVisibility);
+    }
+
+    /*
+        인증 글이 생성되었을 때, 데일리 로그를 생성 한다.
+     */
+    public void createDailyLog(User user, Challenge challenge, Article article, LocalDate postDate) {
+        challengeDailyLogRepository.save(ChallengeDailyLog.builder()
+                .user(user)
+                .challenge(challenge)
+                .article(article)
+                .postDate(postDate)
+                .build());
+    }
+
+    /*
+        인증글이 생성되었을 때, 챌린지 주간 상태를 업데이트 한다.
+        월요일을 기준으로 이번주에 처음 인증을 하면 그 주에 해당하는 챌린지 주간 상태값이 생성된다.
+        만약 주의 첫 인증이 아니라면 값을 업데이트 한다.
+     */
+    public void updateWeeklyStatus(User user, Challenge challenge, LocalDate weekStartDate, int requiredWeeklyCount) {
+        // 이번주에 해당하는 챌린지 주간 상태 튜플이 있는지 검색한다.
+        Optional<ChallengeWeeklyStatus> optionalStatus = challengeWeeklyStatusRepository.findByUser_IdAndChallenge_IdAndWeekStartDate(
+                                user.getId(),
+                                challenge.getId(),
+                                weekStartDate
+        );
+        if (optionalStatus.isPresent()) {  // 이번 주 상태가 이미 있으면 업데이트 한다.
+            ChallengeWeeklyStatus weeklyStatus = optionalStatus.get();
+            weeklyStatus.updateSuccessCount(requiredWeeklyCount);
+        }
+        else {  // 이번 주 첫 인증이면 새로 생성한다.
+            ChallengeWeeklyStatus weeklyStatus = ChallengeWeeklyStatus.builder()
+                            .user(user)
+                            .challenge(challenge)
+                            .weekStartDate(weekStartDate)
+                            .build();
+
+            weeklyStatus.updateSuccessCount(requiredWeeklyCount);
+            challengeWeeklyStatusRepository.save(weeklyStatus);
+        }
     }
 }
