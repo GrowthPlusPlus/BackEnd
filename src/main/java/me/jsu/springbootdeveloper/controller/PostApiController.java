@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.domain.post.Article;
 import me.jsu.springbootdeveloper.dto.article.*;
 import me.jsu.springbootdeveloper.service.post.CommentService;
+import me.jsu.springbootdeveloper.service.post.ImageVerificationService;
 import me.jsu.springbootdeveloper.service.post.PostService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +22,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -32,6 +34,33 @@ import java.util.List;
 public class PostApiController {
     private final PostService postService;  // 의존성을 주입하여 빈으로 등록된 PostService클래스의 함수를 사용한다.
     private final CommentService commentService;
+    private final ImageVerificationService imageVerificationService;
+
+    /*
+        서버에 사진을 올리기 전에, 해당 사진이 올바른 사진인지 검사하는 컨트롤러이다.
+        사진 1장을 사용자가 올릴 때마다 수행한다.
+     */
+    @Operation(
+            summary = "인증 사진 검사",
+            description = """
+        챌린지 인증을 위해 올린 사진을 검사한다. 사진 1장을 사용자가 올릴 때마다 수행한다.
+        현재 하는 검사는 이미지 크기 검사, 이미지 포멧 검사, 손상된 이미지 업로드 차단 이다. AI 검사는 추후에 추가해야 한다.
+        ex) POST /api/image/verify"
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "이미지 요청 검증 성공"),
+            @ApiResponse(responseCode = "400", description = "이미지 검증 실패")
+    })
+    @PostMapping("/api/image/verify")
+    public ResponseEntity<Void> verify(
+            @Parameter(description = "검사할 이미지 파일", required = true)
+            @RequestPart("images") MultipartFile image
+    ) {
+        imageVerificationService.verify(image);
+
+        return ResponseEntity.noContent().build();  // 인증이 성공한 경우이다.
+    }
 
     /*
        요청으로 온 http 메서드가 post이고, url이 아래와 같으면 매핑하여 함수를 실행한다.
@@ -44,28 +73,29 @@ public class PostApiController {
             summary = "인증글 생성",
             description = """
         챌린지 인증을 위한 게시글을 생성한다.
-        베이스 코드를 정리하여 만든 함수로, Sprint 1에 해당하지 않아 사진 올리기 기능 등이 없으므로 추후에 수정될 예정으로 참고 X
+        사진은 최대 5장 받을 수 있으며, 먼저 사진 검증을 받은 뒤 해당 컨트롤러로 인증글을 업로드 해야 한다.
         ex) POST /api/articles
         """
     )
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "게시글 생성 성공"),
             @ApiResponse(responseCode = "401", description = "인증 실패"),
-            @ApiResponse(responseCode = "400", description = "요청 값 검증 실패")
+            @ApiResponse(responseCode = "400", description = "요청 값 검증 실패"),
+            @ApiResponse(responseCode = "500", description = "외부 이미지 스토리지 업로드 실패")
     })
     @PostMapping("/api/articles")  // post형태는 REST API에서는 생성하는 경우에 사용한다.
     /*
         AddArticleRequest 맴버변수에 맞지 않는 request값이 들어오면 무시한다.
         principal은 스프링 시큐리티 환경에서 인증된 사용자임을 나타내는 매개변수이다.
      */
-    public ResponseEntity<ArticleResponse> addArticle(
-            @RequestBody AddArticleRequest request,
+    public ResponseEntity<ArticleDetailResponse> addArticle(
             // 안정성을 위하여 Principal 대신 사용한다.
-            @AuthenticationPrincipal UserDetails userDetails) {
-        Article savedArticle = postService.save(request, userDetails.getUsername());
-
-        //DB에 저장한 정보를 그대로 다시 반환하는 것은 위험하므로 클라이언트에게 필요한 정보만으로 정제한다.
-        ArticleResponse response = new ArticleResponse(savedArticle);
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestPart("data") @Valid AddArticleRequest request,
+            @Parameter(description = "업로드할 인증 이미지 파일 목록", required = true)
+            @RequestPart("image") List<MultipartFile> images
+    ) {
+        ArticleDetailResponse response = postService.save(userDetails.getUsername(), request.getTitle(), request.getContent(), request.getChallengeId(), images);
 
         // post가 성공하면, 게시글 정보를 응답 객체에 담아 JSON으로 반환하여 클라이언트가 바로 게시글 화면으로 넘어갈 수 있도록 한다.
         return ResponseEntity

@@ -12,25 +12,27 @@ import me.jsu.springbootdeveloper.domain.user.User;
 import me.jsu.springbootdeveloper.domain.user.UserProfilePicture;
 import me.jsu.springbootdeveloper.dto.article.AddArticleRequest;
 import me.jsu.springbootdeveloper.dto.article.ArticleDetailResponse;
-import me.jsu.springbootdeveloper.dto.article.ArticleResponse;
 import me.jsu.springbootdeveloper.dto.article.UpdateArticleRequest;
 import me.jsu.springbootdeveloper.dto.challengeCalendar.ChallengeCalendarPhotoResponse;
 import me.jsu.springbootdeveloper.dto.challengeCalendar.ChallengeCalendarPostResponse;
-import me.jsu.springbootdeveloper.repository.post.CommentRepository;
+import me.jsu.springbootdeveloper.dto.picture.ImageUploadResult;
 import me.jsu.springbootdeveloper.repository.post.PostLikeRepository;
 import me.jsu.springbootdeveloper.repository.post.PostPictureRepository;
 import me.jsu.springbootdeveloper.repository.post.PostRepository;
 import me.jsu.springbootdeveloper.service.UserService;
 import me.jsu.springbootdeveloper.service.challenge.ChallengeService;
 import me.jsu.springbootdeveloper.service.cloudinary.CloudinaryService;
+import me.jsu.springbootdeveloper.service.cloudinary.CloudinaryUploadException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Optional;
 
 @RequiredArgsConstructor  // final 또는 notNull이 있는 맴버변수만 생성자에서 초기화 한다.
 @Service
@@ -38,33 +40,63 @@ public class PostService {
     private final PostRepository postRepository;
     private final UserService userService;
     private final ChallengeService challengeService;
-    private final CommentRepository commentRepository;
     private final PostLikeRepository postLikeRepository;
     private final PostPictureRepository postPictureRepository;
     private final CloudinaryService cloudinaryService;
+    private static final int MAX_IMAGE_COUNT = 5;
 
     /*
         게시글을 추가하는 함수이다.
-        request 객체와 userName 정보를 바탕으로 게시글을 생성하여 DB에 업데이트 한다.
+        유저로부터 받은 이미지는 검증 서비스를 거치고 왔다고 가정하고 수행한다.
      */
-    public Article save(AddArticleRequest request, String userName) {
+    @Transactional
+    public ArticleDetailResponse save(String email, String title, String content, Long challengeId, List<MultipartFile> images) {
         // 유저 이메일로 user 객체를 검색한다.
-        User user = userService.findByEmail(userName);
+        User user = userService.findByEmail(email);
 
         // request로 온 챌린지 id로 post가 어떤 챌린지에 속하는지 검색한다.
-        Challenge challenge = challengeService.findById(request.getChallengeId());
+        Challenge challenge = challengeService.findById(challengeId);
 
         // 챌린지 인증 시각을 정확하게 보기 위해 생성 시각과는 다른 인증 날짜 도메인을 생성한다.
         LocalDate postDate = LocalDate.now(ZoneId.of("Asia/Seoul"));
 
-        // 서버에서 게시글 생성 시각을 명시적으로 설정한다.
-        return postRepository.save(Article.builder()
-                .title(request.getTitle())
-                .content(request.getContent())
+        // 서버에 글을 저장한다.
+        Article article = postRepository.save(Article.builder()
+                .title(title)
+                .content(content)
                 .user(user)
                 .challenge(challenge)
                 .postDate(postDate)
                 .build());
+
+        // 챌린지의 이미지 필수 여부를 확인한다.
+        boolean photoRequired = challenge.isPhotoRequired();
+        if (photoRequired && images.isEmpty()) {  
+            throw new InvalidImageException("IMAGE_REQUIRED");  // 사진이 필수 인증인데 이미지가 없다면 예외처리 한다.
+        }
+
+        // 업로드 한 사진의 개수가 5개보다 많으면 예외처리 한다.
+        if (images.size() > MAX_IMAGE_COUNT) {
+            throw new InvalidImageException("MAX_IMAGE_COUNT_EXCEEDED");
+        }
+
+        // 검증된 사진을 DB와 클라우디너리에 저장한다. 이미지가 없는 경우엔 if문을 실행하지 않는다.
+        if (!images.isEmpty()) {
+            for (MultipartFile multipartFile : images) {
+                // 인증글 이미지를 클라우디너리에 업로드하고 정보를 반환받는다.
+                ImageUploadResult imageUploadResult = cloudinaryService.uploadImage(multipartFile);
+
+                // 사진 정보를 DB에 반영한다.
+                postPictureRepository.save(PostPicture.builder()
+                        .article(article)
+                        .cloudinaryPublicId(imageUploadResult.publicId())
+                        .imageUrl(imageUploadResult.secureUrl())
+                        .build());
+            }
+        }
+
+        // 저장한 인증글 id로 검색하여 인증글 상세 정보를 반환한다.
+        return getPost(email, article.getId());
     }
 
     /*

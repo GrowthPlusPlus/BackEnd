@@ -110,6 +110,7 @@ public class UserApiController {
             summary = "프로필 이미지 등록",
             description = """
         로그인한 사용자의 프로필 이미지를 등록하거나 변경한다.
+        이미지 파일은 multipart/form-data의 Body 안의 image 파트로 전달받는다.
         ex) POST /api/users/me/profile-image
         """
     )
@@ -122,7 +123,7 @@ public class UserApiController {
     public ResponseEntity<Void> updateProfileImage(
             @AuthenticationPrincipal UserDetails userDetails,
             @Parameter(description = "업로드할 프로필 이미지 파일", required = true)
-            @RequestPart MultipartFile image
+            @RequestPart("image") MultipartFile image
     ) {
         userService.updateProfileImage(userDetails.getUsername(), image);
         return ResponseEntity.noContent().build();
