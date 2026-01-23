@@ -32,7 +32,12 @@ public class TokenProvider {
         시크릿 키를 이용하여 암호화된 키를 반환한다.
      */
     private Key getSigningKey() {
-        byte[] keyBytes = Base64.getDecoder().decode(jwtProperties.getSecretKey());
+        byte[] keyBytes;
+        try {
+            keyBytes = Base64.getDecoder().decode(jwtProperties.getSecretKey());
+        } catch (IllegalArgumentException e) {
+            keyBytes = Base64.getUrlDecoder().decode(jwtProperties.getSecretKey());
+        }
         return Keys.hmacShaKeyFor(keyBytes);
     }
 

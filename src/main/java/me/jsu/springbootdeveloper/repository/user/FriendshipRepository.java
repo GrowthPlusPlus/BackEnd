@@ -5,6 +5,7 @@ package me.jsu.springbootdeveloper.repository.user;
 import me.jsu.springbootdeveloper.domain.user.Friendship;
 import me.jsu.springbootdeveloper.domain.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -28,4 +29,22 @@ public interface FriendshipRepository extends JpaRepository<Friendship, Long> {
         해당 검사는 조회용 api가 아닌 도메인 규칙으로 존재 여부를 검사하기 때문에 user id가 아닌 객체로 비교한다.
      */
     boolean existsByUser1AndUser2(User user1, User user2);
+
+    //친구 삭제
+    @Modifying
+    @Query("DELETE FROM Friendship f WHERE (f.user1 = :user AND f.user2 = :friend) OR (f.user1 = :friend AND f.user2 = :user)")
+    void deleteFriendship(@Param("user") User user, @Param("friend") User friend);
+
+    // 나와 친구인 상대방 유저들 가져오기 (Hibernate 6 호환 버전)
+    @Query("""
+        SELECT u FROM User u 
+        WHERE u.id IN (
+            SELECT CASE WHEN f.user1.id = :userId THEN f.user2.id ELSE f.user1.id END 
+            FROM Friendship f 
+            WHERE f.user1.id = :userId OR f.user2.id = :userId
+        )
+    """)
+
+    List<User> findAllFriendsByUserId(@Param("userId") Long userId);
+
 }

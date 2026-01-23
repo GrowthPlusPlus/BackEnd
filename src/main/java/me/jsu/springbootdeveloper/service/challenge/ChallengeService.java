@@ -5,7 +5,12 @@ package me.jsu.springbootdeveloper.service.challenge;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.domain.challenge.*;
+import me.jsu.springbootdeveloper.domain.challenge.Challenge;
+import me.jsu.springbootdeveloper.domain.challenge.ChallengeDailyLog;
+import me.jsu.springbootdeveloper.domain.challenge.ChallengeParticipant;
+import me.jsu.springbootdeveloper.domain.challenge.ChallengeWeeklyStatus;
 import me.jsu.springbootdeveloper.domain.post.Article;
+import me.jsu.springbootdeveloper.domain.challenge.*;
 import me.jsu.springbootdeveloper.domain.user.User;
 import me.jsu.springbootdeveloper.domain.user.UserProfilePicture;
 import me.jsu.springbootdeveloper.dto.challenge.ChallengeMemberResponse;
@@ -19,13 +24,22 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import me.jsu.springbootdeveloper.dto.FriendListResponse;
+import me.jsu.springbootdeveloper.dto.createChallenge.CreateChallengeRequest;
+import me.jsu.springbootdeveloper.dto.createChallenge.CreateChallengeResponse;
+import me.jsu.springbootdeveloper.repository.challenge.ChallengeDailyLogRepository;
+import me.jsu.springbootdeveloper.repository.challenge.ChallengeParticipantRepository;
+import me.jsu.springbootdeveloper.repository.challenge.ChallengeRepository;
+import me.jsu.springbootdeveloper.repository.challenge.ChallengeWeeklyStatusRepository;
+import me.jsu.springbootdeveloper.repository.user.UserRepository;
+import me.jsu.springbootdeveloper.service.FriendService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
-
 /*
     챌린지와 관련된 일을 처리하는 클래스이다.
  */
@@ -40,6 +54,52 @@ public class ChallengeService {
     private final TagService tagService;
     private final UserService userService;
     private final PostRepository postRepository;
+    private final UserRepository userRepository;
+    //base url(application.yml의 base url값 불러옴)
+    @Value("${app.base-url}")
+    private String baseUrl;
+    //챌린지 생성 시 친구 목록 가져와서 전달해야 함
+    private final FriendService friendService;
+
+
+    //챌린지 생성 기능
+    @Transactional
+    public CreateChallengeResponse createChallenge(String email, CreateChallengeRequest dto) {
+        //로그인한 유저 정보 조회 (인증 객체에서 넘어온 email 사용)
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("해당 유저를 찾을 수 없습니다: " + email));
+        //챌린지 저장하기
+        // 종료일 계산 로직 (시작일 + 인증 기간), 화면에서 '30일'을 선택했다면 startDate로부터 30일 뒤를 계산합니다.
+        LocalDate endDate = dto.getStartDate().plusDays(dto.getDuration());
+
+        //Challenge 객체 생성 (Builder 패턴 사용)
+        Challenge challenge = Challenge.builder()
+                .title(dto.getTitle())
+                .content(dto.getDescription())
+                //챌린지 생성자(방장)
+                .user(user)
+                // 화면에 필드가 없으므로 디폴트 50
+                .maxParticipantNumber((dto.getMaxParticipantNumber() != null) ? dto.getMaxParticipantNumber() : 50)
+                // 화면에 필드가 없으므로 디폴트 PUBLIC
+                .challengeVisibility((dto.getChallengeVisibility() != null) ? dto.getChallengeVisibility() : ChallengeVisibility.PUBLIC)
+                .startDate(dto.getStartDate())
+                .endDate(endDate)
+                .requiredWeeklyCount(dto.getFrequency())
+                .build();
+
+        //챌린지 객체 db에 저장
+        Challenge savedChallenge = challengeRepository.save(challenge);
+
+        //공유 Url 생성
+        String inviteUrl = baseUrl + "/challenges/" + savedChallenge.getId();
+
+        //친구 목록 가져오기
+        List<FriendListResponse> friends = friendService.getFriendList(email);
+
+        //(1) url 링크, (2)친구 목록 반환하기
+        return new CreateChallengeResponse(inviteUrl, friends);
+
+    }
 
     /*
         챌린지 id로 챌린지를 검색해주는 함수이다.
@@ -366,7 +426,7 @@ public class ChallengeService {
 
         // int로 들어온 종료일을 LocalDate 형식으로 변환한다.
         LocalDate endDate = challenge.getStartDate().plusDays(endDateInteger);
-        
+
         tagService.deleteAllChallenge_Id(challengeId);  // 기존 챌린지-태그 매핑을 모두 삭제한다.
 
         // 요청 태그로 업데이트 한다.

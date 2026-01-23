@@ -7,14 +7,26 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.dto.challenge.*;
+import me.jsu.springbootdeveloper.dto.createChallenge.CreateChallengeResponse;
+import me.jsu.springbootdeveloper.dto.createChallenge.CreateChallengeRequest;
+import me.jsu.springbootdeveloper.repository.challenge.ChallengeParticipantRepository;
+import me.jsu.springbootdeveloper.repository.challenge.ChallengeRepository;
+import me.jsu.springbootdeveloper.service.UserService;
 import me.jsu.springbootdeveloper.service.challenge.ChallengeService;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 /*
     챌린지에 관련된 일을 수행하는 api 컨트롤러이다.
@@ -23,7 +35,28 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class ChallengeApiController {
     private final ChallengeService challengeService;
+    private final ChallengeRepository challengeRepository;
+    private final ChallengeParticipantRepository challengeParticipantRepository;
+    private final UserService userService;
 
+    /*
+        챌린지를 생성하는 POST 요청 API이다.
+        요청 본문으로 챌린지 정보를 받고, 요청자의 이메일(UserDetails)을 기반으로 오너를 설정한다.
+
+        @param userDetails 인증된 유저 정보(이메일)
+        @param request 생성할 챌린지 정보
+        @return 생성된 챌린지 상세 정보(ChallengeDetailResponse)
+     */
+    @Transactional
+    @PostMapping("/api/challenges/create")
+    public ResponseEntity<CreateChallengeResponse> createChallenge (@AuthenticationPrincipal UserDetails userDetails,
+                                                                    @RequestBody CreateChallengeRequest request)
+
+    {
+        CreateChallengeResponse response = challengeService.createChallenge(userDetails.getUsername(), request);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
     /*
         유저가 챌린지 id로 해당 챌린지에서 나가도록 하는 컨트롤러이다.
         챌린지에서 나가면 의미 없는 챌린지 초대 링크, 챌린지 위크 스테이터스 DB 값도 삭제한다.
