@@ -3,7 +3,6 @@
 package me.jsu.springbootdeveloper.controller;
 
 import jakarta.transaction.Transactional;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -13,11 +12,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.domain.challenge.Challenge;
-import me.jsu.springbootdeveloper.domain.challenge.ChallengeParticipant;
 import me.jsu.springbootdeveloper.domain.challenge.ChallengeVisibility;
-import me.jsu.springbootdeveloper.domain.user.User;
-import me.jsu.springbootdeveloper.dto.ChallengeRequestDto;
-import me.jsu.springbootdeveloper.dto.ChallengeResponseDto;
+import me.jsu.springbootdeveloper.dto.createChallenge.CreateChallengeResponse;
+import me.jsu.springbootdeveloper.dto.createChallenge.CreateChallengeRequest;
 import me.jsu.springbootdeveloper.repository.challenge.ChallengeParticipantRepository;
 import me.jsu.springbootdeveloper.repository.challenge.ChallengeRepository;
 import me.jsu.springbootdeveloper.service.UserService;
@@ -36,7 +33,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.bind.annotation.*;
+
 import java.time.LocalDate;
 
 /*
@@ -62,16 +59,12 @@ public class ChallengeApiController {
      */
     @Transactional
     @PostMapping("/api/challenges/create")
-    public ResponseEntity<ChallengeResponseDto> createChallenge (@AuthenticationPrincipal UserDetails userDetails,
-                                                                 @Valid @RequestBody ChallengeRequestDto dto)
+    public ResponseEntity<CreateChallengeResponse> createChallenge (@AuthenticationPrincipal UserDetails userDetails,
+                                                                    @RequestBody CreateChallengeRequest request)
         
         {
-            // 1. 서비스를 통해 엔티티 저장
-            Challenge savedChallenge = challengeService.save(userDetails.getUsername(), dto);
-            
-            // 2. 엔티티를 응답용 DTO로 변환하여 반환
-            ChallengeResponseDto response = new ChallengeResponseDto(savedChallenge);
-            
+            CreateChallengeResponse response = challengeService.createChallenge(userDetails.getUsername(), request);
+
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -148,7 +141,7 @@ public class ChallengeApiController {
     /*
         챌린지 생성 요청 값의 유효성을 검사한다.
         컨트롤러에서 처리 가능한 범위의 간단한 검증만 수행한다.
-     */
+
     private static void validateCreateRequest(CreateChallengeRequest request) {
         LocalDate startDate;
         LocalDate endDate;
@@ -175,7 +168,7 @@ public class ChallengeApiController {
         챌린지 생성 요청 DTO이다.
         날짜(LocalDate)는 Jackson 설정에 따라 배열 형태로 직렬/역직렬화될 수 있으므로,
         요청/응답은 ISO-8601 문자열(yyyy-MM-dd)로 취급한다.
-     */
+
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
@@ -203,9 +196,9 @@ public class ChallengeApiController {
         private int requiredWeeklyCount;
     }
 
-    /*
-        챌린지 목록/요약 정보를 반환하기 위한 DTO이다.
-     */
+    */
+        //챌린지 목록/요약 정보를 반환하기 위한 DTO이다.
+
     @Getter
     public static class ChallengeSummaryResponse {
         private final Long id;
@@ -259,4 +252,6 @@ public class ChallengeApiController {
             this.requiredWeeklyCount = challenge.getRequiredWeeklyCount();
         }
     }
+
+
 }

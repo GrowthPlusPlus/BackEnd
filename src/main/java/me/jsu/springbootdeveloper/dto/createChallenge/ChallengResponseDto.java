@@ -1,4 +1,4 @@
-package me.jsu.springbootdeveloper.dto;
+package me.jsu.springbootdeveloper.dto.createChallenge;
 
 import lombok.Getter;
 import me.jsu.springbootdeveloper.domain.challenge.Challenge;
@@ -8,7 +8,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Getter
-public class ChallengeResponseDto {
+public class ChallengResponseDto {
     private Long id;                // 생성된 챌린지 식별자
     private String title;
     private String content;
@@ -20,9 +20,11 @@ public class ChallengeResponseDto {
     private int requiredWeeklyCount;
     private LocalDateTime createdAt; // 생성 시간 (Auditing)
     private ChallengeVisibility challengeVisibility;
+    //챌린지 생성 링크
+    private String challengeLink;
 
     // Entity -> DTO 변환 생성자
-    public ChallengeResponseDto(Challenge challenge) {
+    public ChallengResponseDto(Challenge challenge) {
         this.id = challenge.getId();
         this.title = challenge.getTitle();
         this.content = challenge.getContent();

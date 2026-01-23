@@ -5,8 +5,7 @@ import me.jsu.springbootdeveloper.dto.FriendListResponse;
 import me.jsu.springbootdeveloper.dto.FriendRequestResponse_Sent;
 import me.jsu.springbootdeveloper.dto.FriendRequestResponse_Received;
 import me.jsu.springbootdeveloper.repository.user.UserRepository;
-import me.jsu.springbootdeveloper.service.FriendRequestService;
-import org.springframework.http.HttpStatus;
+import me.jsu.springbootdeveloper.service.FriendService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,7 +17,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("/api/users/friend")
 public class FriendRequestController {
-    private final FriendRequestService friendRequestService;
+    private final FriendService friendService;
     private final UserRepository userRepository;
 
     //친구 신청 보내기
@@ -28,7 +27,7 @@ public class FriendRequestController {
             @AuthenticationPrincipal UserDetails userDetails) {
 
         // 버튼 누르면 실행되는 로직
-        friendRequestService.sendFriendRequest(userDetails.getUsername(), toUserNickName);
+        friendService.sendFriendRequest(userDetails.getUsername(), toUserNickName);
 
         return ResponseEntity.ok().build();
     }
@@ -39,7 +38,7 @@ public class FriendRequestController {
             @AuthenticationPrincipal UserDetails userDetails) {
 
         List<FriendRequestResponse_Received> responses =
-                friendRequestService.getReceivedRequests(userDetails.getUsername());
+                friendService.getReceivedRequests(userDetails.getUsername());
 
         return ResponseEntity.ok(responses);
     }
@@ -50,7 +49,7 @@ public class FriendRequestController {
             @PathVariable Long requestId,
             @AuthenticationPrincipal UserDetails userDetails) {
 
-        friendRequestService.acceptFriendRequest(requestId, userDetails.getUsername());
+        friendService.acceptFriendRequest(requestId, userDetails.getUsername());
 
         return ResponseEntity.ok("친구 신청을 수락했습니다.");
     }
@@ -61,7 +60,7 @@ public class FriendRequestController {
             @PathVariable Long requestId,
             @AuthenticationPrincipal UserDetails userDetails) {
 
-        friendRequestService.rejectOrCancelRequest(requestId, userDetails.getUsername(), true);
+        friendService.rejectOrCancelRequest(requestId, userDetails.getUsername(), true);
 
         return ResponseEntity.ok("친구 신청을 거절했습니다.");
     }
@@ -72,7 +71,7 @@ public class FriendRequestController {
 
         // getReceivedRequests 대신 getSentRequests 호출
         List<FriendRequestResponse_Sent> responses =
-                friendRequestService.getSentRequests(userDetails.getUsername());
+                friendService.getSentRequests(userDetails.getUsername());
 
         return ResponseEntity.ok(responses);
     }
@@ -82,7 +81,7 @@ public class FriendRequestController {
             @PathVariable Long requestId,
             @AuthenticationPrincipal UserDetails userDetails) {
 
-        friendRequestService.rejectOrCancelRequest(requestId, userDetails.getUsername(), false);
+        friendService.rejectOrCancelRequest(requestId, userDetails.getUsername(), false);
 
         return ResponseEntity.ok("친구 신청을 취소했습니다.");
     }
@@ -92,7 +91,7 @@ public class FriendRequestController {
             @PathVariable String friendNickname,
             @AuthenticationPrincipal UserDetails userDetails) {
 
-        friendRequestService.deleteFriend(userDetails.getUsername(), friendNickname);
+        friendService.deleteFriend(userDetails.getUsername(), friendNickname);
 
         return ResponseEntity.noContent().build();
     }
@@ -102,7 +101,7 @@ public class FriendRequestController {
     public ResponseEntity<List<FriendListResponse>> getFriendList(
             @AuthenticationPrincipal UserDetails userDetails) {
 
-        List<FriendListResponse> friends = friendRequestService.getFriendList(userDetails.getUsername());
+        List<FriendListResponse> friends = friendService.getFriendList(userDetails.getUsername());
 
         return ResponseEntity.ok(friends);
     }

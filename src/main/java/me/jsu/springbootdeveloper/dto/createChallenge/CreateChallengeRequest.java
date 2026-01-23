@@ -1,5 +1,4 @@
-//여하늘
-package me.jsu.springbootdeveloper.dto;
+package me.jsu.springbootdeveloper.dto.createChallenge;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,7 +9,7 @@ import java.util.List;
 
 @Getter
 @NoArgsConstructor
-public class ChallengeRequestDto {
+public class CreateChallengeRequest {
 
 		//챌린지 방 이름
     @NotBlank(message = "챌린지 방 이름을 입력해주세요.")
@@ -22,11 +21,11 @@ public class ChallengeRequestDto {
 
 		//인증 기간
     @NotBlank(message = "인증 기간을 선택해주세요.") // 예: "30일"
-    private String duration;
+    private Integer duration;
 
 		//인증 빈도
     @NotBlank(message = "인증 빈도를 선택해주세요.") // 예: "매일"
-    private String frequency;
+    private Integer frequency;
 
     //챌린지 태그
     private List<String> tags; // 태그는 여러 개일 수 있으므로 List
