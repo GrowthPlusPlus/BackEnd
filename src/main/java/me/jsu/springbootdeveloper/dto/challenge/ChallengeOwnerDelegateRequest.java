@@ -14,6 +14,4 @@ import lombok.NoArgsConstructor;
 public class ChallengeOwnerDelegateRequest {
     @NotNull
     private Long delegateMemberId;   // 위임할 멤버 ID
-    @NotNull
-    private boolean leaveAfterDelegate;  // true: 위임 후 챌린지 탈퇴
 }

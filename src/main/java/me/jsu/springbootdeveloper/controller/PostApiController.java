@@ -148,9 +148,10 @@ public class PostApiController {
     })
     @DeleteMapping("/api/articles/{postId}")
     public ResponseEntity<Void> deleteArticle(
+            @AuthenticationPrincipal UserDetails userDetails,
             @Parameter(description = "게시글 ID", required = true, example = "1")
             @PathVariable Long postId) {
-        postService.delete(postId);
+        postService.delete(userDetails.getUsername(), postId);
 
         return ResponseEntity.noContent().build();  // 삭제에 성공하면 204를 반환한다.
     }
@@ -162,25 +163,29 @@ public class PostApiController {
     @Operation(
             summary = "인증글 수정",
             description = """
-        게시글 ID로 인증글 내용을 수정한다.
+        게시글 id로 인증글 내용을 수정한다.
         ex) PATCH /api/articles/1
         """
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "게시글 수정 성공"),
+            @ApiResponse(responseCode = "400", description = "클라이언트의 요청이 잘못됨"),
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "403", description = "수정 권한 없음"),
-            @ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음")
+            @ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음"),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
-    @PatchMapping("/api/articles/{id}")
-    public ResponseEntity<ArticleResponse> updateArticle(
+    @PatchMapping("/api/articles/{postId}")
+    public ResponseEntity<ArticleDetailResponse> updateArticle(
+            @AuthenticationPrincipal UserDetails userDetails,
             @Parameter(description = "게시글 ID", required = true, example = "1")
-            @PathVariable Long id,
-            @RequestBody UpdateArticleRequest request) {
-        Article updataArticle = postService.update(id, request);
+            @PathVariable Long postId,
+            @RequestPart("request") @Valid UpdateArticleRequest request,
+            @RequestPart("images") List<MultipartFile> images
+    ) {
+        ArticleDetailResponse response = postService.update(userDetails.getUsername(), postId, request.getContent(), request.getDeleteImageIds(), images);
 
-        return ResponseEntity.ok(
-                new ArticleResponse(updataArticle));  // 업데이트한 게시글을 정제하여 반환한다.
+        return ResponseEntity.ok(response);
     }
 
     /*

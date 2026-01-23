@@ -7,6 +7,7 @@ import me.jsu.springbootdeveloper.domain.post.Article;
 import me.jsu.springbootdeveloper.domain.user.User;
 import me.jsu.springbootdeveloper.domain.user.UserProfilePicture;
 import me.jsu.springbootdeveloper.dto.article.ArticleDetailResponse;
+import me.jsu.springbootdeveloper.dto.article.ArticleImageResponse;
 import me.jsu.springbootdeveloper.service.UserService;
 import me.jsu.springbootdeveloper.service.challenge.ChallengeService;
 import me.jsu.springbootdeveloper.service.post.PostLikeService;
@@ -58,12 +59,18 @@ public abstract class AbstractFeedService {
                 .toList();
 
         // 인증글 이미지를 구한다.
-        Map<Long, List<String>> imageMap = new HashMap<>();  // postId를 기준으로 이미지 링크를 묶는다.
+        Map<Long, List<ArticleImageResponse>> imageMap = new HashMap<>();  // postId를 기준으로 이미지 링크를 묶는다.
         for (Object[] row : postService.findImagesByPostIds(postIds)) {
             Long postId = (Long) row[0];  // 게시글 id
-            String url = (String) row[1];  // 게시글의 사진 중 하나
+            Long imageId = (Long) row[1];  // 사진 id
+            String url = (String) row[2];  // 사진 주소
             // postId가 없으면 새로운 리스트를 생성하여 반환한다. 있다면 원래 있던 것을 반환한다.
-            imageMap.computeIfAbsent(postId, k -> new ArrayList<>()).add(url);  // add로 postId에 해당하는 리스트에 사진 url을 넣는다.
+            imageMap.computeIfAbsent(postId, k -> new ArrayList<>())
+                    // add로 postId에 해당하는 리스트에 ArticleImageResponse 객체를 넣는다.
+                    .add(ArticleImageResponse.builder()
+                            .imageId(imageId)
+                            .imageUrl(url)
+                            .build());
         }
 
         // 인증글에 대해 사용자가 좋아요를 눌렀는지에 대한 여부를 검색한다.
@@ -88,7 +95,7 @@ public abstract class AbstractFeedService {
                             successDaysMap.getOrDefault(article.getChallenge().getId(), 0)
                     )
                     .content(article.getContent())
-                    .articleImageUrl(
+                    .images(
                             imageMap.getOrDefault(article.getId(), List.of())
                     )
                     .userNickname(article.getUser().getNickname())
