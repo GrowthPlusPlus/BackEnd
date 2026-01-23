@@ -29,16 +29,37 @@ public interface PostRepository extends JpaRepository<Article, Long> {
             LocalDate postDate
     );
 
-    // 최신순으로 피드에 post를 보여주기 위한 쿼리문이다. page로 전체 게시글 중 일부를 보여준다.
+    // 최신순으로 공개 피드의 인증글을 보여주기 위한 쿼리문이다. 날짜를 받아 챌린지 기간을 구별한다.
     @Query("""
         select a
         from Article a
         join a.challenge c
-        where c.challengeVisibility = :visibility
-        order by a.createdAt desc
+        where c.startDate <= :targetDate
+          and c.endDate >= :targetDate
     """)
-    Page<Article> findPublicChallengePostFeed(
-            @Param("visibility") ChallengeVisibility visibility,
+    Page<Article> findPublicFeed(
+            @Param("targetDate") LocalDate targetDate,
+            Pageable pageable
+    );
+
+    // 최신 순으로 친구 공개 피드의 인증글을 보여주기 위한 쿼리문이다.
+    @Query("""
+        select a
+        from Article a
+        join a.challenge c
+        where c.startDate <= :targetDate
+          and c.endDate >= :targetDate
+          and c.challengeVisibility = 'FRIENDS_ONLY'
+          and exists (
+                select 1
+                from Friendship fs
+                where (fs.user1.id = :viewerId and fs.user2.id = a.user.id)
+                   or (fs.user2.id = :viewerId and fs.user1.id = a.user.id)
+          )
+    """)
+    Page<Article> findFriendFeed(
+            @Param("viewerId") Long viewerId,
+            @Param("targetDate") LocalDate targetDate,
             Pageable pageable
     );
 

@@ -2,7 +2,7 @@
 
 package me.jsu.springbootdeveloper.service.challenge;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.domain.challenge.*;
 import me.jsu.springbootdeveloper.domain.post.Article;
@@ -414,5 +414,12 @@ public class ChallengeService {
             weeklyStatus.updateSuccessCount(requiredWeeklyCount);
             challengeWeeklyStatusRepository.save(weeklyStatus);
         }
+    }
+
+    /*
+        피드를 조회하기 위해 사용하는 함수로, 챌린지 id 여러 개와 유저 id로 챌린지 참여 DB를 검색해 성공 일수를 조회한다.
+     */
+    public List<Object[]> findSuccessDays(Long userId, List<Long> challengeIds) {
+        return findSuccessDays(userId, challengeIds);
     }
 }
