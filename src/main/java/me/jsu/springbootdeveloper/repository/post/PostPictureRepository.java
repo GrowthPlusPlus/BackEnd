@@ -23,4 +23,12 @@ public interface PostPictureRepository extends JpaRepository<PostPicture, Long> 
         where pp.article.id = :articleId
     """)
     List<String> findImageUrlsByPostId(@Param("articleId") Long postId);
+
+    // 게시글 id List로 사진을 검색한다. 위와는 다르게 단체 조회이다.
+    @Query("""
+        select pi.article.id, pi.imageUrl
+        from PostPicture pi
+        where pi.article.id in :postIds
+    """)
+    List<Object[]> findImagesByPostIds(@Param("postIds") List<Long> postIds);
 }

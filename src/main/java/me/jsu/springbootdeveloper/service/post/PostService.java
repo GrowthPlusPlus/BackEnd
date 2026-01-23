@@ -2,28 +2,24 @@
 
 package me.jsu.springbootdeveloper.service.post;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.domain.challenge.ChallengeParticipant;
 import me.jsu.springbootdeveloper.domain.post.Article;
 import me.jsu.springbootdeveloper.domain.challenge.Challenge;
-import me.jsu.springbootdeveloper.domain.challenge.ChallengeVisibility;
 import me.jsu.springbootdeveloper.domain.post.PostPicture;
 import me.jsu.springbootdeveloper.domain.user.User;
 import me.jsu.springbootdeveloper.domain.user.UserProfilePicture;
-import me.jsu.springbootdeveloper.dto.article.AddArticleRequest;
 import me.jsu.springbootdeveloper.dto.article.ArticleDetailResponse;
 import me.jsu.springbootdeveloper.dto.article.UpdateArticleRequest;
 import me.jsu.springbootdeveloper.dto.challengeCalendar.ChallengeCalendarPhotoResponse;
 import me.jsu.springbootdeveloper.dto.challengeCalendar.ChallengeCalendarPostResponse;
 import me.jsu.springbootdeveloper.dto.picture.ImageUploadResult;
-import me.jsu.springbootdeveloper.repository.post.PostLikeRepository;
 import me.jsu.springbootdeveloper.repository.post.PostPictureRepository;
 import me.jsu.springbootdeveloper.repository.post.PostRepository;
 import me.jsu.springbootdeveloper.service.UserService;
 import me.jsu.springbootdeveloper.service.challenge.ChallengeService;
 import me.jsu.springbootdeveloper.service.cloudinary.CloudinaryService;
-import me.jsu.springbootdeveloper.service.cloudinary.CloudinaryUploadException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -34,8 +30,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @RequiredArgsConstructor  // final 또는 notNull이 있는 맴버변수만 생성자에서 초기화 한다.
 @Service
@@ -43,7 +38,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final UserService userService;
     private final ChallengeService challengeService;
-    private final PostLikeRepository postLikeRepository;
+    private final PostLikeService postLikeService;
     private final PostPictureRepository postPictureRepository;
     private final CloudinaryService cloudinaryService;
     private static final int MAX_IMAGE_COUNT = 5;
@@ -120,11 +115,29 @@ public class PostService {
     }
 
     /*
-        공개 상태의 게시글 일부를 조회하는 함수이다.
-        리턴하는 값은 Article 객체를 가지고 있는 리스트이다.
+        공개 인증글 목록을 조회한다.
+        오늘 날짜, 페이지 정보를 넘겨준다.
+        피드 생성에 사용된다.
      */
-    public Page<Article> findAll(Pageable pageable) {
-        return postRepository.findPublicChallengePostFeed(ChallengeVisibility.PUBLIC, pageable);
+    public Page<Article> findPublicFeed(LocalDate targetDate, Pageable pageable) {
+        return postRepository.findPublicFeed(targetDate, pageable);
+    }
+
+    /*
+        친구 인증글 목록을 조회한다.
+        자신의 id, 오늘 날짜, 페이지 정보를 넘겨준다.
+        피드 생성에 사용된다.
+     */
+    public Page<Article> findFriendFeed(Long userId, LocalDate targetDate, Pageable pageable) {
+        return postRepository.findFriendFeed(userId, targetDate, pageable);
+    }
+
+    /*
+        인증글 id 여러 개로 그 인증글과 관련된 이미지들을 구한다.
+        피드 생성에 사용된다.
+     */
+    public List<Object[]> findImagesByPostIds(List<Long> postIds) {
+        return postPictureRepository.findImagesByPostIds(postIds);
     }
 
     /*
@@ -163,9 +176,10 @@ public class PostService {
         List<String> articlePicture = postPictureRepository.findImageUrlsByPostId(postId);
 
         // 게시글을 조회한 유저가 해당 게시글에 좋아요를 눌렀는지에 대한 여부를 검색한다.
-        boolean liked = postLikeRepository.existsByArticle_IdAndUser_Id(postId, user.getId());
+        boolean liked = postLikeService.existsByArticle_IdAndUser_IdForLike(postId, user.getId());
 
         return ArticleDetailResponse.builder()
+                .postId(article.getId())
                 .challengeTitle(article.getChallenge().getTitle())
                 .totalSuccessDays(totalSuccessDays)  // 총 성공 일수이다.
                 .content(article.getContent())

@@ -2,7 +2,7 @@
 
 package me.jsu.springbootdeveloper.service.tag;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.domain.challenge.Challenge;
 import me.jsu.springbootdeveloper.domain.tag.Tag;

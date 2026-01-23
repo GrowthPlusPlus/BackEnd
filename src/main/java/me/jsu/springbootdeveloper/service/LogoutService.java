@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.domain.user.User;
 import me.jsu.springbootdeveloper.service.token.RefreshTokenService;
 import org.springframework.stereotype.Service;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 
 /*
     유저가 로그아웃 할 수 있도록 리프레시 토큰을 서버 DB에서 삭제해주는 서비스이다.

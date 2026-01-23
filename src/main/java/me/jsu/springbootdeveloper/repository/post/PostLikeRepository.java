@@ -18,6 +18,19 @@ import java.util.List;
 public interface PostLikeRepository extends JpaRepository<PostLike, Long> {
     // 유저 id와 게시글 id로 유저가 좋아요를 누른 여부를 반환한다.
     boolean existsByArticle_IdAndUser_Id(Long articleId, Long userId);
+
+    // 유저 id와 게시글 id 여러 개로 유저가 좋아요를 누른 여부를 반환한다. 반환되는 값은 좋아요를 누른 인증글의 id이다.
+    @Query("""
+        select pl.article.id
+        from PostLike pl
+        where pl.user.id = :userId
+          and pl.article.id in :postIds
+    """)
+    List<Long> findLikedPostIds(
+            @Param("userId") Long userId,
+            @Param("postIds") List<Long> postIds
+    );
+
     List<PostLike> findByArticle_Id (Long articleId);  // 게시글 id로 좋아요를 누른 모든 유저를 검색한다.
 
     /*

@@ -104,34 +104,6 @@ public class PostApiController {
     }
 
     /*
-        전체 게시글을 조회 한 뒤에 반환해주는 함수로, 챌린지 피드에서 모든 유저의 게시글을 최신순으로 보고 싶을 때 사용한다.
-        페이징을 사용하여 기본적으론 한 번 검색에 10개의 게시글을 검색하도록 한다.
-        또한 생성일을 기준으로 내림차순으로 검새갛여 최신 -> 과거 순으로 게시글을 검색한다.
-
-        GET /api/articles?page=0&size=5 를 수정하여 클라이언트가 원하면 검색할 게시글 수를 조절할 수 있다.
-     */
-    @Operation(
-            summary = "전체 인증글 조회 (공개 피드 검색 피드 기능)",
-            description = """
-        전체 인증글을 최신순으로 페이징 조회하여 인증글 리스트를 20개씩 페이지 형태로 반환한다.
-        베이스 코드를 정리하여 만든 함수로, Sprint 1에 해당하지 않아 추후에 수정될 수 있으므로 참고 X
-        ex) GET /api/articles?page=0&size=5
-        """
-    )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "게시글 목록 조회 성공"),
-            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
-    })
-    @GetMapping("/api/articles")
-    public ResponseEntity<Page<ArticleResponse>> findAllArticles(
-            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        Page<ArticleResponse> articles = postService.findAll(pageable)
-                .map(ArticleResponse::new);  // 검색한 Article값을 ArticleResponse로 변환한다.
-
-        return ResponseEntity.ok(articles);  // 조회가 성공적이면 얻은 정보를 반환한다.
-    }
-
-    /*
         article id로 인증글 하나를 검색하여 반환하는 함수이다.
         url 경로에서 id값을 추출하여 사용한다.
      */

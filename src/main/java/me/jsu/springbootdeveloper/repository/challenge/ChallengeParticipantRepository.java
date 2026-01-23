@@ -82,4 +82,16 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
             @Param("nickname") String nickname,
             Pageable pageable
     );
+
+    // 특정 유저의 챌린지 성공 일수를 여러 챌린지 id로 조회하기 위해 사용하는 쿼리문이다.
+    @Query("""
+        select cp.challenge.id, cp.totalSuccessDays
+        from ChallengeParticipant cp
+        where cp.user.id = :userId
+          and cp.challenge.id in :challengeIds
+    """)
+    List<Object[]> findSuccessDays(
+            @Param("userId") Long userId,
+            @Param("challengeIds") List<Long> challengeIds
+    );
 }

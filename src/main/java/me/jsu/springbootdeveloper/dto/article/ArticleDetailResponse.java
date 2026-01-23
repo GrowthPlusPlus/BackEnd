@@ -14,6 +14,7 @@ import java.util.List;
 @Getter
 @Builder
 public class ArticleDetailResponse {
+    private Long postId;
     private String challengeTitle;
     private int totalSuccessDays;
     private String content;
