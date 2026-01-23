@@ -2,6 +2,7 @@
 
 package me.jsu.springbootdeveloper.service.post;
 
+import me.jsu.springbootdeveloper.dto.article.ArticleImageResponse;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.domain.challenge.ChallengeParticipant;
@@ -83,20 +84,8 @@ public class PostService {
                 .postDate(postDate)
                 .build());
 
-        // 검증된 사진을 DB와 클라우디너리에 저장한다. 이미지가 없는 경우엔 if문을 실행하지 않는다.
-        if (!images.isEmpty()) {
-            for (MultipartFile multipartFile : images) {
-                // 인증글 이미지를 클라우디너리에 업로드하고 정보를 반환받는다.
-                ImageUploadResult imageUploadResult = cloudinaryService.uploadImage(multipartFile);
-
-                // 사진 정보를 DB에 반영한다.
-                postPictureRepository.save(PostPicture.builder()
-                        .article(article)
-                        .cloudinaryPublicId(imageUploadResult.publicId())
-                        .imageUrl(imageUploadResult.secureUrl())
-                        .build());
-            }
-        }
+        // 검증된 사진을 DB와 클라우디너리에 저장한다.
+        saveImages(images, article);
 
         // 인증글을 업데이트 했으므로 총 인증 횟수와 연속 인증 횟수를 업데이트 한다.
         challengeService.succeedChallenge(article.getId(), challengeId);
@@ -112,6 +101,42 @@ public class PostService {
 
         // 저장한 인증글 id로 검색하여 인증글 상세 정보를 반환한다.
         return getPost(email, article.getId());
+    }
+
+    /*
+        클라우디너리에 사진을 저장하고, 사진 정보를 DB에 반영해주는 함수이다.
+     */
+    public void saveImages(List<MultipartFile> images, Article article) {
+        // 이미지가 없는 경우엔 if문을 실행하지 않는다.
+        if (!images.isEmpty()) {
+            for (MultipartFile multipartFile : images) {
+                // 인증글 이미지를 클라우디너리에 업로드하고 정보를 반환받는다.
+                ImageUploadResult imageUploadResult = cloudinaryService.uploadImage(multipartFile);
+
+                // 사진 정보를 DB에 반영한다.
+                postPictureRepository.save(PostPicture.builder()
+                        .article(article)
+                        .cloudinaryPublicId(imageUploadResult.publicId())
+                        .imageUrl(imageUploadResult.secureUrl())
+                        .build());
+            }
+        }
+    }
+
+    /*
+        클라우디너리의 사진을 삭제하고, 사진 정보를 DB에서 삭제하는 함수이다.
+     */
+    public void deleteImages(List<PostPicture> postPictures) {
+        // 인증글에 저장된 사진들을 클라우디너리에서 삭제한다. 이미지가 없는 경우엔 if문을 실행하지 않는다.
+        if (!postPictures.isEmpty()) {
+            for (PostPicture pp : postPictures) {
+                // 클라우디너리의 이미지를 삭제한다.
+                cloudinaryService.deleteImage(pp.getCloudinaryPublicId());
+
+                // 우리 서버의 DB에서도 정보를 삭제한다.
+                postPictureRepository.delete(pp);
+            }
+        }
     }
 
     /*
@@ -172,8 +197,13 @@ public class PostService {
             userImageUrl = userProfilePicture.getImageUrl();
         }
 
-        // 인증글 id로 인증글의 사진을 검색한다.
-        List<String> articlePicture = postPictureRepository.findImageUrlsByPostId(postId);
+        // 인증글의 사진, id 리스트를 생성한다.
+        List<ArticleImageResponse> images = article.getPostPictures().stream()
+                        .map(pp -> ArticleImageResponse.builder()
+                                .imageId(pp.getId())
+                                .imageUrl(pp.getImageUrl())
+                                .build())
+                        .toList();
 
         // 게시글을 조회한 유저가 해당 게시글에 좋아요를 눌렀는지에 대한 여부를 검색한다.
         boolean liked = postLikeService.existsByArticle_IdAndUser_IdForLike(postId, user.getId());
@@ -183,7 +213,7 @@ public class PostService {
                 .challengeTitle(article.getChallenge().getTitle())
                 .totalSuccessDays(totalSuccessDays)  // 총 성공 일수이다.
                 .content(article.getContent())
-                .articleImageUrl(articlePicture)  // 게시글의 사진이다.
+                .images(images)  // 게시글의 사진, id이다.
                 .userNickname(article.getUser().getNickname())
                 .userImageUrl(userImageUrl)  // 게시글 작성자의 사진이다.
                 .createdAt(article.getCreatedAt())
@@ -210,46 +240,73 @@ public class PostService {
         따라서 @Transactional는 DB 작업의 원자성, 일관성, 격리성, 지속성을 보장한다.
      */
     @Transactional
-    public void delete(Long postId) {
+    public void delete(String email, Long postId) {
+        User user = userService.findByEmail(email);
+
         Article article = postRepository.findByIdWithImages(postId)  // 삭제할 글과 사진을 DB에서 찾는다.
                 .orElseThrow(() -> new ArticleNotFoundException("ARTICLE_NOT_FOUND_FOR_ID"));
 
-        authorizeArticleAuthor(article);  // 글 작성자인지 확인한다.
+        authorizeArticleAuthor(article, user);  // 글 작성자인지 확인한다.
         challengeService.detachLogToArticle(article);  // 챌린지 데일리 로그 정보는 게시글이 삭제되도 남아있도록 한다
 
-        // 인증글에 저장된 사진들을 클라우디너리에서 삭제한다.
-        for (PostPicture postPicture : article.getPostPictures())
-        {
-            cloudinaryService.deleteImage(postPicture.getCloudinaryPublicId());
-        }
+        deleteImages(article.getPostPictures());  // 인증글에 저장된 사진들을 클라우디너리에서 삭제한다.
         postRepository.delete(article);  // DB에서 게시글을 삭제한다. 댓글이나 좋아요 등의 정보도 함께 삭제된다.
     }
 
     /*
-        게시글을 수정하는 함수로, 게시글 작성자 id가 요청자 id와 다르면 수정하지 않는다.
-        해당 함수는 수정이 필요하다.
+        인증글을 수정하는 함수이다.
+        수정하는 값은 인증 내용, 사진이다.
      */
     @Transactional
-    public Article update(long id, UpdateArticleRequest request) {
-        Article article = postRepository.findById(id)
-                .orElseThrow(() -> new ArticleNotFoundException("ARTICLE_NOT_FOUND_FOR_ID"));
+    public ArticleDetailResponse update(String email, Long postId, String content, List<Long> deleteImageIds, List<MultipartFile> images) {
+        User user = userService.findByEmail(email);
+        Article article = findById(postId);
 
-        authorizeArticleAuthor(article);  // 글 작성자인지 확인한다.
-        // 위에서 찾은 게시글을 UpdateArticleRequest 객체의 값으로 업데이트 한다.
-        article.update(request.getTitle(), request.getContent());
+        authorizeArticleAuthor(article, user);  // 글 작성자인지 확인한다.
 
-        // @Transactional가 엔티티 수정을 감지하고 자동으로 DB에 값을 업데이트 하므로, 수정된 게시글 정보만 반환한다.
-        return article;
+        // 기존 사진 객체를 검색한다.
+        List<PostPicture> postPictures = postPictureRepository.findAllById(deleteImageIds);
+
+        // 삭제를 요청한 이미지 개수와 서버에 존재하는 이미지 개수가 일치하는지 확인한다.
+        if (postPictures.size() != deleteImageIds.size()) {
+            throw new InvalidImageException("IMAGE_NOT_FOUND");
+        }
+
+        // 삭제하려는 이미지가 현재 수정 중인 게시글의 이미지인지 확인한다.
+        for (PostPicture pp : postPictures) {
+            if (!pp.getArticle().getId().equals(article.getId())) {
+                throw new InvalidImageException("INVALID_IMAGE_ACCESS");
+            }
+        }
+
+        int currentCount = article.getPostPictures().size();  // 기존 사진 개수
+        int deleteCount = deleteImageIds.size();  // 삭제할 사진 개수
+        int newCount = images.size();  // 새로 추가할 사진 개수
+
+        int finalCount = currentCount - deleteCount + newCount;  // 최종 사진 개수
+
+        if (finalCount > MAX_IMAGE_COUNT) {
+            throw new InvalidImageException("MAX_IMAGE_COUNT_EXCEEDED");
+        }
+
+        // 인증글 내용을 업데이트 한다.
+        article.updateContent(content);
+
+        // 인증글의 기존 이미지를 삭제한다.
+        deleteImages(postPictures);
+
+        // 인증글의 사진을 업데이트 한다.
+        saveImages(images, article);
+
+        // 수정된 게시글 정보를 반환한다.
+        return getPost(email, postId);
     }
 
     /*
-        계시글을 작성한 유저인지 확인해주는 함수이다.
-        email을 기준으로 비교한다.
+        인증글을 작성한 유저와 요청한 유저가 동일 인물인지 검증한다.
      */
-    private static void authorizeArticleAuthor(Article article) {
-        String userName = SecurityContextHolder.getContext().getAuthentication().getName();  // 현재 로그인한 유저의 이메일을 가져온다.
-
-        if (!article.getUser().getEmail().equals(userName)) {  // 유저의 이메일과 게시글 작성자의 이메일을 비교한다.
+    private static void authorizeArticleAuthor(Article article, User user) {
+        if (!article.getUser().getId().equals(user.getId())) {  // 유저의 id와 인증글 작성자의 id를 비교한다.
             throw new ArticleAccessDeniedException("ARTICLE_ACCESS_DENIED");
         }
     }

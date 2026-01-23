@@ -125,10 +125,10 @@ public class Article {
         this.commentNumber = 0;
     }
 
-    public void update(String title, String content) {
-        if (title != null) {  // 게시글을 업데이트하는 경우, 내용만 수정해도 제목에는 null값이 들어가지 않도록 한다.
-            this.title = title;
-        }
+    /*
+        내용을 업데이트 한다.
+     */
+    public void updateContent(String content) {
         if (content != null) {
             this.content = content;
         }

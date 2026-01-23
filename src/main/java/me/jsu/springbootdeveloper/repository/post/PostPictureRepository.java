@@ -26,7 +26,7 @@ public interface PostPictureRepository extends JpaRepository<PostPicture, Long> 
 
     // 게시글 id List로 사진을 검색한다. 위와는 다르게 단체 조회이다.
     @Query("""
-        select pi.article.id, pi.imageUrl
+        select pi.article.id, pi.id, pi.imageUrl
         from PostPicture pi
         where pi.article.id in :postIds
     """)
