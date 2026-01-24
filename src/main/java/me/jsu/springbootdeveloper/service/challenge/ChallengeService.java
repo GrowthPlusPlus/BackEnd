@@ -314,7 +314,7 @@ public class ChallengeService {
         챌린지의 방장을 위임하기 위한 함수이다.
      */
     @Transactional
-    public void delegateOwner(String email, Long challengeId, Long targetUserId, boolean leaveAfterDelegate) {
+    public void delegateOwner(String email, Long challengeId, Long targetUserId) {
         User user = userService.findByEmail(email);
 
         // 챌린지를 조회한다.
@@ -329,10 +329,8 @@ public class ChallengeService {
         // 방장을 변경한다.
         challenge.updateUser(targetParticipant.getUser());
 
-        // 이전의 방장이 챌린지에 남을지, 나갈지 선택한다.
-        if (leaveAfterDelegate) {
-            leaveChallengeInternal(user.getId(), challengeId);
-        }
+        // 챌린지에서 나간다.
+        leaveChallengeInternal(user.getId(), challengeId);
     }
 
     /*
@@ -480,6 +478,6 @@ public class ChallengeService {
         피드를 조회하기 위해 사용하는 함수로, 챌린지 id 여러 개와 유저 id로 챌린지 참여 DB를 검색해 성공 일수를 조회한다.
      */
     public List<Object[]> findSuccessDays(Long userId, List<Long> challengeIds) {
-        return findSuccessDays(userId, challengeIds);
+        return challengeParticipantRepository.findSuccessDays(userId, challengeIds);
     }
 }
