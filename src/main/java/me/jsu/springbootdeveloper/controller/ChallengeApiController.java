@@ -147,7 +147,7 @@ public class ChallengeApiController {
             @PathVariable Long challengeId,
             @RequestBody @Valid ChallengeOwnerDelegateRequest request
     ) {
-        challengeService.delegateOwner(userDetails.getUsername(), challengeId, request.getDelegateMemberId(), request.isLeaveAfterDelegate());
+        challengeService.delegateOwner(userDetails.getUsername(), challengeId, request.getDelegateMemberId());
 
         return ResponseEntity.noContent().build();
     }

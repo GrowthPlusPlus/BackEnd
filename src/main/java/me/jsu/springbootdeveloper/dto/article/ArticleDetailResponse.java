@@ -14,11 +14,11 @@ import java.util.List;
 @Getter
 @Builder
 public class ArticleDetailResponse {
-    private Long postId;
+    private Long postId;  // 게시글 수정을 위해 필요하다.
     private String challengeTitle;
     private int totalSuccessDays;
     private String content;
-    private List<String> articleImageUrl;
+    private List<ArticleImageResponse> images;
     private String userNickname;
     private String userImageUrl;
     private LocalDateTime createdAt;
