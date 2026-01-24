@@ -47,6 +47,14 @@ public class ChallengeApiController {
         @param request 생성할 챌린지 정보
         @return 생성된 챌린지 상세 정보(ChallengeDetailResponse)
      */
+    @Operation(
+            summary = "챌린지 생성하기",
+            description = """
+        요청: 챌린지 생성 화면에 있는 필드 순서대로 값 보내기 -> 응답: (1) 챌린지 방 링크 (2) 친구 목록
+        ex) POST /api/challenges/create
+        """
+    )
+
     @Transactional
     @PostMapping("/api/challenges/create")
     public ResponseEntity<CreateChallengeResponse> createChallenge (@AuthenticationPrincipal UserDetails userDetails,
