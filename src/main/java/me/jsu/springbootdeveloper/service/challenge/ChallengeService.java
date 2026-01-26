@@ -57,6 +57,13 @@ public class ChallengeService {
     }
 
     /*
+        유저 id와 챌린지 상태로 참여한 챌린지를 반환해주는 함수이다.
+     */
+    public List<ChallengeParticipant> findStatusWithChallengeByUserIdAndStatus(Long userId, Status status) {
+        return challengeParticipantRepository.findStatusWithChallengeByUserIdAndStatus(userId, status);
+    }
+
+    /*
         유저 id와 날짜로 해당 날짜에 수행한 데일리 로그를 반환해주는 함수이다.
      */
     public List<ChallengeDailyLog> findByUser_IdAndPostDate(Long userId, LocalDate targetDate) {
@@ -415,9 +422,26 @@ public class ChallengeService {
     }
 
     /*
+        인증글이 생성되면, 오늘 총 인증한 사람 수를 업데이트 한다.
+     */
+    public void updateTodaySuccessCount(Challenge challenge, LocalDate today) {
+        challenge.increaseTodaySuccess(today);
+    }
+
+    /*
         피드를 조회하기 위해 사용하는 함수로, 챌린지 id 여러 개와 유저 id로 챌린지 참여 DB를 검색해 성공 일수를 조회한다.
      */
     public List<Object[]> findSuccessDays(Long userId, List<Long> challengeIds) {
         return challengeParticipantRepository.findSuccessDays(userId, challengeIds);
+    }
+
+    /*
+        해당 유저의 챌린지가 진행중인 챌린지인지 검사한다.
+     */
+    public void challengeStatusInProgress(Long userId, Long challengeId) {
+        ChallengeParticipant challengeParticipant = findByUser_IdAndChallenge_IdForParticipant(userId, challengeId);
+        if (challengeParticipant.getStatus() != Status.IN_PROGRESS) {
+            throw new ChallengeNotInProgressException("CHALLENGE_IS_NOT_IN_PROGRESS");
+        }
     }
 }

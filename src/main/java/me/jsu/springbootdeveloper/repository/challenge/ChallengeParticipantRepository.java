@@ -3,12 +3,14 @@
 package me.jsu.springbootdeveloper.repository.challenge;
 
 import me.jsu.springbootdeveloper.domain.challenge.ChallengeParticipant;
+import me.jsu.springbootdeveloper.domain.challenge.Status;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -41,6 +43,19 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
           and cp.status = 'IN_PROGRESS'
     """)
     List<ChallengeParticipant> findInProgressWithChallengeByUserId(@Param("userId") Long userId);
+
+    // 유저 id와 챌린지 상태로 챌린지 참여 DB와 챌린지 자체 DB를 함께 검색한다.
+    @Query("""
+        select cp
+        from ChallengeParticipant cp
+        join fetch cp.challenge
+        where cp.user.id = :userId
+          and cp.status = :status
+    """)
+    List<ChallengeParticipant> findStatusWithChallengeByUserIdAndStatus(
+            @Param("userId") Long userId,
+            @Param("status") Status status
+    );
 
     // 챌린지 id와 오너 id로 해당 챌린지의 참가자를 참가 순서대로 오너 제외하고 반환한다.
     @Query("""
@@ -94,4 +109,26 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
             @Param("userId") Long userId,
             @Param("challengeIds") List<Long> challengeIds
     );
+
+    // 현재 진행중인 챌린지들을 검색한다. 커서 기반으로 검색한다.
+    @Query("""
+        select cp
+        from ChallengeParticipant cp
+        where cp.status = 'IN_PROGRESS'
+          and cp.id > :lastId
+        order by cp.id asc
+    """)
+    List<ChallengeParticipant> findAllInProgressAfterId(@Param("lastId") Long lastId, Pageable pageable);
+
+    // 현재 진행중이면서 종료일인 챌린지들을 검색한다. batch 사이즈 단위로 조사한다. endDate < today 이므로 종료 당일도 챌린지 수행이 가능하다.
+    @Query("""
+        select cp
+        from ChallengeParticipant cp
+        join cp.challenge c
+        where cp.status = 'IN_PROGRESS'
+          and c.endDate < :today
+          and cp.id > :lastId
+        order by cp.id asc
+    """)
+    List<ChallengeParticipant> findEndedInProgressAfterId(@Param("lastId") Long lastId, @Param("today") LocalDate today, Pageable pageable);
 }

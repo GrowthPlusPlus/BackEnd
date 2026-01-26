@@ -36,6 +36,7 @@ public interface PostRepository extends JpaRepository<Article, Long> {
         join a.challenge c
         where c.startDate <= :targetDate
           and c.endDate >= :targetDate
+          and c.challengeVisibility = 'PUBLIC'
     """)
     Page<Article> findPublicFeed(
             @Param("targetDate") LocalDate targetDate,

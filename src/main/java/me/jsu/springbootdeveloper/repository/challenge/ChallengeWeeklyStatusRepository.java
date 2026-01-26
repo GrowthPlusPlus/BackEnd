@@ -3,7 +3,9 @@
 package me.jsu.springbootdeveloper.repository.challenge;
 
 import me.jsu.springbootdeveloper.domain.challenge.ChallengeWeeklyStatus;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDate;
 import java.util.List;

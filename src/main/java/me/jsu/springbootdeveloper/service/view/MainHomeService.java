@@ -7,6 +7,7 @@ import me.jsu.springbootdeveloper.domain.challenge.ChallengeDailyLog;
 import me.jsu.springbootdeveloper.domain.challenge.ChallengeParticipant;
 import me.jsu.springbootdeveloper.domain.challenge.ChallengeWeeklyStatus;
 import me.jsu.springbootdeveloper.domain.user.User;
+import me.jsu.springbootdeveloper.service.challenge.ChallengeMaintenanceService;
 import me.jsu.springbootdeveloper.service.challenge.ChallengeService;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ public class MainHomeService {
     private final UserService userService;
     private final NotificationService notificationService;
     private final ChallengeService challengeService;
+    private final ChallengeMaintenanceService challengeMaintenanceService;
 
     public MainHomeResponse getMainHome(String userEmail, LocalDate today, LocalDate weekStartDate, LocalDate targetDate) {
         User user = userService.findByEmail(userEmail);
@@ -76,7 +78,8 @@ public class MainHomeService {
          */
         if (isToday) {
             List<ChallengeWeeklyStatus> challengeWeeklyStatuses = challengeService.findByUser_IdAndWeekStartDate(
-                    user.getId(), weekStartDate);
+                    user.getId(), weekStartDate
+            );
             // 위와 마찬가지로 챌린지 id를 매핑하기 위해 map을 사용한다.
             weeklyStatusMap = challengeWeeklyStatuses.stream().collect(Collectors.toMap(
                     ws -> ws.getChallenge().getId(),
@@ -102,29 +105,51 @@ public class MainHomeService {
             /*
                 이번 주 챌린지가 실패에 임박했는지 판단한다. 오늘만 판단하고 과거나 미래는 판단하지 않는다.
                 또한 오늘 안 했고, 실패에 임박하면 경고한다. 오늘 이미 했다면 실패 위험 경고를 줄 이유가 없다.
-                만약 챌린지를 시작한 첫 주라면 해당 경고를 보여주지 않는다. 물리적으로 불가능할 수 있기 때문이다.
 
-                즉 요청받은 날짜가 오늘이며, 오늘 챌린지를 안했고, 챌린지의 시작이 첫 주가 아니라면 if문에 진입한다.
+                즉 요청받은 날짜가 오늘이며, 오늘 챌린지를 안했다면 if문에 진입한다.
              */
-            boolean isFirstWeek = !challengeParticipant.getCreatedAt().toLocalDate().isBefore(weekStartDate);  // 챌린지 시작이 첫 주인지 확인한다.
-            if (isToday && !isDoIt && !isFirstWeek) {
+            if (isToday && !isDoIt) {
                 ChallengeWeeklyStatus weeklyStatus = weeklyStatusMap.get(challengeId);
 
-                // 이번 주 성공 횟수를 계산한다. weeklyStatus 값 자체가 존재하지 않으면 0회로 간주한다.
-                int successCount = (weeklyStatus == null) ? 0 : weeklyStatus.getSuccessCount();
-
-                // 챌린지의 주당 최소 인증 횟수를 구한다.
-                int required = challenge.getRequiredWeeklyCount();
-
-                // 오늘을 포함하여 이번 주 남은 일수 계산한다.
-                LocalDate weekEndDate = weekStartDate.plusDays(6);  // 일요일을 의미한다.
-                long remainingDays = ChronoUnit.DAYS.between(today, weekEndDate) + 1;  // 오늘 기준으로 며칠 남았는지 확인한다.
-
-                // 남은 날을 모두 성공한다고 가정했을 때 이번 주에 달성 가능한 최대 성공 횟수이다.
-                int maxPossibleSuccess = successCount + (int) remainingDays;
-                if (maxPossibleSuccess == required) {  // 오늘 하지 않으면 실패한다는 경고 메세지를 생성한다.
-                    isWarning = true;
+                // 이번주 성공 횟수를 검색한다.
+                int successCount;
+                if (weeklyStatus != null) {
+                    successCount =  weeklyStatus.getSuccessCount();  // 해당 주에 성공한 횟수
+                } else {
+                    successCount = 0;
                 }
+
+                // 부분 주를 계산한다. 다른 서비스의 함수를 사용한 것으로 리펙토링이 필요할 수 있다.
+                int adjustedRequiredWeeklyCount = challengeMaintenanceService.calculateAdjustedRequired(challenge, weekStartDate,weekStartDate.plusDays(6));
+
+                /*
+                    effectiveStart와 effectiveEnd는 남은 가능 일수를 계산하기 위해 필요한 값이다.
+                    effectiveStart는 12시가 넘어간 시점이므로 내일부터 챌린지를 수행 가능한 날짜에 포함한다.
+                 */
+                LocalDate effectiveStart;
+                if (today.plusDays(1).isAfter(challenge.getStartDate())) {  // 내일이 챌린지 시작 이후인지 검사한다.
+                    effectiveStart = today.plusDays(1);  // 보통은 내일부터 수행 가능한 날로 정한다.
+                }
+                else {
+                    effectiveStart = challenge.getStartDate();  // 방어코드이다.
+                }
+
+                // 챌린지 종료일과 이번주 종료일 중, 더 이른 날짜를 수행 가능한 날짜로 잡는다. 주가 더 남았어도 챌린지가 종료되면 수행이 불가능하기 때문이다.
+                LocalDate effectiveEnd;
+                if (challenge.getEndDate().isBefore(weekStartDate.plusDays(6))) {  // 챌린지 종료가 주 마지막 날보다 더 빠른 경우이다.
+                    effectiveEnd = challenge.getEndDate();
+                }
+                else {  // 일반적인 케이스이다.
+                    effectiveEnd = weekStartDate.plusDays(6);
+                }
+
+                long remainingDays = 0;  // 앞으로 성공 횟수를 추가로 올릴 수 있는 최대 횟수의 상한이다.
+                if (!effectiveStart.isAfter(effectiveEnd)) {  // 시작일이 마지막 수행일보다 뒤가 아닌 경우이다. 즉 수행 가능한 날짜가 남았다.
+                    // 날짜 범위는 양 끝을 포함하므로 +1을 해야 한다. ex) start: 8/11, end: 8/11
+                    remainingDays = ChronoUnit.DAYS.between(effectiveStart, effectiveEnd) + 1;
+                }
+
+                isWarning = (successCount + remainingDays) == adjustedRequiredWeeklyCount;
             }
 
             // 유저가 챌린지를 시작한 경과일을 계산한다.
@@ -137,7 +162,7 @@ public class MainHomeService {
                     .challengeId(challengeId)
                     .title(challenge.getTitle())
                     .content(challenge.getContent())
-                    .maxParticipantNumber(challenge.getMaxParticipantNumber())
+                    .todaySuccessCount(challenge.getTodaySuccessCount())
                     .participantNumber(challenge.getParticipantNumber())
                     .duringDate(elapsedDays)
                     .doIt(isDoIt)
