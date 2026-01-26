@@ -2,6 +2,9 @@
 
 package me.jsu.springbootdeveloper.controller.view;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.domain.challenge.Status;
 import me.jsu.springbootdeveloper.dto.MyChallengeInProgressResponse;
@@ -26,6 +29,17 @@ public class MyChallengeListController {
     /*
         유저가 참여한 챌린지 중, 진행중인 챌린지 리스트를 조회한다.
      */
+    @Operation(
+            summary = "내 진행 중인 챌린지 목록 조회",
+            description = """
+        로그인한 사용자가 현재 참여 중인 챌린지 목록을 조회한다.
+        ex) GET /api/challenges/my/inProgress
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "진행 중인 챌린지 목록 조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
+    })
     @GetMapping("/api/challenges/my/inProgress")
     public ResponseEntity<List<MyChallengeInProgressResponse>> getMyChallengesInProgress(
             @AuthenticationPrincipal UserDetails userDetails
@@ -38,6 +52,18 @@ public class MyChallengeListController {
     /*
         유저가 참여한 챌린지 중, 완료한 챌린지 리스트를 조회한다.
      */
+    @Operation(
+            summary = "내 완료 챌린지 목록 조회",
+            description = """
+        로그인한 사용자가 완료한 챌린지 목록을 조회한다.
+        완료일은 챌린지 참여 기록의 completedAt 기준으로 반환된다.
+        ex) GET /api/challenges/my/success
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "완료한 챌린지 목록 조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
+    })
     @GetMapping("/api/challenges/my/success")
     public ResponseEntity<List<MyChallengeSuccessOrFailResponse>> getMyChallengesSuccess(
             @AuthenticationPrincipal UserDetails userDetails
@@ -50,6 +76,18 @@ public class MyChallengeListController {
     /*
         유저가 참여한 챌린지 중, 실패한 챌린지 리스트를 조회한다.
      */
+    @Operation(
+            summary = "내 실패 챌린지 목록 조회",
+            description = """
+        로그인한 사용자가 실패한 챌린지 목록을 조회한다.
+        실패일은 챌린지 참여 기록의 failedAt 기준으로 반환된다.
+        ex) GET /api/challenges/my/fail
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "실패한 챌린지 목록 조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
+    })
     @GetMapping("/api/challenges/my/fail")
     public ResponseEntity<List<MyChallengeSuccessOrFailResponse>> getMyChallengesFail(
             @AuthenticationPrincipal UserDetails userDetails
