@@ -37,12 +37,10 @@ public class MyChallengeListService {
         // 참여한 챌린지들을 검색한다.
         List<ChallengeParticipant> challengeParticipants = challengeService.findStatusWithChallengeByUserIdAndStatus(user.getId(), status);
 
-        // 인증률 계산을 위한 알고리즘 수행
-
         // 얻은 값을 매핑하여 반환한다.
         return challengeParticipants.stream()
                 .map(cp -> {
-                    LocalDate startDate = cp.getChallenge().getStartDate();
+                    LocalDate startDate = cp.getJoinDate();  // 유저가 챌린지를 시작한 날을 기준으로 한다.
                     LocalDate endDate = cp.getChallenge().getEndDate();
                     LocalDate today = LocalDate.now();
 
@@ -64,7 +62,7 @@ public class MyChallengeListService {
                             .participantNumber(cp.getChallenge().getParticipantNumber())
                             .duringDate(elapsedDays)
                             .endDate(cp.getChallenge().getEndDate())  // 완료일
-                            .achievementRate(0) // 계산 정책 정의 필요
+                            .achievementRate(calculateAchievementRatePercent(cp))  // 달성률을 계산하여 반환한다.
                             .status(status)
                             .build();
                         }
@@ -80,8 +78,6 @@ public class MyChallengeListService {
 
         // 참여한 챌린지들을 검색한다.
         List<ChallengeParticipant> challengeParticipants = challengeService.findStatusWithChallengeByUserIdAndStatus(user.getId(), status);
-
-        // 달성율 계산을 위한 알고리즘 수행
 
         // 얻은 값을 매핑하여 반환한다.
         return challengeParticipants.stream()
@@ -99,10 +95,24 @@ public class MyChallengeListService {
                             .title(cp.getChallenge().getTitle())
                             .duringDate(ChronoUnit.DAYS.between(cp.getChallenge().getStartDate(), endDate))
                             .endDate(endDate)  // 완료 또는 실패일
-                            .achievementRate(0) // 계산 정책 정의 필요
+                            .achievementRate(calculateAchievementRatePercent(cp))  // 달성률을 계산하여 반환한다.
                             .status(status)
                             .build();
                 })
                 .toList();
+    }
+
+    /*
+        챌린지의 달성률을 계산해주는 함수이다.
+     */
+    public int calculateAchievementRatePercent(ChallengeParticipant participant) {
+        int totalWeeks = participant.getTotalWeeks();
+
+        if (totalWeeks == 0) {
+            return 0;
+        }
+
+        // 현재 진행한 주차 수와 총 주차 수로 달성률을 계산한다.
+        return (int) Math.round((double) participant.getSuccessWeeks() * 100 / totalWeeks);
     }
 }

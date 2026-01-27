@@ -21,6 +21,6 @@ public class MyChallengeInProgressResponse {
     private int participantNumber;
     private long duringDate;  // 챌린지 경과일이다.
     private LocalDate endDate;
-    private double achievementRate;
+    private int achievementRate;
     private Status status;
 }

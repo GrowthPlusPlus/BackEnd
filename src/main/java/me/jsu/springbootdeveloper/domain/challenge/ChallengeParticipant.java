@@ -56,9 +56,12 @@ public class ChallengeParticipant {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Column(name = "joined_date", nullable = false)
+    private LocalDate joinDate;  // 유저가 챌린지에 참여한 시간이다.
+
     @CreatedDate
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;  // 유저가 챌린지에 참여한 시간이다.
+    private LocalDateTime createdAt;  // 해당 튜플이 실제로 DB에 저장된 시간이다.
 
     @Column(name = "completed_at", nullable = true)
     private LocalDate completedAt;  // 완료된 날짜
@@ -93,14 +96,25 @@ public class ChallengeParticipant {
     @Column(name = "max_streak_end_date")
     private LocalDate maxStreakEndDate;
 
+    // 유저 기준 총 수행 주차 수
+    @Column(name = "total_weeks", nullable = false)
+    private int totalWeeks;
+
+    // 성공한 주차 수
+    @Column(name = "success_weeks", nullable = false)
+    private int successWeeks;
+
     @Builder
-    public ChallengeParticipant(Challenge challenge, User user) {
+    public ChallengeParticipant(Challenge challenge, User user, LocalDate joinDate, int totalWeeks) {
         this.challenge = challenge;
         this.user = user;
+        this.joinDate = joinDate;
         this.status = Status.IN_PROGRESS;  // 처음 챌린지에 참여하면 진행중인 상태가 된다.
         this.totalSuccessDays = 0;  // 초기엔 전부 0이다.
         this.currentStreakDays = 0;
         this.maxStreakDays = 0;
+        this.successWeeks = 0;
+        this.totalWeeks = totalWeeks;
     }
 
     /*
@@ -144,5 +158,12 @@ public class ChallengeParticipant {
     public void markFail(LocalDate today) {
         this.status = Status.FAIL;
         this.failedAt = today;
+    }
+
+    /*
+        챌린지의 총 성공 주차 수를 업데이트 한다.
+     */
+    public void increaseSuccessWeeks() {
+        successWeeks++;
     }
 }

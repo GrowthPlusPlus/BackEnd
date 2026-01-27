@@ -18,6 +18,6 @@ public class MyChallengeSuccessOrFailResponse {
     private String title;
     private long duringDate;  // 챌린지를 수행한 일수이다.
     private LocalDate endDate;  // 챌린지를 완수하거나, 실패한 날짜이다.
-    private double achievementRate;
+    private int achievementRate;
     private Status status;
 }
