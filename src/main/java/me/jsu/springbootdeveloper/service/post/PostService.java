@@ -12,7 +12,6 @@ import me.jsu.springbootdeveloper.domain.post.PostPicture;
 import me.jsu.springbootdeveloper.domain.user.User;
 import me.jsu.springbootdeveloper.domain.user.UserProfilePicture;
 import me.jsu.springbootdeveloper.dto.article.ArticleDetailResponse;
-import me.jsu.springbootdeveloper.dto.article.UpdateArticleRequest;
 import me.jsu.springbootdeveloper.dto.challengeCalendar.ChallengeCalendarPhotoResponse;
 import me.jsu.springbootdeveloper.dto.challengeCalendar.ChallengeCalendarPostResponse;
 import me.jsu.springbootdeveloper.dto.picture.ImageUploadResult;
@@ -23,7 +22,6 @@ import me.jsu.springbootdeveloper.service.challenge.ChallengeService;
 import me.jsu.springbootdeveloper.service.cloudinary.CloudinaryService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -55,6 +53,9 @@ public class PostService {
 
         // request로 온 챌린지 id로 post가 어떤 챌린지에 속하는지 검색한다.
         Challenge challenge = challengeService.findById(challengeId);
+
+        // 현재 진행중인 챌린지가 아니라면 예외를 던진다.
+        challengeService.challengeStatusInProgress(user.getId(), challengeId);
 
         // 챌린지 인증 시각을 정확하게 보기 위해 생성 시각과는 다른 인증 날짜 도메인을 생성한다.
         LocalDate postDate = LocalDate.now(ZoneId.of("Asia/Seoul"));
@@ -92,6 +93,9 @@ public class PostService {
 
         // 인증글을 업데이트 했으므로 챌린지 데일리 로그도 업데이트 한다.
         challengeService.createDailyLog(user, challenge, article, postDate);
+
+        // 오늘 인증한 사람 수를 증가시킨다.
+        challengeService.updateTodaySuccessCount(challenge, postDate);
 
         // 주의 시작인 월요일을 계산한다.
         LocalDate weekStartDate = postDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));

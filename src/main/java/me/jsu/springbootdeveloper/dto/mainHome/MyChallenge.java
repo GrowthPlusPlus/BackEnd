@@ -14,7 +14,7 @@ public class MyChallenge {
     private Long challengeId;
     private String title;
     private String content;  // 챌린지 설명이다.
-    private int maxParticipantNumber;
+    private int todaySuccessCount;
     private int participantNumber;
     private long duringDate;  // 챌린지 경과일이다.
     private boolean doIt;  // 해당 챌린지를 오늘 수행했는지에 관한 불린 값이다.

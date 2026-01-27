@@ -31,7 +31,10 @@ import java.time.LocalDateTime;
                         columnList = "challenge_id"),  // 챌린지 id로 검색하기 위한 인덱싱이다.
                 @Index(
                         name = "idx_cp_user_id_status",
-                        columnList = "user_id, status")  // 유저 id, 챌린지 진행 여부로 검색하기 위한 인덱싱이다.
+                        columnList = "user_id, status"),  // 유저 id, 챌린지 진행 여부로 검색하기 위한 인덱싱이다.
+                @Index(
+                        name = "idx__status",
+                        columnList = "status")
         }
 )
 @EntityListeners(AuditingEntityListener.class)  // 생성 및 수정시간을 감시하고 기록할 수 있게 해준다.
@@ -56,6 +59,12 @@ public class ChallengeParticipant {
     @CreatedDate
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;  // 유저가 챌린지에 참여한 시간이다.
+
+    @Column(name = "completed_at", nullable = true)
+    private LocalDate completedAt;  // 완료된 날짜
+
+    @Column(name = "failed_at", nullable = true)
+    private LocalDate failedAt;  // 실패로 확정된 날짜
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
@@ -119,5 +128,21 @@ public class ChallengeParticipant {
             maxStreakEndDate = currentStreakEndDate;
             maxStreakDays = currentStreakDays;
         }
+    }
+
+    /*
+        챌린지가 성공한 경우 실행하는 함수이다.
+     */
+    public void markSuccess(LocalDate today) {
+        this.status = Status.SUCCESS;
+        this.completedAt = today;
+    }
+
+    /*
+        챌린지가 실패한 경우 실행하는 함수이다.
+     */
+    public void markFail(LocalDate today) {
+        this.status = Status.FAIL;
+        this.failedAt = today;
     }
 }

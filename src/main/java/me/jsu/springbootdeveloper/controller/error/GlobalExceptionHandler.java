@@ -5,6 +5,7 @@ package me.jsu.springbootdeveloper.controller.error;
 import me.jsu.springbootdeveloper.dto.error.ErrorResponse;
 import me.jsu.springbootdeveloper.service.*;
 import me.jsu.springbootdeveloper.service.challenge.ChallengeNotFoundException;
+import me.jsu.springbootdeveloper.service.challenge.ChallengeNotInProgressException;
 import me.jsu.springbootdeveloper.service.challenge.ChallengeOwnerCannotLeaveException;
 import me.jsu.springbootdeveloper.service.challenge.NotAllowedChallengeActionException;
 import me.jsu.springbootdeveloper.service.cloudinary.CloudinaryDeleteException;
@@ -284,6 +285,20 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(
                         "DUPLICATION_UPLOAD_ERROR",
                         e.getErrorCode()
+                ));
+    }
+    /*
+        현재 챌린지의 상태가 올바르지 않은 경우를 처리하는 핸들러이다.
+     */
+    @ExceptionHandler(ChallengeNotInProgressException.class)
+    public ResponseEntity<ErrorResponse> handleChallengeNotInProgress(
+            ChallengeNotInProgressException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(
+                        "CHALLENGE_STATE_ERROR",
+                        e.getMessage()
                 ));
     }
 
