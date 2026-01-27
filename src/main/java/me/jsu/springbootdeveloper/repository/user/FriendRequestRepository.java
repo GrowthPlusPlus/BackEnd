@@ -26,7 +26,7 @@ public interface FriendRequestRepository extends JpaRepository<FriendRequest, Lo
         즉 A -> B 요청이 있는 상태에서 B -> A 요청을 보내고 있지 않은지 확인한다.
      */
     @Query("""
-        select count(fr) > 0
+        select case when count(fr) > 0 then true else false end
         from FriendRequest fr
         where fr.fromUser = :fromUser
           and fr.toUser = :toUser

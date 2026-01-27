@@ -4,6 +4,7 @@ package me.jsu.springbootdeveloper.service;
 
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.domain.notification.Notification;
+import me.jsu.springbootdeveloper.domain.notification.NotificationType;
 import me.jsu.springbootdeveloper.domain.user.User;
 import me.jsu.springbootdeveloper.dto.mainHome.MyNotification;
 import me.jsu.springbootdeveloper.dto.mainHome.MyNotificationResponse;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /*
     알람을 관리하기 위한 서비스이다.
@@ -22,6 +24,26 @@ import org.springframework.stereotype.Service;
 public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserService userService;
+
+    /**
+     * 인앱 알림을 저장하고 반환한다
+     */
+    @Transactional
+    public void sendNotification(User user, NotificationType notificationType, String message) {
+        // 1. 인앱 알림 DB 저장
+        Notification notification = Notification.builder()
+                .user(user)
+                .message(message)
+                .type(notificationType)
+                .build();
+        notificationRepository.save(notification);
+
+        /* 2. 실시간 푸시 알림 발송(구현 예정)
+        // user 객체에 fcmToken 필드가 있다고 가정합니다.
+        String title = "새로운 챌린지 알림";
+        fcmPushService.sendMessageTo(user.getFcmToken(), title, message);
+        */
+    }
 
     /*
         유저가 읽지 않은 알람 개수를 검색해주는 함수이다.

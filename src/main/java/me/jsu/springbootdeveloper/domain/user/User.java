@@ -151,6 +151,14 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
     }
 
     /*
+        별도로 관리되는 UserProfilePicture 객체를 통해 이미지 URL을 가져옵니다.
+        사진이 없을 경우 null을 반환합니다.
+     */
+    public String getProfileImageUrl() {
+        return (this.userProfilePicture != null) ? this.userProfilePicture.getImageUrl() : null;
+    }
+
+    /*
         User 엔티티를 UserResponse DTO로 변환하는 함수이다.
         @return UserResponse DTO 객체
      */

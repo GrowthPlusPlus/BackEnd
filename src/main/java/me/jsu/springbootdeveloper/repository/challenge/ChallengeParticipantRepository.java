@@ -131,4 +131,5 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
         order by cp.id asc
     """)
     List<ChallengeParticipant> findEndedInProgressAfterId(@Param("lastId") Long lastId, @Param("today") LocalDate today, Pageable pageable);
+    boolean existsByChallenge_IdAndUser_Id(Long challengeId, Long userId);
 }
