@@ -73,15 +73,15 @@ public class ChallengeMaintenanceService {
         LocalDate weekEnd = weekStart.plusDays(6);
 
         // 챌린지 주간 상태를 유저 id, 챌린지 id, 해당 주로 검색한다. 해당 값은 주에 한 번도 챌린지를 수행하지 않았다면 없을 수 있다.
-        Optional<ChallengeWeeklyStatus> weeklyStatusOpt = challengeWeeklyStatusRepository.findByUser_IdAndChallenge_IdAndWeekStartDate(
+        ChallengeWeeklyStatus weeklyStatus = challengeWeeklyStatusRepository.findByUser_IdAndChallenge_IdAndWeekStartDate(
                         cp.getUser().getId(),
                         cp.getChallenge().getId(),
                         weekStart
-        );
+        ).orElse(null);
 
         int successCount;
-        if (weeklyStatusOpt.isPresent()) {
-            successCount =  weeklyStatusOpt.get().getSuccessCount();  // 해당 주에 성공한 횟수
+        if (weeklyStatus != null) {
+            successCount =  weeklyStatus.getSuccessCount();  // 해당 주에 성공한 횟수
         } else {  // Optional.empty()인 케이스로 해당 주에 한 번도 수행하지 않았으므로 0 처리한다.
             successCount = 0;
         }
@@ -118,8 +118,8 @@ public class ChallengeMaintenanceService {
 
         // 조기 실패 판정을 결정한다. 요구된 최소 횟수가 지금까지 수행한 횟수 + 남은 수행 가능 횟수보다 적으면 실패한다.
         if (successCount + remainingDays < adjustedRequired) {
-            if (weeklyStatusOpt.isPresent()) {  // 해당 주에 한 번이라도 수행한 경우이다.
-                weeklyStatusOpt.get().markFail();  // 주간 상태를 실패로 바꾼다.
+            if (weeklyStatus != null) {  // 해당 주에 한 번이라도 수행한 경우이다.
+                weeklyStatus.markFail();  // 주간 상태를 실패로 바꾼다.
             }
             cp.markFail(today);  // 챌린지 상태를 실패로 바꾼다.
         }
