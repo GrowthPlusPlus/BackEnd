@@ -5,6 +5,7 @@ package me.jsu.springbootdeveloper.service.challenge;
 import me.jsu.springbootdeveloper.domain.challenge.InviteChallenge.DTO.ChallengeFriendInviteListResponse;
 import me.jsu.springbootdeveloper.domain.challenge.InviteChallenge.Entity.ChallengeInvite;
 import me.jsu.springbootdeveloper.domain.challenge.InviteChallenge.Repository.ChallengeInviteRepository;
+import me.jsu.springbootdeveloper.domain.challenge.SearchChallenge.DTO.SearchChallengeResponse;
 import me.jsu.springbootdeveloper.domain.notification.NotificationType;
 import me.jsu.springbootdeveloper.repository.user.FriendshipRepository;
 import me.jsu.springbootdeveloper.repository.user.UserProfilePictureRepository;
@@ -163,6 +164,26 @@ public class ChallengeService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * 키워드로 챌린지를 검색한다. (제목 또는 태그명 포함)
+     */
+    public Page<SearchChallengeResponse> searchChallenges(String keyword, int page) {
+        Pageable pageable = PageRequest.of(page, 20);
+
+        // 검색어가 포함된 공개 챌린지를 조회한다.
+        Page<Challenge> challenges = challengeRepository.searchChallenges(
+                keyword, ChallengeVisibility.PUBLIC, pageable);
+
+        // 2. DTO 변환 (생성자에서 필요한 모든 필드 매핑)
+        return challenges.map(challenge -> {
+            // 태그 목록은 성능을 위해 별도로 fetch join하거나
+            // application.yml의 default_batch_fetch_size 설정을 권장합니다.
+            List<TagResponse> tags = tagService.getChallengeTags(challenge.getId());
+
+            return new SearchChallengeResponse(challenge, tags);
+        });
+
+    }
 
     /*
         챌린지 id로 챌린지를 검색해주는 함수이다.
