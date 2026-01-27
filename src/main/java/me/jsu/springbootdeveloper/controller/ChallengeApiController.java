@@ -9,6 +9,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import me.jsu.springbootdeveloper.domain.challenge.InviteChallenge.DTO.ChallengeFriendInviteListResponse;
+import me.jsu.springbootdeveloper.dto.FriendRequestResponse_Sent;
 import me.jsu.springbootdeveloper.dto.challenge.*;
 import me.jsu.springbootdeveloper.dto.createChallenge.CreateChallengeResponse;
 import me.jsu.springbootdeveloper.dto.createChallenge.CreateChallengeRequest;
@@ -27,6 +29,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /*
     챌린지에 관련된 일을 수행하는 api 컨트롤러이다.
@@ -50,7 +54,7 @@ public class ChallengeApiController {
     @Operation(
             summary = "챌린지 생성하기",
             description = """
-        요청: 챌린지 생성 화면에 있는 필드 순서대로 값 보내기 -> 응답: (1) 챌린지 방 링크 (2) 친구 목록
+        요청: 챌린지 생성 화면에 있는 필드 순서대로 값 보내기 -> 응답: (1) 챌린지 방 링크 (2) 친구 목록 with 초대상태
         ex) POST /api/challenges/create
         """
     )
@@ -65,6 +69,43 @@ public class ChallengeApiController {
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
+
+    //챌린지 초대 - 친구 목록 with 초대 상태
+    @Operation(
+            summary = "챌린지 초대 탭 - 친구 목록과 각 친구의 초대 상태 불러오기",
+            description = """
+        """
+    )
+
+    @GetMapping("/api/challenges/{challengeId}/invite")
+    public ResponseEntity<List<ChallengeFriendInviteListResponse>> getFriendList_with_InviteStatus (@AuthenticationPrincipal UserDetails userDetails,
+                                                                              @PathVariable Long challengeId)
+
+    {
+        List<ChallengeFriendInviteListResponse> responses = challengeService.getFriendList_with_InviteStatus(userDetails.getUsername(), challengeId);
+
+        return ResponseEntity.ok(responses);
+    }
+
+    //챌린지 초대 - 친구 초대하기
+    @Operation(
+            summary = "챌린지에 친구 초대하기",
+            description = """
+        """
+    )
+    @Transactional
+    @PostMapping("/api/challenges/{challengeId}/invite/{friendNickname}")
+    public ResponseEntity<Void> inviteChallenge (@AuthenticationPrincipal UserDetails userDetails,
+                                                                    @PathVariable Long challengeId,
+                                                 @PathVariable String friendNickname)
+
+    {
+        challengeService.inviteUser(userDetails.getUsername(), challengeId, friendNickname);
+
+        return ResponseEntity.noContent().build();
+    }
+
     /*
         유저가 챌린지 id로 해당 챌린지에서 나가도록 하는 컨트롤러이다.
         챌린지에서 나가면 의미 없는 챌린지 초대 링크, 챌린지 위크 스테이터스 DB 값도 삭제한다.

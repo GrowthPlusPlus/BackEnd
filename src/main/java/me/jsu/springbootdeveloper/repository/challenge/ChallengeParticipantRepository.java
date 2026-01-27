@@ -94,4 +94,5 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
             @Param("userId") Long userId,
             @Param("challengeIds") List<Long> challengeIds
     );
+    boolean existsByChallenge_IdAndUser_Id(Long challengeId, Long userId);
 }
