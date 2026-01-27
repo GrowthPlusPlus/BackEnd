@@ -2,6 +2,13 @@
 
 package me.jsu.springbootdeveloper.service.challenge;
 
+import me.jsu.springbootdeveloper.domain.challenge.InviteChallenge.DTO.ChallengeFriendInviteListResponse;
+import me.jsu.springbootdeveloper.domain.challenge.InviteChallenge.Entity.ChallengeInvite;
+import me.jsu.springbootdeveloper.domain.challenge.InviteChallenge.Repository.ChallengeInviteRepository;
+import me.jsu.springbootdeveloper.domain.notification.NotificationType;
+import me.jsu.springbootdeveloper.repository.user.FriendshipRepository;
+import me.jsu.springbootdeveloper.repository.user.UserProfilePictureRepository;
+import me.jsu.springbootdeveloper.service.NotificationService;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.domain.challenge.*;
@@ -40,6 +47,8 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
 /*
     챌린지와 관련된 일을 처리하는 클래스이다.
  */
@@ -60,8 +69,10 @@ public class ChallengeService {
     private String baseUrl;
     //챌린지 생성 시 친구 목록 가져와서 전달해야 함
     private final FriendService friendService;
-
-
+    private final ChallengeInviteRepository challengeInviteRepository;
+    private final NotificationService notificationService;
+    private final UserProfilePictureRepository userProfilePictureRepository;
+    private final FriendshipRepository friendshipRepository;
     //챌린지 생성 기능
     @Transactional
     public CreateChallengeResponse createChallenge(String email, CreateChallengeRequest dto) {
@@ -100,6 +111,58 @@ public class ChallengeService {
         return new CreateChallengeResponse(inviteUrl, friends);
 
     }
+    /*
+        친구를 챌린지에 초대하는 함수이다.
+        (1) 알림 전송 (2) 초대 테이블에 'INVITED' 상태로 저장
+     */
+    @Transactional
+    public void inviteUser(String inviterEmail, Long challengeId, String targetNickname) {
+        User inviter = userService.findByEmail(inviterEmail);
+        Challenge challenge = findById(challengeId);
+        User invitee = userService.findByNickname(targetNickname);
+
+        // 1. 초대 알림 전송 (NotificationService 구현에 따라 호출)
+        String message = inviter.getNickname() + "님이 " + challenge.getTitle()+ " 방에 나를 초대했어요.";
+        notificationService.sendNotification(invitee, NotificationType.CHALLENGE, message); // 예시 메서드
+
+        // 2. 초대 정보 저장
+        ChallengeInvite invite = ChallengeInvite.builder()
+                .challenge(challenge)
+                .inviter(inviter)
+                .invitee(invitee)
+                .build();
+
+        challengeInviteRepository.save(invite);
+    }
+
+    /**
+     * 친구 목록과 챌린지 초대 상태 조회
+     * 이미 참여 중인 유저는 제외하고, 초대됨/초대 가능 상태인 유저만 반환한다.
+     */
+    @Transactional(readOnly = true)
+    public List<ChallengeFriendInviteListResponse> getFriendList_with_InviteStatus(String email, Long challengeId) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        //전체 친구 목록 조회
+        List<User> friends = friendshipRepository.findAllFriendsByUserId(user.getId());
+
+        return friends.stream()
+                //이미 참여 중인 친구는 제외
+                .filter(friend-> !challengeParticipantRepository.existsByChallenge_IdAndUser_Id(challengeId, friend.getId()))
+                .map(friend -> {
+                    // 친구의 프로필 사진 조회
+                    String profileUrl = userProfilePictureRepository.findByUser_Id(friend.getId())
+                            .map(UserProfilePicture::getImageUrl)
+                            .orElse(null); // 사진이 없을 경우 기본값 처리
+
+                    //해당 친구의 초대 상태 판별(1. 초대되거나 2.초대되지 않음 (해당 초대 테이블에 저장된 정보 없음))
+                    boolean inviteStatus = challengeInviteRepository.existsByChallenge_IdAndInvitee_Id(challengeId, friend.getId());
+                    return new ChallengeFriendInviteListResponse(friend, profileUrl, inviteStatus);
+                })
+                .collect(Collectors.toList());
+    }
+
 
     /*
         챌린지 id로 챌린지를 검색해주는 함수이다.
@@ -480,4 +543,6 @@ public class ChallengeService {
     public List<Object[]> findSuccessDays(Long userId, List<Long> challengeIds) {
         return challengeParticipantRepository.findSuccessDays(userId, challengeIds);
     }
+
+
 }

@@ -1,10 +1,12 @@
 package me.jsu.springbootdeveloper.service;
 
 import lombok.RequiredArgsConstructor;
+import me.jsu.springbootdeveloper.domain.challenge.InviteChallenge.Repository.ChallengeInviteRepository;
 import me.jsu.springbootdeveloper.domain.user.*;
 import me.jsu.springbootdeveloper.dto.FriendListResponse;
 import me.jsu.springbootdeveloper.dto.FriendRequestResponse_Received;
 import me.jsu.springbootdeveloper.dto.FriendRequestResponse_Sent;
+import me.jsu.springbootdeveloper.repository.challenge.ChallengeParticipantRepository;
 import me.jsu.springbootdeveloper.repository.user.FriendRequestRepository;
 import me.jsu.springbootdeveloper.repository.user.FriendshipRepository;
 import me.jsu.springbootdeveloper.repository.user.UserProfilePictureRepository;
@@ -22,6 +24,8 @@ public class FriendService {
     private final FriendshipRepository friendshipRepository;
     private final UserRepository userRepository;
     private final UserProfilePictureRepository userProfilePictureRepository;
+    private final ChallengeInviteRepository challengeInviteRepository;
+    private final ChallengeParticipantRepository challengeParticipantRepository;
     /**
      * 1. 친구 신청 보내기
      */
