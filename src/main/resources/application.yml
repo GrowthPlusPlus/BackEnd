@@ -43,9 +43,9 @@ jwt:
 
 # 클라우디너리 설정 
 cloudinary:
-  cloud-name:
-  api-key:
-  api-secret:
+  cloud-name: doayitbfd
+  api-key: 747796122854198
+  api-secret: OB9C15esKMCvW4mcgd7GStsCWfY
 
 
 app:
