@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.domain.challenge.InviteChallenge.DTO.ChallengeFriendInviteListResponse;
+import me.jsu.springbootdeveloper.domain.challenge.SearchChallenge.DTO.SearchChallengeResponse;
 import me.jsu.springbootdeveloper.dto.FriendRequestResponse_Sent;
 import me.jsu.springbootdeveloper.dto.challenge.*;
 import me.jsu.springbootdeveloper.dto.createChallenge.CreateChallengeResponse;
@@ -104,6 +105,29 @@ public class ChallengeApiController {
         challengeService.inviteUser(userDetails.getUsername(), challengeId, friendNickname);
 
         return ResponseEntity.noContent().build();
+    }
+
+    /*
+        챌린지를 검색하는 API이다. (제목 또는 태그 검색)
+        반환값에는 제목, 생성날짜, 참여자 수 정보 등이 포함된다.
+     */
+    @Operation(
+            summary = "챌린지 검색",
+            description = """
+        키워드를 포함하는 제목 또는 태그를 가진 챌린지 목록을 조회한다.
+        응답 데이터로 챌린지 이름, 생성일, 참여 인원 현황 등을 포함한다.
+        ex) GET /api/challenges/search?keyword=운동&page=0
+        """
+    )
+    @GetMapping("/api/challenges/search")
+    public ResponseEntity<Page<SearchChallengeResponse>> searchChallenges(
+            @Parameter(description = "검색어", required = true, example = "운동")
+            @RequestParam String keyword,
+            @Parameter(description = "페이지 번호", required = true, example = "0")
+            @RequestParam int page
+    ) {
+        Page<SearchChallengeResponse> response = challengeService.searchChallenges(keyword, page);
+        return ResponseEntity.ok(response);
     }
 
     /*

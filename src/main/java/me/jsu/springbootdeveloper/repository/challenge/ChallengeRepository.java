@@ -36,6 +36,24 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
     // 챌린지 id와 유저 id로 해당 유저가 방장인지 검사한다.
     boolean existsByIdAndUser_Id(Long challengeId, Long userId);
 
+    /**
+     * 제목 또는 연관된 태그 이름에 키워드가 포함된 공개 챌린지를 검색한다.
+     * @param keyword 검색어
+     * @param visibility 공개 여부
+     * @param pageable 페이징 정보
+     */
+    @Query("SELECT DISTINCT c FROM Challenge c " +
+            "LEFT JOIN c.tagMappings tm " +
+            "LEFT JOIN tm.tag t " +
+            "WHERE c.challengeVisibility = :visibility " +
+            "AND (c.title LIKE %:keyword% OR t.tagName LIKE %:keyword%) " +
+            "ORDER BY c.startDate DESC")
+    Page<Challenge> searchChallenges(@Param("keyword") String keyword,
+                                     @Param("visibility") ChallengeVisibility visibility,
+                                     Pageable pageable);
+
+
+
     // 현재 진행중인 챌린지들을 배치 단위로 검색한다.
     @Query("""
         select c
