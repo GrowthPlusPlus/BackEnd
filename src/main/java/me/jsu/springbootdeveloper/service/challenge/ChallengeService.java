@@ -78,8 +78,8 @@ public class ChallengeService {
     @Transactional
     public CreateChallengeResponse createChallenge(String email, CreateChallengeRequest dto) {
         //로그인한 유저 정보 조회 (인증 객체에서 넘어온 email 사용)
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("해당 유저를 찾을 수 없습니다: " + email));
+        User user = userService.findByEmail(email);
+
         //챌린지 저장하기
         // 종료일 계산 로직 (시작일 + 인증 기간), 화면에서 '30일'을 선택했다면 startDate로부터 30일 뒤를 계산합니다.
         LocalDate endDate = dto.getStartDate().plusDays(dto.getDuration());
@@ -97,10 +97,13 @@ public class ChallengeService {
                 .startDate(dto.getStartDate())
                 .endDate(endDate)
                 .requiredWeeklyCount(dto.getFrequency())
+                .photoRequired(dto.isPhotoRequired())
                 .build();
 
         //챌린지 객체 db에 저장
         Challenge savedChallenge = challengeRepository.save(challenge);
+        
+        // 챌린지 생성자는 자동으로 챌린지에 참여하는 로직 구현
 
         //공유 Url 생성
         String inviteUrl = baseUrl + "/challenges/" + savedChallenge.getId();
