@@ -9,11 +9,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import me.jsu.springbootdeveloper.domain.tag.TagToChallenge;
 import me.jsu.springbootdeveloper.domain.user.User;
+import org.springframework.cglib.core.Local;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 /*
@@ -116,7 +118,7 @@ public class Challenge {
 
     @Builder
     public Challenge(String title, String content, User user, int maxParticipantNumber, ChallengeVisibility challengeVisibility,
-                     LocalDate startDate, LocalDate endDate, int requiredWeeklyCount, boolean photoRequired) {
+                     LocalDate startDate, LocalDate endDate, int requiredWeeklyCount, boolean photoRequired, LocalDate todayDate) {
         this.title = title;
         this.content = content;
         this.user = user;
@@ -127,6 +129,8 @@ public class Challenge {
         this.endDate = endDate;
         this.requiredWeeklyCount = requiredWeeklyCount;
         this.photoRequired = photoRequired;
+        this.todaySuccessCount = 0;
+        this.todayDate = LocalDate.now(ZoneId.of("Asia/Seoul"));  // 아시아 시간으로 초기화 한다.
     }
 
     /*
