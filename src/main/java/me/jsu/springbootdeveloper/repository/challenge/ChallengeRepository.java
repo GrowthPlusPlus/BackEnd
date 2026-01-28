@@ -17,12 +17,6 @@ import java.util.List;
     챌린지를 저장하는 DB로, 테이블에 매핑되는 엔티티 타입은 Challenge, 엔티티의 pk 타입은 Long이다.
  */
 public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
-    // 공개 챌린지만 시작일 기준으로 최신순으로 보여준다.
-    Page<Challenge> findByChallengeVisibilityOrderByStartDateDesc(
-            ChallengeVisibility challengeVisibility,
-            Pageable pageable
-    );
-
     // 진행중인 챌린지를 검색하여 유저에게 보여준다.
     Page<Challenge> findByStartDateLessThanEqualAndEndDateGreaterThanEqual(
             LocalDate today1,  // today1, today2는 같은 값이다.
@@ -60,4 +54,14 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
 
 
 
+    // 현재 진행중인 챌린지들을 배치 단위로 검색한다.
+    @Query("""
+        select c
+        from Challenge c
+        where c.startDate <= :today
+          and c.endDate >= :today
+          and c.id > :lastId
+        order by c.id asc
+    """)
+    List<Challenge> findActiveChallengesAfterId(@Param("today") LocalDate today, @Param("lastId") Long lastId, Pageable pageable);
 }

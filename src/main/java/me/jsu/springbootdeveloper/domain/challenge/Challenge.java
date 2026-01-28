@@ -37,6 +37,10 @@ import java.util.List;
                 @Index(
                         name = "idx_date_range",
                         columnList = "start_date, end_date"
+                ),
+                @Index(
+                        name = "idx_end_date",
+                        columnList = "end_date"
                 )
         }
 )
@@ -84,6 +88,12 @@ public class Challenge {
     @Column(name = "photo_required", nullable = false)
     private boolean photoRequired;  // 사진 여부가 필수인지 정하는 값이다.
 
+    @Column(name = "today_success_count", nullable = false)
+    private int todaySuccessCount;  // 오늘 해당 챌린지를 달성한 사람이 몇 명인지 기록하는 값이다.
+
+    @Column(name = "today_date", nullable = false)
+    private LocalDate todayDate;  // 해당 챌린지의 "오늘"의 기준을 만드는 값이다.
+
     @CreatedDate
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -99,7 +109,7 @@ public class Challenge {
     private List<ChallengeInviteLink> challengeInviteLinks;
 
     @OneToMany(mappedBy = "challenge", cascade = CascadeType.REMOVE)
-    private List<ChallengeWeeklyStatus>challengeWeeklyStatuses;
+    private List<ChallengeWeeklyStatus> challengeWeeklyStatuses;
 
     @OneToMany(mappedBy = "challenge", cascade = CascadeType.REMOVE)
     private List<TagToChallenge> tagMappings;
@@ -153,5 +163,27 @@ public class Challenge {
         }
 
         this.participantNumber--;
+    }
+
+    /*
+        해당 챌린지를 오늘 누군가가 수행할 때마다 하나씩 증가한다.
+     */
+    public void increaseTodaySuccess(LocalDate today) {
+        if (!today.equals(this.todayDate)) {  // 날짜가 같지 않으면 다음 날이므로 날짜를 오늘로 초기화 한다. 방어 코드이다.
+            this.todayDate = today;
+            this.todaySuccessCount = 0;
+        }
+        this.todaySuccessCount++;
+    }
+
+    /*
+        서버가 12시마다 모든 챌린지의 날짜를 초기화 하는 함수이다.
+        서비스에서 현재 진행중인 챌린지만 찾아서 초기화 한다.
+     */
+    public void syncToday(LocalDate today) {
+        if (!today.equals(this.todayDate)) {
+            this.todayDate = today;
+            this.todaySuccessCount = 0;
+        }
     }
 }

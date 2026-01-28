@@ -31,7 +31,10 @@ import java.time.LocalDateTime;
                         columnList = "challenge_id"),  // 챌린지 id로 검색하기 위한 인덱싱이다.
                 @Index(
                         name = "idx_cp_user_id_status",
-                        columnList = "user_id, status")  // 유저 id, 챌린지 진행 여부로 검색하기 위한 인덱싱이다.
+                        columnList = "user_id, status"),  // 유저 id, 챌린지 진행 여부로 검색하기 위한 인덱싱이다.
+                @Index(
+                        name = "idx__status",
+                        columnList = "status")
         }
 )
 @EntityListeners(AuditingEntityListener.class)  // 생성 및 수정시간을 감시하고 기록할 수 있게 해준다.
@@ -53,9 +56,18 @@ public class ChallengeParticipant {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Column(name = "joined_date", nullable = false)
+    private LocalDate joinDate;  // 유저가 챌린지에 참여한 시간이다.
+
     @CreatedDate
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;  // 유저가 챌린지에 참여한 시간이다.
+    private LocalDateTime createdAt;  // 해당 튜플이 실제로 DB에 저장된 시간이다.
+
+    @Column(name = "completed_at", nullable = true)
+    private LocalDate completedAt;  // 완료된 날짜
+
+    @Column(name = "failed_at", nullable = true)
+    private LocalDate failedAt;  // 실패로 확정된 날짜
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
@@ -84,14 +96,25 @@ public class ChallengeParticipant {
     @Column(name = "max_streak_end_date")
     private LocalDate maxStreakEndDate;
 
+    // 유저 기준 총 수행 주차 수
+    @Column(name = "total_weeks", nullable = false)
+    private int totalWeeks;
+
+    // 성공한 주차 수
+    @Column(name = "success_weeks", nullable = false)
+    private int successWeeks;
+
     @Builder
-    public ChallengeParticipant(Challenge challenge, User user) {
+    public ChallengeParticipant(Challenge challenge, User user, LocalDate joinDate, int totalWeeks) {
         this.challenge = challenge;
         this.user = user;
+        this.joinDate = joinDate;
         this.status = Status.IN_PROGRESS;  // 처음 챌린지에 참여하면 진행중인 상태가 된다.
         this.totalSuccessDays = 0;  // 초기엔 전부 0이다.
         this.currentStreakDays = 0;
         this.maxStreakDays = 0;
+        this.successWeeks = 0;
+        this.totalWeeks = totalWeeks;
     }
 
     /*
@@ -119,5 +142,28 @@ public class ChallengeParticipant {
             maxStreakEndDate = currentStreakEndDate;
             maxStreakDays = currentStreakDays;
         }
+    }
+
+    /*
+        챌린지가 성공한 경우 실행하는 함수이다.
+     */
+    public void markSuccess(LocalDate today) {
+        this.status = Status.SUCCESS;
+        this.completedAt = today;
+    }
+
+    /*
+        챌린지가 실패한 경우 실행하는 함수이다.
+     */
+    public void markFail(LocalDate today) {
+        this.status = Status.FAIL;
+        this.failedAt = today;
+    }
+
+    /*
+        챌린지의 총 성공 주차 수를 업데이트 한다.
+     */
+    public void increaseSuccessWeeks() {
+        successWeeks++;
     }
 }

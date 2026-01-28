@@ -18,7 +18,6 @@ import me.jsu.springbootdeveloper.domain.challenge.ChallengeDailyLog;
 import me.jsu.springbootdeveloper.domain.challenge.ChallengeParticipant;
 import me.jsu.springbootdeveloper.domain.challenge.ChallengeWeeklyStatus;
 import me.jsu.springbootdeveloper.domain.post.Article;
-import me.jsu.springbootdeveloper.domain.challenge.*;
 import me.jsu.springbootdeveloper.domain.user.User;
 import me.jsu.springbootdeveloper.domain.user.UserProfilePicture;
 import me.jsu.springbootdeveloper.dto.challenge.ChallengeMemberResponse;
@@ -46,6 +45,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.WeekFields;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -198,6 +198,13 @@ public class ChallengeService {
      */
     public List<ChallengeParticipant> findInProgressWithChallengeByUserId(Long userId) {
         return challengeParticipantRepository.findInProgressWithChallengeByUserId(userId);
+    }
+
+    /*
+        유저 id와 챌린지 상태로 참여한 챌린지를 반환해주는 함수이다.
+     */
+    public List<ChallengeParticipant> findStatusWithChallengeByUserIdAndStatus(Long userId, Status status) {
+        return challengeParticipantRepository.findStatusWithChallengeByUserIdAndStatus(userId, status);
     }
 
     /*
@@ -537,25 +544,41 @@ public class ChallengeService {
      */
     public void updateWeeklyStatus(User user, Challenge challenge, LocalDate weekStartDate, int requiredWeeklyCount) {
         // 이번주에 해당하는 챌린지 주간 상태 튜플이 있는지 검색한다.
-        Optional<ChallengeWeeklyStatus> optionalStatus = challengeWeeklyStatusRepository.findByUser_IdAndChallenge_IdAndWeekStartDate(
+       ChallengeWeeklyStatus challengeWeeklyStatus = challengeWeeklyStatusRepository.findByUser_IdAndChallenge_IdAndWeekStartDate(
                                 user.getId(),
                                 challenge.getId(),
                                 weekStartDate
-        );
-        if (optionalStatus.isPresent()) {  // 이번 주 상태가 이미 있으면 업데이트 한다.
-            ChallengeWeeklyStatus weeklyStatus = optionalStatus.get();
-            weeklyStatus.updateSuccessCount(requiredWeeklyCount);
-        }
-        else {  // 이번 주 첫 인증이면 새로 생성한다.
-            ChallengeWeeklyStatus weeklyStatus = ChallengeWeeklyStatus.builder()
-                            .user(user)
-                            .challenge(challenge)
-                            .weekStartDate(weekStartDate)
-                            .build();
+        ).orElse(null);
 
-            weeklyStatus.updateSuccessCount(requiredWeeklyCount);
-            challengeWeeklyStatusRepository.save(weeklyStatus);
+        if (challengeWeeklyStatus == null) {  // 이번 주 첫 인증이면 새로 생성한다.
+            challengeWeeklyStatus = ChallengeWeeklyStatus.builder()
+                    .user(user)
+                    .challenge(challenge)
+                    .weekStartDate(weekStartDate)
+                    .build();
+            challengeWeeklyStatusRepository.save(challengeWeeklyStatus);
         }
+
+        // 이번주 인증 횟수를 업데이트 한다.
+        challengeWeeklyStatus.updateSuccessCount(requiredWeeklyCount);
+
+        // 챌린지 참여 DB를 검색한다.
+        ChallengeParticipant challengeParticipant = findByUser_IdAndChallenge_IdForParticipant(user.getId(), challenge.getId());
+
+        // 이번 주차가 챌린지 시작 이후 몇 주차인지 검색한다.
+        int weekIndex = calculateWeekIndex(challengeParticipant.getJoinDate(), weekStartDate);
+
+        // 이번 주의 상태가 성공이라면 총 성공 주차 수를 업데이트 한다. 주에 한 번만 수행된다.
+        if (challengeWeeklyStatus.getStatus() == Status.SUCCESS && challengeParticipant.getSuccessWeeks() < weekIndex) {
+            challengeParticipant.increaseSuccessWeeks();
+        }
+    }
+
+    /*
+        인증글이 생성되면, 오늘 총 인증한 사람 수를 업데이트 한다.
+     */
+    public void updateTodaySuccessCount(Challenge challenge, LocalDate today) {
+        challenge.increaseTodaySuccess(today);
     }
 
     /*
@@ -565,5 +588,31 @@ public class ChallengeService {
         return challengeParticipantRepository.findSuccessDays(userId, challengeIds);
     }
 
+    /*
+        해당 유저의 챌린지가 진행중인 챌린지인지 검사한다.
+     */
+    public void challengeStatusInProgress(Long userId, Long challengeId) {
+        ChallengeParticipant challengeParticipant = findByUser_IdAndChallenge_IdForParticipant(userId, challengeId);
+        if (challengeParticipant.getStatus() != Status.IN_PROGRESS) {
+            throw new ChallengeNotInProgressException("CHALLENGE_IS_NOT_IN_PROGRESS");
+        }
+    }
 
+    /*
+        두 날짜 사이에 걸쳐 있는 캘린더 주차의 개수를 계산하는 함수이다.
+     */
+    public int calculateWeekIndex(LocalDate start, LocalDate end) {
+        WeekFields wf = WeekFields.ISO;  // ISO 주차 규칙을 사용하는 기준점이다.
+
+        LocalDate cursor = start.with(wf.dayOfWeek(), 1);   // 해당 날짜의 시작 주에서 월요일을 기준으로 한다.
+        LocalDate endWeek = end.with(wf.dayOfWeek(), 1);  // 위와 같은 일을 한다. 따라서 end가 화요일이면 월요일로 시간을 바꿔주는 역할을 한다.
+
+        int weeks = 1;
+        while (cursor.isBefore(endWeek)) {  // 몇 주가 차이나는지 주 단위로 이동하며 계산한다.
+            cursor = cursor.plusWeeks(1);
+            weeks++;
+        }
+
+        return weeks;
+    }
 }

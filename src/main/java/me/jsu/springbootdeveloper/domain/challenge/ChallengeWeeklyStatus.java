@@ -90,7 +90,7 @@ public class ChallengeWeeklyStatus {
     public void updateSuccessCount(int requiredCount) {  // 주당 최소 성공 횟수를 매개변수로 받는다.
         this.successCount++;
 
-        if (this.successCount >= requiredCount) {  // 성공 횟수 업데이트와 동시에 주간 인증 성공여부를 판단한다.
+        if (this.status == Status.IN_PROGRESS || this.successCount >= requiredCount) {  // 성공 횟수 업데이트와 동시에 주간 인증 성공여부를 판단한다.
             this.status = Status.SUCCESS;
         }
     }
