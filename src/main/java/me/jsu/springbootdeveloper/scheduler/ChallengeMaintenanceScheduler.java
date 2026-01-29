@@ -3,7 +3,7 @@
 package me.jsu.springbootdeveloper.scheduler;
 
 import lombok.RequiredArgsConstructor;
-import me.jsu.springbootdeveloper.service.challenge.ChallengeMaintenanceService;
+import me.jsu.springbootdeveloper.challenge.service.ChallengeMaintenanceService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 

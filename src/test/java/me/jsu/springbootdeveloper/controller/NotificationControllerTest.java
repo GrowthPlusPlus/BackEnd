@@ -2,11 +2,11 @@
 
 package me.jsu.springbootdeveloper.controller;
 
-import me.jsu.springbootdeveloper.domain.notification.Notification;
-import me.jsu.springbootdeveloper.domain.notification.NotificationType;
-import me.jsu.springbootdeveloper.domain.user.User;
-import me.jsu.springbootdeveloper.repository.NotificationRepository;
-import me.jsu.springbootdeveloper.repository.user.UserRepository;
+import me.jsu.springbootdeveloper.notification.domain.Notification;
+import me.jsu.springbootdeveloper.notification.enumType.NotificationType;
+import me.jsu.springbootdeveloper.user.domain.User;
+import me.jsu.springbootdeveloper.notification.repository.NotificationRepository;
+import me.jsu.springbootdeveloper.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,7 +21,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.web.context.WebApplicationContext;
 
-import static me.jsu.springbootdeveloper.domain.user.Role.ROLE_USER;
+import static me.jsu.springbootdeveloper.user.enumType.Role.ROLE_USER;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
