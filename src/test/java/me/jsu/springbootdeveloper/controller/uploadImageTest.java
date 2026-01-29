@@ -2,10 +2,8 @@
 
 package me.jsu.springbootdeveloper.controller;
 
-import me.jsu.springbootdeveloper.domain.user.User;
-import me.jsu.springbootdeveloper.dto.picture.ImageUploadResult;
-import me.jsu.springbootdeveloper.service.cloudinary.CloudinaryService;
-import org.junit.jupiter.api.BeforeEach;
+import me.jsu.springbootdeveloper.cloudinary.dto.ImageUploadResult;
+import me.jsu.springbootdeveloper.cloudinary.service.CloudinaryService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
