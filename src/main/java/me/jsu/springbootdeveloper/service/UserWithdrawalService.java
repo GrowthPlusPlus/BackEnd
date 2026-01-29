@@ -51,9 +51,9 @@ public class UserWithdrawalService {
             클라우디너리의 사진인 외부 리소스를 삭제한다.
             삭제를 위해 DB에서 유저 프로필 사진 객체를 검색한다.
          */
-        Optional<UserProfilePicture> userProfilePicture = userService.findByUserIdForProfile(user.getId());
-        if (userProfilePicture.isPresent()) {  // 사진이 존재하면 삭제한다.
-            cloudinaryService.deleteImage(userProfilePicture.get().getCloudinaryPublicId());  // public id로 삭제한다.
+        UserProfilePicture userProfilePicture = userService.findByUserIdForProfile(user.getId());
+        if (userProfilePicture != null) {  // 사진이 존재하면 삭제한다.
+            cloudinaryService.deleteImage(userProfilePicture.getCloudinaryPublicId());  // public id로 삭제한다.
         }
 
         // 유저를 삭제한다. 유저가 사라짐에 따라 필요 없는 정보들은 CASCADE로 자동으로 삭제된다.

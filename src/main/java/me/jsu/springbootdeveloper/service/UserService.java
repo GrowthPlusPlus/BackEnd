@@ -133,11 +133,7 @@ public class UserService {
         }
 
         // 유저에게 기존 프로필 이미지기 있는지 검색하고 있다면 DB, 클라우디너리에서 삭제한다.
-        Optional<UserProfilePicture> userProfilePicture = userProfilePictureRepository.findByUser_Id(user.getId());
-        if (userProfilePicture.isPresent()) {
-            cloudinaryService.deleteImage(userProfilePicture.get().getCloudinaryPublicId());  // 클라우디너리에서 삭제한다.
-            userProfilePictureRepository.delete(userProfilePicture.get());  // 서비스 DB에서 삭제한다.
-        }
+        removeUserPicture(user.getId());
 
         // 클라이언트에게 받은 이미지를 업로드하고 정보를 반환받는다.
         ImageUploadResult imageUploadResult = cloudinaryService.uploadImage(image);
@@ -148,6 +144,17 @@ public class UserService {
                 .cloudinaryPublicId(imageUploadResult.publicId())
                 .imageUrl(imageUploadResult.secureUrl())
                 .build());
+    }
+
+    /*
+        유저 프로필 사진을 삭제하기 위해 사용하는 함수이다.
+        함수 재사용과 @Transactional 일관성을 위해 사용한다.
+     */
+    @Transactional
+    public void removeProfileImage(String email) {
+        User user = findByEmail(email);
+
+        removeUserPicture(user.getId());
     }
 
     /*
@@ -171,8 +178,20 @@ public class UserService {
         유저 id로 프로필 사진 정보를 검색한다.
         사진을 검색하지 못해도 정상 상태이다.
      */
-    public Optional<UserProfilePicture> findByUserIdForProfile(Long userId) {
-        return userProfilePictureRepository.findByUser_Id(userId);
+    public UserProfilePicture findByUserIdForProfile(Long userId) {
+        return userProfilePictureRepository.findByUser_Id(userId)
+                .orElse(null);
+    }
+
+    /*
+        유저에게 기존 프로필 이미지기 있는지 검색하고 있다면 DB, 클라우디너리에서 삭제해주는 함수이다.
+     */
+    public void removeUserPicture(Long userId) {
+        UserProfilePicture userProfilePicture = findByUserIdForProfile(userId);
+        if (userProfilePicture != null) {  // 이미지가 있어야 동작한다.
+            cloudinaryService.deleteImage(userProfilePicture.getCloudinaryPublicId());  // 클라우디너리에서 삭제한다.
+            deleteProfilePicture(userProfilePicture);  // 서비스 DB에서 삭제한다.
+        }
     }
 
     /*
