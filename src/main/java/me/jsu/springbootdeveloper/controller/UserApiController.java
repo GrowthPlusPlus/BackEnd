@@ -154,6 +154,28 @@ public class UserApiController {
     }
 
     /*
+        해당 컨트롤러로 유저의 프로필 사진을 삭제한다.
+     */
+    @Operation(
+            summary = "프로필 이미지 삭제",
+            description = """
+        로그인한 사용자의 프로필 이미지를 삭제한다.
+        ex) DELETE /api/users/me/profile-image
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "프로필 이미지 삭제 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패")
+    })
+    @DeleteMapping("/api/users/me/profile-image")
+    public ResponseEntity<Void> deleteProfileImage(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        userService.removeProfileImage(userDetails.getUsername());
+        return ResponseEntity.noContent().build();
+    }
+
+    /*
         해당 함수로 유저의 한 줄 소개를 업데이트 한다.
      */
     @Operation(
