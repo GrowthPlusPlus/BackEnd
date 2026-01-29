@@ -132,7 +132,13 @@ public class Challenge {
         this.todaySuccessCount = 0;
         this.todayDate = LocalDate.now(ZoneId.of("Asia/Seoul"));  // 아시아 시간으로 초기화 한다.
     }
-
+    /*
+        챌린지 참여 시 인원 초과인지 먼저 확인한다. 최대 50명이 기본값이다.
+        반환 값: 인원 초과 시 True, 참여 가능 시 False
+     */
+    public boolean checkIfOverMaxParticipantNumber() {
+        return participantNumber >= maxParticipantNumber;
+    }
     /*
         챌린지 설을 변경하는 함수이다. 챌린지 이름, 챌린지 시작일을 제외하고 수정이 가능하다.
      */

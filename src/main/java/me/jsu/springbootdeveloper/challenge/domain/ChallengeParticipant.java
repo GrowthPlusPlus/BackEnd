@@ -116,6 +116,7 @@ public class ChallengeParticipant {
         this.maxStreakDays = 0;
         this.successWeeks = 0;
         this.totalWeeks = totalWeeks;
+        challenge.updateParticipate();
     }
 
     /*

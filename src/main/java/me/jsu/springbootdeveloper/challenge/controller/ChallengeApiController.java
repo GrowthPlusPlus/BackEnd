@@ -9,11 +9,14 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import me.jsu.springbootdeveloper.challenge.domain.Challenge;
 import me.jsu.springbootdeveloper.challenge.dto.*;
 import me.jsu.springbootdeveloper.challenge.dto.CreateChallengeResponse;
 import me.jsu.springbootdeveloper.challenge.dto.CreateChallengeRequest;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeParticipantRepository;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeRepository;
+import me.jsu.springbootdeveloper.user.domain.User;
+import me.jsu.springbootdeveloper.user.repository.UserRepository;
 import me.jsu.springbootdeveloper.user.service.UserService;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeService;
 import org.springframework.data.domain.Page;
@@ -40,6 +43,7 @@ public class ChallengeApiController {
     private final ChallengeRepository challengeRepository;
     private final ChallengeParticipantRepository challengeParticipantRepository;
     private final UserService userService;
+    private final UserRepository userRepository;
 
     /*
         챌린지를 생성하는 POST 요청 API이다.
@@ -125,6 +129,21 @@ public class ChallengeApiController {
     ) {
         Page<SearchChallengeResponse> response = challengeService.searchChallenges(keyword, page);
         return ResponseEntity.ok(response);
+    }
+    /*
+      챌린지 참여하기
+      - 유저가 '참여하기'를 누르면 해당 유저를 ChallengeParticipant에 등록한다
+     */
+    @PostMapping("api/challenges/{challengeId}/participate")
+    public ResponseEntity<Void> joinChallenge(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long challengeId
+    ) {
+        User user = userRepository.findByEmail(userDetails.getUsername()).orElseThrow();
+        Challenge challenge = challengeRepository.findById(challengeId).orElseThrow();
+        challengeService.joinChallenge(challenge, user);
+
+        return ResponseEntity.ok().build();
     }
 
     /*

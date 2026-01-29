@@ -102,7 +102,8 @@ public class ChallengeService {
         //챌린지 객체 db에 저장
         Challenge savedChallenge = challengeRepository.save(challenge);
         
-        // 챌린지 생성자는 자동으로 챌린지에 참여하는 로직 구현
+        // 생성자는 해당 챌린지에 참여
+        boolean joinchallenge = joinChallenge(savedChallenge, user);
 
         //공유 Url 생성
         String inviteUrl = baseUrl + "/challenges/" + savedChallenge.getId();
@@ -123,12 +124,18 @@ public class ChallengeService {
         User inviter = userService.findByEmail(inviterEmail);
         Challenge challenge = findById(challengeId);
         User invitee = userService.findByNickname(targetNickname);
+        //챌린지 참여 인원수 확인 후 참여
+        if (!joinChallenge(challenge, invitee))
+        {
+            //참여 못했다면 exception 발동
+            throw new IllegalStateException("챌린지 참여 정원이 꽉 찼습니다");
 
-        // 1. 초대 알림 전송 (NotificationService 구현에 따라 호출)
+        }
+        //초대 알림 전송 (NotificationService 구현에 따라 호출)
         String message = inviter.getNickname() + "님이 " + challenge.getTitle()+ " 방에 나를 초대했어요.";
         notificationService.sendNotification(invitee, NotificationType.CHALLENGE, message); // 예시 메서드
 
-        // 2. 초대 정보 저장
+        //초대 정보 저장
         ChallengeInvite invite = ChallengeInvite.builder()
                 .challenge(challenge)
                 .inviter(inviter)
@@ -136,6 +143,31 @@ public class ChallengeService {
                 .build();
 
         challengeInviteRepository.save(invite);
+
+    }
+    //챌린지 참여하기
+    //반환 값: 참여 성공하면 true, 실패하면 false
+    public boolean joinChallenge(Challenge challenge, User user) {
+        //해당 챌린지 인원수 체크
+        // 내가 참여했을 때 challenge 의 maxParticipant를 초과하면 들어가지 못함
+        if (!challenge.checkIfOverMaxParticipantNumber()){
+            LocalDate today = LocalDate.now();
+            /* joinDate 설정
+             case 1. 참여하는 사람이 챌린지 시작일 전에 들어오면 -> joinDate는 챌린지 시작일
+             case 2. 참여하는 사람이 챌린지 시작일 후에 들어오면 -> joinDate는 들어온 날짜
+            * */
+            LocalDate joinDate = today.isBefore(challenge.getStartDate()) ? challenge.getStartDate() : today;
+            //totalWeeks 값:  6일 챌린지 -> 0, 7일 챌린지 -> 1,  8일 챌린지 -> 1
+            int totalWeeks = (int) ChronoUnit.WEEKS.between(joinDate, challenge.getEndDate());
+            //챌린지 참여자 객체 생성
+            ChallengeParticipant challengeParticipant = new ChallengeParticipant(challenge, user, joinDate, totalWeeks);
+            challengeParticipantRepository.save(challengeParticipant);
+            //챌린지 참여자 수 업데이트
+            challenge.updateParticipate();
+            return true;
+        }
+        else
+            return false;
     }
 
     /**
