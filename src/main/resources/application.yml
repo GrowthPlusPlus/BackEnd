@@ -1,15 +1,19 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:testdb  # db값이 유지되도록 나중에 바꿔야 한다
-    username: sa
+    url: jdbc:postgresql://localhost:5432/hanaemDB
+    username: postgres
+    password: 1234
+    driver-class-name: org.postgresql.Driver
 
   jpa:
     show-sql: true
     hibernate:
-      ddl-auto: create
+      #엔티티 클래스를 수정하면 구조에 맞춰 테이블을 자동으로 생성/수정
+      ddl-auto: update
     properties:
       hibernate:
         format_sql: true
+        #데이터베이스 초기화 시점을 hibernate가 테이블을 다 생성한 이후로 미룸
     defer-datasource-initialization: true
 
   h2:
@@ -46,7 +50,6 @@ cloudinary:
   cloud-name: doayitbfd
   api-key: 747796122854198
   api-secret: OB9C15esKMCvW4mcgd7GStsCWfY
-
 
 app:
   base-url: http://localhost:3000 # 로컬 프론트엔드 주소 (운영 시에는 운영 서버 주소로 변경)
