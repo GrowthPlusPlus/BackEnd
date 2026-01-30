@@ -33,33 +33,42 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
      */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        // 요청 헤더의 authorization 키값 조회로 요청 헤더의 Authorization값을 가져온다. ex) Authorization: Bearer ABCsdfW...
-        String authorizationHeader = request.getHeader(HEADER_AUTHORIZATION);
+        try {
+            // 요청 헤더의 authorization 키값 조회로 요청 헤더의 Authorization값을 가져온다. ex) Authorization: Bearer ABCsdfW...
+            String authorizationHeader = request.getHeader(HEADER_AUTHORIZATION);
 
-        // 토큰이 없는 경우 그냥 통과 시키고 세큐리티에서 처리하도록 한다.
-        if (authorizationHeader == null || !authorizationHeader.startsWith(TOKEN_PREFIX)) {
+            // 토큰이 없는 경우 그냥 통과 시키고 세큐리티에서 처리하도록 한다.
+            if (authorizationHeader == null || !authorizationHeader.startsWith(TOKEN_PREFIX)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            // 가져온 값에서 접두사를 제거한다.
+            String token = getAccessToken(authorizationHeader);
+
+            if (tokenProvider.validToken(token)) {  // 토큰의 유효성을 검사한다.
+                // 사용자 식별자, 권한, 인증 여부를 포함한 Authentication 객체를 생성한다.
+                Authentication authentication = tokenProvider.getAuthentication(token);
+
+                // 스프링 시큐리티에게 이 요청은 인증된 사용자라고 알려주는 핵심 단계이다.
+                // 이후 @PreAuthorize, authenticated() 등의 인증에 모두 정상 동작하게 된다.
+                SecurityContextHolder
+                        .getContext()
+                        .setAuthentication(authentication);
+            } else {  // 토큰은 있지만 유효하지 않은 경우 401을 반환한다.
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                return;
+            }
+        }
+        catch(Exception e){
+            // [핵심] 에러가 발생하면 렌더 로그에 범인을 출력함
+            System.out.println("🚨 [Filter Error Found]: " + e.getMessage());
+            e.printStackTrace(); // 에러가 발생한 코드의 줄 번호까지 로그에 찍어줌
+
+            // 에러가 나도 서버가 아예 죽지 않도록 다음 필터로 흐름을 넘김
             filterChain.doFilter(request, response);
             return;
         }
-
-        // 가져온 값에서 접두사를 제거한다.
-        String token = getAccessToken(authorizationHeader);
-
-        if (tokenProvider.validToken(token)) {  // 토큰의 유효성을 검사한다.
-            // 사용자 식별자, 권한, 인증 여부를 포함한 Authentication 객체를 생성한다.
-            Authentication authentication = tokenProvider.getAuthentication(token);
-
-            // 스프링 시큐리티에게 이 요청은 인증된 사용자라고 알려주는 핵심 단계이다.
-            // 이후 @PreAuthorize, authenticated() 등의 인증에 모두 정상 동작하게 된다.
-            SecurityContextHolder
-                    .getContext()
-                    .setAuthentication(authentication);
-        }
-        else {  // 토큰은 있지만 유효하지 않은 경우 401을 반환한다.
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-            return;
-        }
-
         // 다음 필터로 요청 전달한다.
         // 해당 클래스인 필터 체인은 스프링 시큐리티의 필터 체인에 끼워넣은 구조이기 때문이다.
         filterChain.doFilter(request, response);

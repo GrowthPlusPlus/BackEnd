@@ -80,6 +80,8 @@ public class SecurityConfig {
                         .requestMatchers(new AntPathRequestMatcher("/api/oauth/**")).permitAll()
                         // 위의 두 케이스를 제외한 api는 모두 인증이 필요하다.
                         .requestMatchers(new AntPathRequestMatcher("/api/**")).authenticated()
+                        // 추가: 에러 페이지 접근 허용
+                        .requestMatchers(new AntPathRequestMatcher("/error")).permitAll()
                         // api가 아닌 화면/정적 페이지 등은 허용한다.
                         .anyRequest().permitAll())
                 // 토큰이 없으면 컨트롤러에 진입하지 못하도록 401응답을 만들어준다.
