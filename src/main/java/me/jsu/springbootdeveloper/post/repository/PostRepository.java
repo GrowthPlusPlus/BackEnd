@@ -74,7 +74,7 @@ public interface PostRepository extends JpaRepository<Article, Long> {
 
     // 유저 id, 챌린지 id로 날짜 2개 사이의 인증글의 id, 날짜, 사진을 검색해준다. 캘린더를 조회할때 사용한다.
     @Query("""
-        select new me.jsu.springbootdeveloper.dto.challengeCalendar.ChallengeCalendarPhotoResponse(
+        select new me.jsu.springbootdeveloper.view.dto.ChallengeCalendarPhotoResponse(
             p.id,
             p.postDate,
             i.imageUrl
@@ -99,7 +99,7 @@ public interface PostRepository extends JpaRepository<Article, Long> {
      */
     @Query(
             value = """
-            select new me.jsu.springbootdeveloper.dto.challengeCalendar.ChallengeCalendarPostResponse(
+            select new me.jsu.springbootdeveloper.view.dto.ChallengeCalendarPostResponse(
                 p.id,
                 p.postDate,
                 i.imageUrl,
