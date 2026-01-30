@@ -38,7 +38,6 @@ public class SecurityConfig {
     @Bean
     public WebSecurityCustomizer configure() {
         return (web) -> web.ignoring()  // 아래의 요청들은 스프링 시큐티리가 건드리지 않는다. 즉 세큐리티 필터를 무시한다.
-                //.requestMatchers(toH2Console())  // h2데베 콘솔은 보안 없이 접근 가능하다. (h2는 테스트를 위해 사용. 후에 비활성화)
                 .requestMatchers(
                         new AntPathRequestMatcher("/img/**"),  //해당 정적 파일들은 인증 절차에서 제외한다.
                         new AntPathRequestMatcher("/css/**"),
