@@ -22,8 +22,10 @@ import java.util.List;
     DB에 저장될 챌린지 정보이다.
  */
 @Table(
-        name = "challenge",
+        name = "challenge"
+        /*
         indexes = {
+
                 @Index(  // 피드를 위해 공개 범위와 시작 일로 최신순으로 인덱싱 한다.
                         name = "idx_visibility_start_date",
                         columnList = "challenge_visibility, start_date"
@@ -36,6 +38,7 @@ import java.util.List;
                     챌린지 시작일과 종료일로 인덱싱 하여 진행중, 완료, 종료 상태의 챌린지를 쉽게 찾아낸다.
                     참여자는 챌린지 참여자 DB에서 상태를 알아낼 수 있으므로, 챌린지에 참여하지 않은 유저를 위한 인덱싱이다.
                  */
+        /*
                 @Index(
                         name = "idx_date_range",
                         columnList = "start_date, end_date"
@@ -45,6 +48,8 @@ import java.util.List;
                         columnList = "end_date"
                 )
         }
+        */
+
 )
 @EntityListeners(AuditingEntityListener.class)  // 생성 및 수정시간을 감시하고 기록할 수 있게 해준다.
 @Entity
