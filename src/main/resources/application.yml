@@ -47,6 +47,5 @@ cloudinary:
   api-key: 747796122854198
   api-secret: OB9C15esKMCvW4mcgd7GStsCWfY
 
-
 app:
   base-url: http://localhost:3000 # 로컬 프론트엔드 주소 (운영 시에는 운영 서버 주소로 변경)
