@@ -3,7 +3,7 @@
 package me.jsu.springbootdeveloper.view.dto;
 
 import lombok.Getter;
-import me.jsu.springbootdeveloper.domain.*;
+//import me.jsu.springbootdeveloper.domain.*;
 
 import java.util.List;
 
