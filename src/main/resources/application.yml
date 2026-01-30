@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/hanaemDB
-    username: postgres
-    password: 1234
+    url: jdbc:postgresql://haneul:JuWVt8IzASwO4LIkmNNux96Q67hYqXN5@dpg-d5ubio4oud1c73bk5he0-a.virginia-postgres.render.com/hanaemdb
+    username: haneul
+    password: JuWVt8IzASwO4LIkmNNux96Q67hYqXN5
     driver-class-name: org.postgresql.Driver
 
   jpa:
