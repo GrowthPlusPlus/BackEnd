@@ -4,7 +4,7 @@ spring:
     active: prod
 
   datasource:
-    url: jdbc:postgresql://haneul:JuWVt8IzASwO4LIkmNNux96Q67hYqXN5@dpg-d5ubio4oud1c73bk5he0-a.virginia-postgres.render.com/hanaemdb
+    url: jdbc:postgresql://dpg-d5ubio4oud1c73bk5he0-a.virginia-postgres.render.com/hanaemdb
     username: haneul
     password: JuWVt8IzASwO4LIkmNNux96Q67hYqXN5
     driver-class-name: org.postgresql.Driver
@@ -56,5 +56,6 @@ cloudinary:
   api-key: 747796122854198
   api-secret: OB9C15esKMCvW4mcgd7GStsCWfY
 
+#챌린지 생성 시 base url 전달값
 app:
   base-url: http://localhost:3000 # 로컬 프론트엔드 주소 (운영 시에는 운영 서버 주소로 변경)
