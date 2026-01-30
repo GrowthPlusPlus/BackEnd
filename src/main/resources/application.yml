@@ -1,4 +1,8 @@
 spring:
+  #배포시 active: prod 사용 (default로 설정 시 로컬에서 db를 찾음)
+  profiles:
+    active: prod
+
   datasource:
     url: jdbc:postgresql://haneul:JuWVt8IzASwO4LIkmNNux96Q67hYqXN5@dpg-d5ubio4oud1c73bk5he0-a.virginia-postgres.render.com/hanaemdb
     username: haneul
