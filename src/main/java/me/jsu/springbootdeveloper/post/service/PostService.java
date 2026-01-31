@@ -2,6 +2,8 @@
 
 package me.jsu.springbootdeveloper.post.service;
 
+import me.jsu.springbootdeveloper.challenge.domain.ChallengeDailyLog;
+import me.jsu.springbootdeveloper.challenge.domain.ChallengeWeeklyStatus;
 import me.jsu.springbootdeveloper.post.dto.ArticleImageResponse;
 import me.jsu.springbootdeveloper.post.exception.ArticleAccessDeniedException;
 import me.jsu.springbootdeveloper.post.exception.ArticleNotFoundException;
@@ -93,7 +95,7 @@ public class PostService {
         saveImages(images, article);
 
         // 인증글을 업데이트 했으므로 총 인증 횟수와 연속 인증 횟수를 업데이트 한다.
-        challengeService.succeedChallenge(article.getId(), challengeId);
+        challengeService.succeedChallenge(user.getId(), challengeId);
 
         // 인증글을 업데이트 했으므로 챌린지 데일리 로그도 업데이트 한다.
         challengeService.createDailyLog(user, challenge, article, postDate);
@@ -206,12 +208,13 @@ public class PostService {
         }
 
         // 인증글의 사진, id 리스트를 생성한다.
-        List<ArticleImageResponse> images = article.getPostPictures().stream()
-                        .map(pp -> ArticleImageResponse.builder()
-                                .imageId(pp.getId())
-                                .imageUrl(pp.getImageUrl())
-                                .build())
-                        .toList();
+        List<PostPicture> postPictures = postPictureRepository.findAllByArticle_Id(article.getId());
+        List<ArticleImageResponse> images = postPictures.stream()
+                .map(pp -> ArticleImageResponse.builder()
+                        .imageId(pp.getId())
+                        .imageUrl(pp.getImageUrl())
+                        .build())
+                .toList();
 
         // 게시글을 조회한 유저가 해당 게시글에 좋아요를 눌렀는지에 대한 여부를 검색한다.
         boolean liked = postLikeService.existsByArticle_IdAndUser_IdForLike(postId, user.getId());
@@ -251,13 +254,33 @@ public class PostService {
     public void delete(String email, Long postId) {
         User user = userService.findByEmail(email);
 
-        Article article = postRepository.findByIdWithImages(postId)  // 삭제할 글과 사진을 DB에서 찾는다.
+        Article article = postRepository.findById(postId)  // 삭제할 글을 찾는다.
                 .orElseThrow(() -> new ArticleNotFoundException("ARTICLE_NOT_FOUND_FOR_ID"));
 
-        authorizeArticleAuthor(article, user);  // 글 작성자인지 확인한다.
-        challengeService.detachLogToArticle(article);  // 챌린지 데일리 로그 정보는 게시글이 삭제되도 남아있도록 한다
+        // 글에 있는 사진을 찾는다.
+        List<PostPicture> postPictures = postPictureRepository.findAllByArticle_Id(postId);
 
-        deleteImages(article.getPostPictures());  // 인증글에 저장된 사진들을 클라우디너리에서 삭제한다.
+        authorizeArticleAuthor(article, user);  // 글 작성자인지 확인한다.
+
+        // 챌린지 데일리 로그 정보는 게시글이 삭제되면 삭제한다.
+        ChallengeDailyLog challengeDailyLog = challengeService.findLogByUser_IdAndArticle_IdAndPostDate(user.getId(), postId, article.getPostDate());
+        challengeService.deleteLog(challengeDailyLog);
+
+        deleteImages(postPictures);  // 인증글에 저장된 사진들을 클라우디너리에서 삭제한다.
+
+        // 챌린지의 오늘 성공 횟수를 감소시킨다.
+        Challenge challenge = challengeService.findById(article.getChallenge().getId());
+        challenge.decreaseTodaySuccess();
+
+        // 해당 유저의 총 챌린지 성공 일수를 감소시킨다.
+        ChallengeParticipant challengeParticipant = challengeService.findByUser_IdAndChallenge_IdForParticipant(user.getId(), challenge.getId());
+        challengeParticipant.removeDailySuccess(article.getPostDate());
+
+        // 이번주 챌린지 총 성공 횟수를 감소시킨다.
+        LocalDate thisWeekMonday = article.getPostDate().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        ChallengeWeeklyStatus challengeWeeklyStatus = challengeService.findWeeklyStatus(user.getId(), challenge.getId(), thisWeekMonday);
+        challengeWeeklyStatus.decreaseSuccessCount(challenge.getRequiredWeeklyCount());
+
         postRepository.delete(article);  // DB에서 게시글을 삭제한다. 댓글이나 좋아요 등의 정보도 함께 삭제된다.
     }
 

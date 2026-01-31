@@ -69,7 +69,7 @@ public class FeedController {
             @ApiResponse(responseCode = "200", description = "게시글 목록 조회 성공"),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
     })
-    @GetMapping("/feed/friends")
+    @GetMapping("/api/feed/friends")
     public ResponseEntity<Page<ArticleDetailResponse>> getFriendFeed(
             @AuthenticationPrincipal UserDetails userDetails,
             @Parameter(description = "페이지 번호 (0부터 시작)", required = true, example = "0")

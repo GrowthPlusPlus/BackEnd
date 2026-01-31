@@ -303,6 +303,36 @@ public class GlobalExceptionHandler {
     }
 
     /*
+        같은 게시글에 좋아요를 두 번 누른 경우를 처리하는 핸들러이다.
+     */
+    @ExceptionHandler(DuplicatePostLikeException.class)
+    public ResponseEntity<ErrorResponse> handleChallengeNotInProgress(
+            DuplicatePostLikeException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(
+                        "DUPLICATION_POST_LIKE_ERROR",
+                        e.getMessage()
+                ));
+    }
+
+    /*
+        인증글 좋아요를 찾지 못한 경우를 처리하는 핸들러이다.
+     */
+    @ExceptionHandler(PostLikeNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleChallengeNotInProgress(
+            PostLikeNotFoundException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(
+                        "POST_LIKE_NOT_FOUND",
+                        e.getMessage()
+                ));
+    }
+
+    /*
         위에서 정의하지 않은 모든 기타 서버 오류들을 처리해준다.
         spring 기본 처리에 예외를 맡기는 것이 좋다. 따라서 비활성화 한다.
 

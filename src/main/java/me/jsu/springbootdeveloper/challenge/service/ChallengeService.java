@@ -307,28 +307,43 @@ public class ChallengeService {
     }
 
     /*
+        인증글 id로 챌린지를 검색한다.
+     */
+
+    /*
         챌린지 데일리 로그의 유저 fk값을 null로 바꿔주는 함수이다.
         회원 탈퇴 시에 사용한다.
      */
-    @Transactional
     public void detachLogToUser(User user) {
         challengeDailyLogRepository.detachUser(user);
     }
 
     /*
-        챌린지 데일리 로그의 인증글 fk값을 null로 바꿔주는 함수이다.
-        인증글 삭제 시에 사용한다.
+        챌린지 데일리 로그를 유저 id, 인증글 id, 날짜로 검색한다.
      */
-    @Transactional
+    public ChallengeDailyLog findLogByUser_IdAndArticle_IdAndPostDate(Long userId, Long articleId, LocalDate postDate) {
+        return challengeDailyLogRepository.findByUser_IdAndArticle_IdAndPostDate(userId, articleId, postDate)
+                .orElseThrow(() -> new ChallengeNotFoundException("CHALLENGE_LOG_NOT_FOUND"));
+    }
+
+    /*
+        챌린지 데일리 로그의 인증글 fk값을 null로 바꿔주는 함수이다.
+     */
     public void detachLogToArticle(Article article) {
         challengeDailyLogRepository.detachArticle(article);
+    }
+
+    /*
+        챌린지 데일리 로그를 실제로 삭제한다.
+     */
+    public void deleteLog(ChallengeDailyLog challengeDailyLog) {
+        challengeDailyLogRepository.delete(challengeDailyLog);
     }
 
     /*
         특정 챌린지를 완수한 경우, 연속 챌린지 달성 일수와 총 챌린지 일수를 업데이트하기 위해 호출하는 함수이다.
         반드시 하루에 최대 한 번만 수행한다.
      */
-    @Transactional
     public void succeedChallenge(Long userId, Long challengeId) {
         // 챌린지 참여 DB를 검색한다.
         ChallengeParticipant challengeParticipant = findByUser_IdAndChallenge_IdForParticipant(userId, challengeId);
@@ -417,10 +432,9 @@ public class ChallengeService {
         // 방장이 챌린지 참여자인지 확인한다.
         findByUser_IdAndChallenge_IdForParticipant(user.getId(), challengeId);
 
-        Page<ChallengeParticipant> challengeParticipants =
-                challengeParticipantRepository.findMembersWithUserAndPicture(
-                        challengeId, (nickname == null || nickname.isBlank()) ? null : nickname, pageable
-                );
+        // % 처리를 리포지토리가 아니라 서비스에서 한다.
+        String keyword = (nickname == null || nickname.isBlank()) ? null : "%" + nickname + "%";
+        Page<ChallengeParticipant> challengeParticipants = challengeParticipantRepository.findMembersWithUserAndPicture(challengeId, keyword, pageable);
 
         // 검색한 맴버를 ChallengeMemberResponse에 매핑하여 반환한다.
         return challengeParticipants.map(challengeParticipant -> {
@@ -572,17 +586,22 @@ public class ChallengeService {
     }
 
     /*
+        유저 id, 챌린지 id, 이번주 날짜로 챌린지 주간 상태 값을 리턴하는 함수이다.
+     */
+    public ChallengeWeeklyStatus findWeeklyStatus(Long userId, Long challengeId, LocalDate weekStartDate) {
+        return challengeWeeklyStatusRepository.findByUser_IdAndChallenge_IdAndWeekStartDate(
+                userId, challengeId, weekStartDate)
+                .orElse(null);
+    }
+
+    /*
         인증글이 생성되었을 때, 챌린지 주간 상태를 업데이트 한다.
         월요일을 기준으로 이번주에 처음 인증을 하면 그 주에 해당하는 챌린지 주간 상태값이 생성된다.
         만약 주의 첫 인증이 아니라면 값을 업데이트 한다.
      */
     public void updateWeeklyStatus(User user, Challenge challenge, LocalDate weekStartDate, int requiredWeeklyCount) {
         // 이번주에 해당하는 챌린지 주간 상태 튜플이 있는지 검색한다.
-       ChallengeWeeklyStatus challengeWeeklyStatus = challengeWeeklyStatusRepository.findByUser_IdAndChallenge_IdAndWeekStartDate(
-                                user.getId(),
-                                challenge.getId(),
-                                weekStartDate
-        ).orElse(null);
+       ChallengeWeeklyStatus challengeWeeklyStatus = findWeeklyStatus(user.getId(), challenge.getId(), weekStartDate);
 
         if (challengeWeeklyStatus == null) {  // 이번 주 첫 인증이면 새로 생성한다.
             challengeWeeklyStatus = ChallengeWeeklyStatus.builder()

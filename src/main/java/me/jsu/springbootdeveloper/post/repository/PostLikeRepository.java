@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 /*
     게시글에 달린 좋아요를 저장하는 DB이다.
@@ -42,4 +43,7 @@ public interface PostLikeRepository extends JpaRepository<PostLike, Long> {
         where pl.user = :user
     """)
     void detachUser(@Param("user") User user);
+
+    // 인증글 id와 유저 id로 좋아요를 검색한다.
+    Optional<PostLike> findByArticle_IdAndUser_Id(Long articleId, Long userId);
 }
