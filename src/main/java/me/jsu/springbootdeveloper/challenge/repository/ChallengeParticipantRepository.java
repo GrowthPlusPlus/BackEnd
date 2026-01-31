@@ -82,14 +82,14 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
             join fetch cp.user u
             left join fetch u.userProfilePicture upp
             where cp.challenge.id = :challengeId
-              and (:nickname is null or u.nickname like concat('%', :nickname, '%'))
+              and (:nickname is null or u.nickname like :nickname)
         """,
             countQuery = """
             select count(cp)
             from ChallengeParticipant cp
             join cp.user u
             where cp.challenge.id = :challengeId
-              and (:nickname is null or u.nickname like concat('%', :nickname, '%'))
+              and (:nickname is null or u.nickname like :nickname)
         """
     )
     Page<ChallengeParticipant> findMembersWithUserAndPicture(

@@ -149,7 +149,7 @@ public class MainHomeService {
                     remainingDays = ChronoUnit.DAYS.between(effectiveStart, effectiveEnd) + 1;
                 }
 
-                isWarning = (successCount + remainingDays) == adjustedRequiredWeeklyCount;
+                isWarning = (successCount + remainingDays + 1) == adjustedRequiredWeeklyCount;
             }
 
             // 유저가 챌린지를 시작한 경과일을 계산한다.

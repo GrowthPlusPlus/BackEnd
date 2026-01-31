@@ -132,18 +132,28 @@ public class UserService {
             throw new CloudinaryUploadException("EMPTY_IMAGE");
         }
 
-        // 유저에게 기존 프로필 이미지기 있는지 검색하고 있다면 DB, 클라우디너리에서 삭제한다.
-        removeUserPicture(user.getId());
+        // 유저에게 기존 프로필 이미지가 있는지 검색하고 있다면 클라우디너리에서 삭제한다.
+        UserProfilePicture userProfilePicture = findByUserIdForProfile(user.getId());
+        if (userProfilePicture != null) {  // 이미지가 있어야 동작한다.
+            cloudinaryService.deleteImage(userProfilePicture.getCloudinaryPublicId());  // 클라우디너리에서 삭제한다.
+        }
 
         // 클라이언트에게 받은 이미지를 업로드하고 정보를 반환받는다.
         ImageUploadResult imageUploadResult = cloudinaryService.uploadImage(image);
 
         // 사진 정보를 DB에 반영한다.
-        userProfilePictureRepository.save(UserProfilePicture.builder()
-                .user(user)
-                .cloudinaryPublicId(imageUploadResult.publicId())
-                .imageUrl(imageUploadResult.secureUrl())
-                .build());
+        if (userProfilePicture == null) {  // 사진이 없는 상태에서 등록하는 경우이다.
+            userProfilePicture = userProfilePictureRepository.save(UserProfilePicture.builder()
+                    .user(user)
+                    .cloudinaryPublicId(imageUploadResult.publicId())
+                    .imageUrl(imageUploadResult.secureUrl())
+                    .build());
+        }
+        else {  // 사진이 있던 상태에서 등록하는 경우이다.
+            userProfilePicture.update(imageUploadResult.publicId(), imageUploadResult.secureUrl());
+        }
+
+        userProfilePictureRepository.save(userProfilePicture);
     }
 
     /*
@@ -154,7 +164,11 @@ public class UserService {
     public void removeProfileImage(String email) {
         User user = findByEmail(email);
 
-        removeUserPicture(user.getId());
+        UserProfilePicture userProfilePicture = findByUserIdForProfile(user.getId());
+        if (userProfilePicture != null) {  // 이미지가 있어야 동작한다.
+            cloudinaryService.deleteImage(userProfilePicture.getCloudinaryPublicId());  // 클라우디너리에서 삭제한다.
+            deleteProfilePicture(userProfilePicture);  // 서비스 DB에서 삭제한다.
+        }
     }
 
     /*
@@ -181,17 +195,6 @@ public class UserService {
     public UserProfilePicture findByUserIdForProfile(Long userId) {
         return userProfilePictureRepository.findByUser_Id(userId)
                 .orElse(null);
-    }
-
-    /*
-        유저에게 기존 프로필 이미지기 있는지 검색하고 있다면 DB, 클라우디너리에서 삭제해주는 함수이다.
-     */
-    public void removeUserPicture(Long userId) {
-        UserProfilePicture userProfilePicture = findByUserIdForProfile(userId);
-        if (userProfilePicture != null) {  // 이미지가 있어야 동작한다.
-            cloudinaryService.deleteImage(userProfilePicture.getCloudinaryPublicId());  // 클라우디너리에서 삭제한다.
-            deleteProfilePicture(userProfilePicture);  // 서비스 DB에서 삭제한다.
-        }
     }
 
     /*

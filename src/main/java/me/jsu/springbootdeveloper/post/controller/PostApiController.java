@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.post.dto.*;
 import me.jsu.springbootdeveloper.post.service.CommentService;
 import me.jsu.springbootdeveloper.post.service.ImageVerificationService;
+import me.jsu.springbootdeveloper.post.service.PostLikeService;
 import me.jsu.springbootdeveloper.post.service.PostService;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -30,6 +31,7 @@ import java.util.List;
 public class PostApiController {
     private final PostService postService;  // 의존성을 주입하여 빈으로 등록된 PostService클래스의 함수를 사용한다.
     private final CommentService commentService;
+    private final PostLikeService postLikeService;
     private final ImageVerificationService imageVerificationService;
 
     /*
@@ -296,5 +298,52 @@ public class PostApiController {
         commentService.deleteComment(userDetails.getUsername(), commentId);
 
         return ResponseEntity.noContent().build();  // 성공적으로 삭제되면 완료됐음을 알린다.
+    }
+
+    @Operation(
+            summary = "인증글 좋아요",
+            description = """
+        인증글 id로 좋아요를 누른다.
+        ex) POST /api/article/1/like
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "좋아요 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "404", description = "인증글을 찾을 수 없음"),
+            @ApiResponse(responseCode = "409", description = "이미 좋아요를 누른 인증글")
+    })
+    @PostMapping("/api/article/{articleId}/like")
+    public ResponseEntity<Void> likeArticle(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Parameter(description = "인증글 id", required = true, example = "1")
+            @PathVariable Long articleId
+    ) {
+        postLikeService.likePost(userDetails.getUsername(), articleId);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(
+            summary = "인증글 좋아요 취소",
+            description = """
+        인증글 id로 좋아요를 취소한다.
+        ex) DELETE /api/article/1/like
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "좋아요 취소 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "404", description = "좋아요를 찾을 수 없음")
+    })
+    @DeleteMapping("/api/article/{articleId}/like")
+    public ResponseEntity<Void> unlikeArticle(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Parameter(description = "인증글 id", required = true, example = "1")
+            @PathVariable Long articleId
+    ) {
+        postLikeService.unlikePost(userDetails.getUsername(), articleId);
+
+        return ResponseEntity.noContent().build();
     }
 }

@@ -95,6 +95,7 @@ public interface PostRepository extends JpaRepository<Article, Long> {
     /*
         유저 id, 챌린지 id로 유저의 인증글을 검색한다.
         페이지 형태로 dto가공해 반환하여 해당 유저의 최신 인증글을 볼 수 있도록 한다.
+        또한 인증글의 사진은 대표 사진만 한 장 반환한다.
         countQuery는 다른 테이블과 join하면서 page형태로 반환하는 경우에 정확한 page 계산을 위하여 사용한다.
      */
     @Query(
@@ -102,11 +103,16 @@ public interface PostRepository extends JpaRepository<Article, Long> {
             select new me.jsu.springbootdeveloper.view.dto.ChallengeCalendarPostResponse(
                 p.id,
                 p.postDate,
-                i.imageUrl,
+                (
+                    select i.imageUrl
+                    from PostPicture i
+                    where i.article = p
+                    order by i.id asc
+                    limit 1
+                ),
                 p.content
             )
             from Article p
-            left join PostPicture i on i.article = p
             where p.user.id = :userId
               and p.challenge.id = :challengeId
               and p.postDate between :start and :end
@@ -136,15 +142,6 @@ public interface PostRepository extends JpaRepository<Article, Long> {
         where p.id = :articleId
     """)
     Optional<Article> findWithUserAndProfileById(@Param("articleId") Long postId);
-
-    // 인증글과 인증글 사진을 함께 조회한다.
-    @Query("""
-        select distinct a
-        from Article a
-        left join fetch a.postPictures
-        where a.id = :articleId
-    """)
-    Optional<Article> findByIdWithImages(@Param("articleId") Long postId);
 
     /*
         인증글 테이블에서 특정 challenge인 행의 challenge_id 칼럼을 null로 바꾸는 쿼리문이다.

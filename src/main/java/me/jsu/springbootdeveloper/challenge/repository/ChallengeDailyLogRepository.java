@@ -13,21 +13,37 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 /*
     챌린지 로그를 저장하는 DB로, 테이블에 매핑되는 엔티티 타입은 ChallengeDailyLog, 엔티티의 pk 타입은 Long이다.
  */
 public interface ChallengeDailyLogRepository extends JpaRepository<ChallengeDailyLog, Long> {
-    List<ChallengeDailyLog> findByUser_IdAndPostDateBetweenOrderByPostDate(  // 한 달치 로그를 조회하기 위한 쿼리문이다.
-            Long userId,
-            LocalDate startDate,
-            LocalDate endDate
+    // 유저의 오늘 하루의 post 로그를 조회하기 위한 쿼리문이다. 챌린지가 없는 경우 제외한다.
+    @Query("""
+        select cdl
+        from ChallengeDailyLog cdl
+        where cdl.user.id = :userId
+          and cdl.postDate = :postDate
+          and cdl.challenge is not null
+    """)
+    List<ChallengeDailyLog> findByUser_IdAndPostDate(
+            @Param("userId") Long userId,
+            @Param("postDate") LocalDate postDate
     );
 
-    // 유저의 오늘 하루의 post 로그를 조회하기 위한 쿼리문이다.
-    List<ChallengeDailyLog> findByUser_IdAndPostDate(
-            Long userId,
-            LocalDate postDate
+    // 유저의 로그를 날짜와 인증글 id로 검색한다.
+    @Query("""
+        select cdl
+        from ChallengeDailyLog cdl
+        where cdl.user.id = :userId
+          and cdl.article.id = :articleId
+          and cdl.postDate = :postDate
+    """)
+    Optional<ChallengeDailyLog> findByUser_IdAndArticle_IdAndPostDate(
+            @Param("userId") Long userId,
+            @Param("articleId") Long articleId,
+            @Param("postDate") LocalDate postDate
     );
 
     /*

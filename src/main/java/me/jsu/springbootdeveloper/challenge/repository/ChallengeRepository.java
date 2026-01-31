@@ -52,8 +52,6 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
                                      @Param("visibility") ChallengeVisibility visibility,
                                      Pageable pageable);
 
-
-
     // 현재 진행중인 챌린지들을 배치 단위로 검색한다.
     @Query("""
         select c

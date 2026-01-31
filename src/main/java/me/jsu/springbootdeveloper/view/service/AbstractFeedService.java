@@ -23,7 +23,6 @@ import java.time.ZoneId;
 import java.util.*;
 
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public abstract class AbstractFeedService {
     protected final UserService userService;
     protected final PostService postService;

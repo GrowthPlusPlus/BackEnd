@@ -116,7 +116,6 @@ public class ChallengeParticipant {
         this.maxStreakDays = 0;
         this.successWeeks = 0;
         this.totalWeeks = totalWeeks;
-        challenge.updateParticipate();
     }
 
     /*
@@ -143,6 +142,37 @@ public class ChallengeParticipant {
             maxStreakStartDate = currentStreakStartDate;  // 현재 연속 달성 일수를 최대 인증 달성 횟수에 대입한다.
             maxStreakEndDate = currentStreakEndDate;
             maxStreakDays = currentStreakDays;
+        }
+    }
+
+    /*
+        인증글을 삭제했을 경우 챌린지의 총 달성일수와 연속 달성일수, 최대 달성일수를 롤백하는 함수이다.
+        현재는 최대 달성일수가 현재 연속 달성 일수와 같았을 경우 돌아갈 수 없기 때문에 무효화 한다.
+     */
+    public void removeDailySuccess(LocalDate today) {
+        // 전체 성공 일수를 감소시킨다.
+        totalSuccessDays--;
+
+        // 현재 연속 달성 기록을 처리한다. 첫 if문은 과거글이 삭제되었을 때 수행하지 않도록 하는 방어코드다.
+        if (currentStreakEndDate != null && currentStreakEndDate.equals(today)) {  // 연속 기록을 달성한적이 있고, 그게 오늘이라면 초기화 한다.
+            if (currentStreakDays == 1) {  // 연속 기록이 1일짜리였다면 완전히 초기화 한다.
+                currentStreakStartDate = null;
+                currentStreakEndDate = null;
+                currentStreakDays = 0;
+            } else {
+                // 연속 기록이 이어진 상태였다면 하루 줄인다
+                currentStreakEndDate = today.minusDays(1);
+                currentStreakDays--;
+            }
+        }
+
+        // 최대 연속 기록을 처리한다.
+        if (maxStreakEndDate != null &&
+                maxStreakEndDate.equals(today)) {  // 오늘 삭제한 연속일수가 최대기록의 마지막 날인지 확인한다. 맞다면 최대 연속일수를 무효화 한다.
+            // 현재는 과거 최대 streak를 복원할 수 없으므로 명시적으로 무효화 한다.
+            maxStreakStartDate = null;
+            maxStreakEndDate = null;
+            maxStreakDays = 0;
         }
     }
 

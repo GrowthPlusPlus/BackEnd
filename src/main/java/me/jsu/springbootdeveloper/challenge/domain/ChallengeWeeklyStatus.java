@@ -91,8 +91,20 @@ public class ChallengeWeeklyStatus {
     public void updateSuccessCount(int requiredCount) {  // 주당 최소 성공 횟수를 매개변수로 받는다.
         this.successCount++;
 
-        if (this.status == Status.IN_PROGRESS || this.successCount >= requiredCount) {  // 성공 횟수 업데이트와 동시에 주간 인증 성공여부를 판단한다.
+        if (this.status == Status.IN_PROGRESS && this.successCount >= requiredCount) {  // 성공 횟수 업데이트와 동시에 주간 인증 성공여부를 판단한다.
             this.status = Status.SUCCESS;
+        }
+    }
+
+    /*
+        인증글을 삭제하면 업데이트되는 함수이다.
+     */
+    public void decreaseSuccessCount(int requiredCount) {  // 주당 최소 성공 횟수를 매개변수로 받는다.
+        this.successCount--;
+
+        // 인증 횟수가 감소하면서 최소 수행 횟수보다 적어지면 상태를 원래대로 변경한다.
+        if (this.status == Status.SUCCESS && this.successCount < requiredCount) {
+            this.status = Status.IN_PROGRESS;
         }
     }
 

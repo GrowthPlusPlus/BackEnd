@@ -128,7 +128,7 @@ public class Challenge {
         this.content = content;
         this.user = user;
         this.maxParticipantNumber = maxParticipantNumber;
-        this.participantNumber = 1;  // 초기 상태엔 혼자만 있다.
+        this.participantNumber = 0;
         this.challengeVisibility = challengeVisibility;
         this.startDate = startDate;
         this.endDate = endDate;
@@ -189,6 +189,13 @@ public class Challenge {
             this.todaySuccessCount = 0;
         }
         this.todaySuccessCount++;
+    }
+
+    /*
+        이미 수행한 챌린지를 누군가가 인증글을 삭제하여 취소하는 경우 인증 총 횟수가 감소한다.
+     */
+    public void decreaseTodaySuccess() {
+        this.todaySuccessCount--;
     }
 
     /*

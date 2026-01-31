@@ -56,4 +56,12 @@ public class UserProfilePicture {
         this.cloudinaryPublicId = cloudinaryPublicId;
         this.imageUrl = imageUrl;
     }
+
+    /*
+        유저 프로필 사진을 업데이트하는 경우 사용하는 함수이다.
+     */
+    public void update(String cloudinaryPublicId, String imageUrl) {
+        this.cloudinaryPublicId = cloudinaryPublicId;
+        this.imageUrl = imageUrl;
+    }
 }
