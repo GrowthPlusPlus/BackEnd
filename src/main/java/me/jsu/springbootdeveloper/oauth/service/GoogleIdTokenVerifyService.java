@@ -9,6 +9,7 @@ import me.jsu.springbootdeveloper.config.oauth.GoogleOAuthProperties;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
+import java.util.List;
 
 /*
     구글 서버에서 OAuth과정을 승인하여 발급해준 토큰이 위조, 변조 되지 않았고 타당한지 해당 서버측에서 검증할 수 있도록 하는 클래스이다.
@@ -30,7 +31,7 @@ public class GoogleIdTokenVerifyService {
                 com.google.api.client.json.gson.GsonFactory.getDefaultInstance()
         )
                 // id 토큰의 aud 클레임을 검증하는 부분으로, 이 토큰이 내 서버용으로 발급된 것인지 확인한다.
-                .setAudience(Collections.singletonList(props.clientId()))
+                .setAudience(props.clientIds())  // 허용 목록으로 안드로이드, ios를 포함한다.
                 .build();  // 설정이 완료된 GoogleIdTokenVerifier를 생성한다.
     }
 

@@ -33,9 +33,10 @@ spring:
 # 앱 PKCE 기반 설정
   oauth:
     google:
-      client-id: 433865217738-5gr9oq66ef2bffc1r8ik065oc45iopg5.apps.googleusercontent.com
-      client-secret: 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
-      redirect-uri: https://api.hanaem.com/oauth/google/callback
+      client-id:
+        - 433865217738-m3uqqdv9lumpf1ne8e3bkpsbtsa6919i.apps.googleusercontent.com  # 안드로이드
+        - 433865217738-gu6vtmh4d7dpephj0mb152vm4s3vcap9.apps.googleusercontent.com  # IOS
+      redirect-uri: com.hanaem.app:/oauth2redirect
 
 # 페이징 기능으로 클라이언트가 요청하여 한 번에 최대 검색 가능한 게시글 수를 50개로 제한한다.
   data:
