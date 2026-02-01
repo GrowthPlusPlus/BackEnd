@@ -11,6 +11,5 @@ import java.util.List;
  */
 @ConfigurationProperties(prefix = "oauth.google")  // oauth.google로 시작하는 설정들을 이 클래스의 필드에 자동으로 바인딩 한다.
 public record GoogleOAuthProperties(  // record는 getter와 생성자를 자동으로 생성하고 불변하는 데이터 객체를 만든다.
-        List<String> clientIds,  // Android + iOS 허용 목록으로 공개되어도 되는 값이다. id token의 검증에 사용한다.
-        String redirectUri  // 인증이 끝난 뒤 내 앱으로 돌아올 주소이다.
+        List<String> clientIds  // Android + iOS 허용 목록으로 공개되어도 되는 값이다. id token의 검증에 사용한다.
 ) {}

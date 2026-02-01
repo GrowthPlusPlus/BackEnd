@@ -13,5 +13,6 @@ package me.jsu.springbootdeveloper.oauth.dto;
 public record GoogleCodeExchangeRequest(
         String code,
         String codeVerifier,
-        String clientId
+        String clientId,
+        String redirectUri
 ) {}
