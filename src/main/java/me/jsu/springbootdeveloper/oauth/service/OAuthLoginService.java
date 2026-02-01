@@ -5,6 +5,7 @@ package me.jsu.springbootdeveloper.oauth.service;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.config.jwt.TokenProvider;
+import me.jsu.springbootdeveloper.config.oauth.GoogleOAuthProperties;
 import me.jsu.springbootdeveloper.oauth.exception.OAuthLoginException;
 import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.oauth.dto.GoogleTokenResponse;
@@ -28,16 +29,22 @@ public class OAuthLoginService {
     private final UserService userService;
     private final TokenProvider tokenProvider;
     private final RefreshTokenService refreshTokenService;
+    private final GoogleOAuthProperties googleOAuthProperties;
 
     /*
         Google OAuth (Authorization Code + PKCE) 로그인의 유스케이스를 한 번에 수행하는 함수이다.
      */
-    public LoginResponse loginWithGoogle(String code, String codeVerifier) {
+    public LoginResponse loginWithGoogle(String code, String codeVerifier, String clientId) {
+        // clientId 화이트리스트 검증
+        if (!googleOAuthProperties.clientIds().contains(clientId)) {
+            throw new OAuthLoginException("INVALID_CLIENT_ID");
+        }
+
         /*
             Google Token(Authorization Code + PKCE)을 교환하여 구글이 PKCE(codeVerifier)를 검증한다.
             검증 성공 시, 구글이 access_token, id_token를 반환한다.
          */
-        GoogleTokenResponse googleToken = tokenService.exchangeCode(code, codeVerifier);
+        GoogleTokenResponse googleToken = tokenService.exchangeCode(code, codeVerifier, clientId);
         // 구글에서 온 토큰 응답이 유효하지 않으면 OAuth 로그인을 실패로 하고 해당 오류 처리를 위한 OAuthLoginException를 생성한다.
         if (googleToken == null || googleToken.idToken() == null) {
             throw new OAuthLoginException("INVALID_AUTH_CODE");  // OAuth 로그인 실패라는 예외를 발생시킨다. 이유는 INVALID_AUTH_CODE 이다.
