@@ -64,8 +64,7 @@ public class GoogleOAuthController {
         LoginResponse response = oauthLoginService.loginWithGoogle(
                 request.code(),
                 request.codeVerifier(),
-                request.clientId(),
-                request.redirectUri()
+                request.clientId()
         );
 
         return ResponseEntity.ok(response);  // 200 OK + json 응답을 반환한다.

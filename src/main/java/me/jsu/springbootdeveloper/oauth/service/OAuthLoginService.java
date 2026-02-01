@@ -34,9 +34,16 @@ public class OAuthLoginService {
     /*
         Google OAuth (Authorization Code + PKCE) 로그인의 유스케이스를 한 번에 수행하는 함수이다.
      */
-    public LoginResponse loginWithGoogle(String code, String codeVerifier, String clientId, String redirectUri) {
-        // clientId 화이트리스트 검증
-        if (!googleOAuthProperties.clientIds().contains(clientId)) {
+    public LoginResponse loginWithGoogle(String code, String codeVerifier, String clientId) {
+        // clientId 검증과 함께 redirectUri 주소를 정의한다.
+        String redirectUri;
+        if (clientId.equals("433865217738-m3uqqdv9lumpf1ne8e3bkpsbtsa6919i.apps.googleusercontent.com")) {
+            redirectUri = "com.googleusercontent.apps.433865217738-m3uqqdv9lumpf1ne8e3bkpsbtsa6919i:/oauth2redirect";
+        }
+        else if (clientId.equals("433865217738-gu6vtmh4d7dpephj0mb152vm4s3vcap9.apps.googleusercontent.com")) {
+            redirectUri = "com.googleusercontent.apps.433865217738-gu6vtmh4d7dpephj0mb152vm4s3vcap9:/oauth2redirect";
+        }
+        else {
             throw new OAuthLoginException("INVALID_CLIENT_ID");
         }
 
