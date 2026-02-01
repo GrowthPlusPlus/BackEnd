@@ -44,7 +44,7 @@ public class GoogleOAuthTokenService {
         code: 구글 Authorization Server가 발급한 authorization code로 1회성이며, 짧은 수명을 가진다.
         codeVerifier: PKCE에서 사용하는 값으로 앱이 처음에 생성한 값이다. Google이 내부에 저장해둔 code_challenge와 비교한다.
      */
-    public GoogleTokenResponse exchangeCode(String code, String codeVerifier, String clientId) {
+    public GoogleTokenResponse exchangeCode(String code, String codeVerifier, String clientId, String redirectUri) {
         // HTTP의 POST 함수이다. token endpoint는 POST로 호출한다.
         return webClient.post()
                 // Google이 제공하는 OAuth Token Endpoint로 구글 서버와 내 서버가 소통하는 API이다.
@@ -57,7 +57,7 @@ public class GoogleOAuthTokenService {
                         BodyInserters.fromFormData("grant_type", "authorization_code")  // Authorization Code Flow로 토큰을 교환하겠다.
                                 .with("client_id", clientId)  // Google에 등록된 앱/프로젝트를 식별하는 값이다. 안드로이드, ios를 구별한다.
                                 // Google 로그인 요청 때 사용한 redirectUri와 동일해야 한다. 요청의 일관성을 위해 검사하는 값이다.
-                                .with("redirect_uri", props.redirectUri())
+                                .with("redirect_uri", redirectUri)
                                 .with("code", code)  // Google이 로그인/동의 후 발급해 준 1회성 코드이다.
                                 /*
                                     앱이 처음 생성했던 PKCE 비밀값이다.

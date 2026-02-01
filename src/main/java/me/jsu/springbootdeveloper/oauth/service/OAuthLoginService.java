@@ -34,7 +34,7 @@ public class OAuthLoginService {
     /*
         Google OAuth (Authorization Code + PKCE) 로그인의 유스케이스를 한 번에 수행하는 함수이다.
      */
-    public LoginResponse loginWithGoogle(String code, String codeVerifier, String clientId) {
+    public LoginResponse loginWithGoogle(String code, String codeVerifier, String clientId, String redirectUri) {
         // clientId 화이트리스트 검증
         if (!googleOAuthProperties.clientIds().contains(clientId)) {
             throw new OAuthLoginException("INVALID_CLIENT_ID");
@@ -44,7 +44,7 @@ public class OAuthLoginService {
             Google Token(Authorization Code + PKCE)을 교환하여 구글이 PKCE(codeVerifier)를 검증한다.
             검증 성공 시, 구글이 access_token, id_token를 반환한다.
          */
-        GoogleTokenResponse googleToken = tokenService.exchangeCode(code, codeVerifier, clientId);
+        GoogleTokenResponse googleToken = tokenService.exchangeCode(code, codeVerifier, clientId, redirectUri);
         // 구글에서 온 토큰 응답이 유효하지 않으면 OAuth 로그인을 실패로 하고 해당 오류 처리를 위한 OAuthLoginException를 생성한다.
         if (googleToken == null || googleToken.idToken() == null) {
             throw new OAuthLoginException("INVALID_AUTH_CODE");  // OAuth 로그인 실패라는 예외를 발생시킨다. 이유는 INVALID_AUTH_CODE 이다.
