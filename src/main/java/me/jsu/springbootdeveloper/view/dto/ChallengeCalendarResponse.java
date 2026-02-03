@@ -9,11 +9,13 @@ import lombok.Getter;
  */
 @Getter
 public class ChallengeCalendarResponse {
+    private final String title;  // 챌린지 이름
     private final int totalSuccessDays;     // 완료 일수
     private final int currentStreakDays;    // 연속 일수
     private final boolean challengeOwner;  // 해당 챌린지에 대한 방장 여부
 
-    public ChallengeCalendarResponse(int totalSuccessDays, int currentStreakDays, boolean challengeOwner) {
+    public ChallengeCalendarResponse(String title, int totalSuccessDays, int currentStreakDays, boolean challengeOwner) {
+        this.title = title;
         this.totalSuccessDays = totalSuccessDays;
         this.currentStreakDays = currentStreakDays;
         this.challengeOwner = challengeOwner;

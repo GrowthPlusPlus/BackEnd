@@ -45,7 +45,7 @@ public class ChallengeCalendarService {
         // 유저가 챌린지의 방장인지 검사한다.
         boolean challengeOwner = challengeService.isOwner(user.getId(), challengeId);
 
-        return new ChallengeCalendarResponse(challengeParticipant.getTotalSuccessDays(), challengeParticipant.getCurrentStreakDays(), challengeOwner);
+        return new ChallengeCalendarResponse(challengeParticipant.getChallenge().getTitle(), challengeParticipant.getTotalSuccessDays(), challengeParticipant.getCurrentStreakDays(), challengeOwner);
     }
 
     /*
