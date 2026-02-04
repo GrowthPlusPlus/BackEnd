@@ -46,7 +46,7 @@ public class PostService {
     private final PostLikeService postLikeService;
     private final PostPictureRepository postPictureRepository;
     private final CloudinaryService cloudinaryService;
-    private static final int MAX_IMAGE_COUNT = 5;
+    private static final int MAX_IMAGE_COUNT = 3;
 
     /*
         게시글을 추가하는 함수이다.
@@ -71,6 +71,9 @@ public class PostService {
         if (alreadyPosted) {
             throw new DuplicateDailyPostException("DAILY_POST_ALREADY_EXISTS");
         }
+
+        // 이미지가 아에 비어있으면 빈 리스트를 대입한다.
+        images = (images == null) ? List.of() : images;
 
         // 챌린지의 이미지 필수 여부를 확인한다.
         boolean photoRequired = challenge.isPhotoRequired();

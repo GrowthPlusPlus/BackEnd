@@ -10,6 +10,7 @@ import me.jsu.springbootdeveloper.challenge.exception.NotAllowedChallengeActionE
 import me.jsu.springbootdeveloper.cloudinary.exception.CloudinaryDeleteException;
 import me.jsu.springbootdeveloper.cloudinary.exception.CloudinaryUploadException;
 import me.jsu.springbootdeveloper.oauth.exception.OAuthLoginException;
+import me.jsu.springbootdeveloper.rag.exception.*;
 import me.jsu.springbootdeveloper.tag.exception.TagNotFoundException;
 import me.jsu.springbootdeveloper.token.exception.InvalidTokenException;
 import me.jsu.springbootdeveloper.token.exception.TokenNotFoundException;
@@ -328,6 +329,81 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse(
                         "POST_LIKE_NOT_FOUND",
+                        e.getMessage()
+                ));
+    }
+
+    /*
+        Spring AI의 문서 처리 과정에서 생기는 예외를 처리하는 핸들러이다.
+     */
+    @ExceptionHandler(DocumentProcessingException.class)
+    public ResponseEntity<ErrorResponse> handleChallengeNotInProgress(
+            DocumentProcessingException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse(
+                        "DOCUMENT_PROCESSING_FAILED",
+                        e.getMessage()
+                ));
+    }
+
+    /*
+        Spring AI의 응답 생성 과정에서 생기는 예외를 처리하는 핸들러이다.
+     */
+    @ExceptionHandler(AiGenerationException.class)
+    public ResponseEntity<ErrorResponse> handleChallengeNotInProgress(
+            AiGenerationException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse(
+                        "AI_RESPONSE_GENERATION_FAILED",
+                        e.getMessage()
+                ));
+    }
+
+    /*
+        벡터 스토어에 문서를 저장하는 과정에서 파일의 형식이 맞지 않아 생기는 예외를 처리하는 핸들러이다.
+     */
+    @ExceptionHandler(InvalidDocumentFormatException.class)
+    public ResponseEntity<ErrorResponse> handleChallengeNotInProgress(
+            InvalidDocumentFormatException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(
+                        "INVALID_FILE_FORMAT",
+                        e.getMessage()
+                ));
+    }
+
+    /*
+        문서가 존재하지 않아 생기는 예외를 처리하는 핸들러이다.
+     */
+    @ExceptionHandler(InvalidDocumentException.class)
+    public ResponseEntity<ErrorResponse> handleChallengeNotInProgress(
+            InvalidDocumentException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(
+                        "INVALID_DOCUMENT_ID",
+                        e.getMessage()
+                ));
+    }
+
+    /*
+        AI에게 보내는 쿼리가 유효하지 않은 경우의 예외를 처리하는 핸들러이다.
+     */
+    @ExceptionHandler(InvalidQueryException.class)
+    public ResponseEntity<ErrorResponse> handleChallengeNotInProgress(
+            InvalidQueryException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(
+                        "INVALID_QUERY_FORMAT",
                         e.getMessage()
                 ));
     }
