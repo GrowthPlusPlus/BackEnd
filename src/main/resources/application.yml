@@ -29,6 +29,24 @@ spring:
   sql:
     init:
       mode: never
+
+# rag 설정
+  ai:
+    openai:
+      api-key: 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
+      embedding:
+        options:
+          model: text-embedding-3-small
+
+    vectorstore:
+      pgvector:
+        initialize-schema: true
+        table-name: document_embeddings
+
+  servlet:
+    multipart:
+      max-file-size: 20MB  # 업로드하는 단일 파일 1개의 최대 크기
+      max-request-size: 20MB  # http 전체 요청의 최대 크기
       
 # 앱 PKCE 기반 설정
   oauth:
