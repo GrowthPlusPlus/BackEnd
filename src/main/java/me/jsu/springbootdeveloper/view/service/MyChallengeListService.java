@@ -31,11 +31,18 @@ public class MyChallengeListService {
     /*
         현재 진행중인 챌린지를 검색하는 함수이다.
      */
-    public List<MyChallengeInProgressResponse> getMyChallenges(String email, Status status) {
+    public List<MyChallengeInProgressResponse> getMyChallenges(String email, Status status, boolean onlyTwo) {
         User user = userService.findByEmail(email);
 
         // 참여한 챌린지들을 검색한다.
         List<ChallengeParticipant> challengeParticipants = challengeService.findStatusWithChallengeByUserIdAndStatus(user.getId(), status);
+
+        // 클라이언트가 챌린지 목록을 2개만 요청한 경우, 챌린지 개수를 2개로 줄인다.
+        if (onlyTwo) {
+            challengeParticipants = challengeParticipants.stream()
+                    .limit(2)
+                    .toList();
+        }
 
         // 얻은 값을 매핑하여 반환한다.
         return challengeParticipants.stream()
@@ -73,11 +80,18 @@ public class MyChallengeListService {
     /*
         완료했거나, 실패한 챌린지를 검색하는 함수이다.
      */
-    public List<MyChallengeSuccessOrFailResponse> getMyChallengesSuccessOrFail(String email, Status status) {
+    public List<MyChallengeSuccessOrFailResponse> getMyChallengesSuccessOrFail(String email, Status status, boolean onlyTwo) {
         User user = userService.findByEmail(email);
 
         // 참여한 챌린지들을 검색한다.
         List<ChallengeParticipant> challengeParticipants = challengeService.findStatusWithChallengeByUserIdAndStatus(user.getId(), status);
+
+        // 클라이언트가 챌린지 목록을 2개만 요청한 경우, 챌린지 개수를 2개로 줄인다.
+        if (onlyTwo) {
+            challengeParticipants = challengeParticipants.stream()
+                    .limit(2)
+                    .toList();
+        }
 
         // 얻은 값을 매핑하여 반환한다.
         return challengeParticipants.stream()

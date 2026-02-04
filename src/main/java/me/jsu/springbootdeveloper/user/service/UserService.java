@@ -2,6 +2,7 @@
 
 package me.jsu.springbootdeveloper.user.service;
 
+import me.jsu.springbootdeveloper.user.dto.MyProfileResponse;
 import me.jsu.springbootdeveloper.user.exception.DuplicateNicknameException;
 import me.jsu.springbootdeveloper.user.exception.UserNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
@@ -143,7 +144,7 @@ public class UserService {
 
         // 사진 정보를 DB에 반영한다.
         if (userProfilePicture == null) {  // 사진이 없는 상태에서 등록하는 경우이다.
-            userProfilePicture = userProfilePictureRepository.save(UserProfilePicture.builder()
+            userProfilePictureRepository.save(UserProfilePicture.builder()
                     .user(user)
                     .cloudinaryPublicId(imageUploadResult.publicId())
                     .imageUrl(imageUploadResult.secureUrl())
@@ -152,13 +153,10 @@ public class UserService {
         else {  // 사진이 있던 상태에서 등록하는 경우이다.
             userProfilePicture.update(imageUploadResult.publicId(), imageUploadResult.secureUrl());
         }
-
-        userProfilePictureRepository.save(userProfilePicture);
     }
 
     /*
         유저 프로필 사진을 삭제하기 위해 사용하는 함수이다.
-        함수 재사용과 @Transactional 일관성을 위해 사용한다.
      */
     @Transactional
     public void removeProfileImage(String email) {
@@ -212,5 +210,22 @@ public class UserService {
     @Transactional
     public void detachStatistics(User user) {
         userStatisticsRepository.detachUser(user);
+    }
+
+    /*
+        마이페이지의 유저 정보를 반환하는 함수이다.
+     */
+    public MyProfileResponse getMyProfile(String email) {
+        User user = findByEmail(email);
+
+        UserProfilePicture profilePicture = findByUserIdForProfile(user.getId());
+
+        return MyProfileResponse.builder()
+                .nickname(user.getNickname())
+                .introduction(user.getIntroduction())
+                .profileImageUrl(  // 프로필 사진 객체가 null이면 Url을 반환하지 않는다.
+                        profilePicture != null ? profilePicture.getImageUrl() : null
+                )
+                .build();
     }
 }
