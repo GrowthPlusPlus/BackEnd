@@ -7,10 +7,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.user.domain.User;
-import me.jsu.springbootdeveloper.user.dto.UpdateIntroductionRequest;
-import me.jsu.springbootdeveloper.user.dto.UpdateNicknameRequest;
-import me.jsu.springbootdeveloper.user.dto.UserResponse;
-import me.jsu.springbootdeveloper.user.dto.UserSearchResponse;
+import me.jsu.springbootdeveloper.user.dto.*;
 import me.jsu.springbootdeveloper.user.repository.UserFriendshipSearchProjection;
 import me.jsu.springbootdeveloper.user.repository.UserRepository;
 import me.jsu.springbootdeveloper.user.service.LogoutService;
@@ -246,5 +243,25 @@ public class UserApiController {
     ) {
         userWithdrawalService.withdraw(userDetails.getUsername());
         return ResponseEntity.noContent().build();
+    }
+
+    /*
+        마이페이지 상단의 유저 정보를 반환하는 함수이다.
+     */
+    @Operation(
+            summary = "내 프로필 조회",
+            description = "로그인한 사용자의 프로필 사진, 이름, 한 줄 소개를 조회한다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "프로필 조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
+    })
+    @GetMapping("/api/users/me/profile")
+    public ResponseEntity<MyProfileResponse> getMyProfile(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        MyProfileResponse response = userService.getMyProfile(userDetails.getUsername());
+
+        return ResponseEntity.ok(response);
     }
 }

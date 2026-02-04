@@ -235,7 +235,7 @@ public class ChallengeService {
     }
 
     /*
-        유저 id와 챌린지 상태로 참여한 챌린지를 반환해주는 함수이다.
+        유저 id와 챌린지 상태로 참여한 챌린지를 최신순으로 반환해주는 함수이다.
      */
     public List<ChallengeParticipant> findStatusWithChallengeByUserIdAndStatus(Long userId, Status status) {
         return challengeParticipantRepository.findStatusWithChallengeByUserIdAndStatus(userId, status);

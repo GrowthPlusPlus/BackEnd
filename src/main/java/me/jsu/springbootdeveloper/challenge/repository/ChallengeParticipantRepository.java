@@ -51,6 +51,7 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
         join fetch cp.challenge
         where cp.user.id = :userId
           and cp.status = :status
+        order by cp.joinDate desc
     """)
     List<ChallengeParticipant> findStatusWithChallengeByUserIdAndStatus(
             @Param("userId") Long userId,
