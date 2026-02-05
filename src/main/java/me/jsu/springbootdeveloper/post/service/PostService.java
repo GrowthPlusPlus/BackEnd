@@ -9,6 +9,7 @@ import me.jsu.springbootdeveloper.post.exception.ArticleAccessDeniedException;
 import me.jsu.springbootdeveloper.post.exception.ArticleNotFoundException;
 import me.jsu.springbootdeveloper.post.exception.DuplicateDailyPostException;
 import me.jsu.springbootdeveloper.post.exception.InvalidImageException;
+import me.jsu.springbootdeveloper.user.service.UserStatisticsService;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
@@ -46,6 +47,7 @@ public class PostService {
     private final PostLikeService postLikeService;
     private final PostPictureRepository postPictureRepository;
     private final CloudinaryService cloudinaryService;
+    private final UserStatisticsService userStatisticsService;
     private static final int MAX_IMAGE_COUNT = 3;
 
     /*
@@ -98,7 +100,7 @@ public class PostService {
         saveImages(images, article);
 
         // 인증글을 업데이트 했으므로 총 인증 횟수와 연속 인증 횟수를 업데이트 한다.
-        challengeService.succeedChallenge(user.getId(), challengeId);
+        challengeService.succeedChallenge(user.getId(), challengeId, postDate);
 
         // 인증글을 업데이트 했으므로 챌린지 데일리 로그도 업데이트 한다.
         challengeService.createDailyLog(user, challenge, article, postDate);
@@ -111,6 +113,9 @@ public class PostService {
 
         // 인증글을 업데이트 했으므로 챌린지 주간 상태도 업데이트 한다.
         challengeService.updateWeeklyStatus(user, challenge, weekStartDate, challenge.getRequiredWeeklyCount());
+
+        // 유저 통계를 업데이트 한다.
+        userStatisticsService.onPostConfirmed(user, challenge.getId(), postDate);
 
         // 저장한 인증글 id로 검색하여 인증글 상세 정보를 반환한다.
         return getPost(email, article.getId());
@@ -239,6 +244,7 @@ public class PostService {
 
     /*
         게시글 하나를 삭제하는 함수로, 게시글 작성자 id가 요청자 id와 다르면 삭제하지 않는다.
+        또한 당일 인증글만 삭제 가능하다.
 
         다음은 @Transactional를 사용했을 때의 효과이다.
         1) findById() 호출 시 엔티티는 영속성 컨텍스트에 등록되어
@@ -259,6 +265,11 @@ public class PostService {
 
         Article article = postRepository.findById(postId)  // 삭제할 글을 찾는다.
                 .orElseThrow(() -> new ArticleNotFoundException("ARTICLE_NOT_FOUND_FOR_ID"));
+
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
+        if (!today.isEqual(article.getPostDate())) {  // 과거의 글을 삭제하려는 경우이다.
+            throw new ArticleAccessDeniedException("PAST_POST_CANNOT_DELETE");
+        }
 
         // 글에 있는 사진을 찾는다.
         List<PostPicture> postPictures = postPictureRepository.findAllByArticle_Id(postId);
@@ -283,6 +294,9 @@ public class PostService {
         LocalDate thisWeekMonday = article.getPostDate().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         ChallengeWeeklyStatus challengeWeeklyStatus = challengeService.findWeeklyStatus(user.getId(), challenge.getId(), thisWeekMonday);
         challengeWeeklyStatus.decreaseSuccessCount(challenge.getRequiredWeeklyCount());
+
+        // 유저 통계의 내용을 롤백한다.
+        userStatisticsService.onTodayPostCancelled(user.getId(), challenge.getId(), article.getPostDate());
 
         postRepository.delete(article);  // DB에서 게시글을 삭제한다. 댓글이나 좋아요 등의 정보도 함께 삭제된다.
     }

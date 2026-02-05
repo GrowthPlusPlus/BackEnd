@@ -3,7 +3,10 @@
 package me.jsu.springbootdeveloper.challenge.repository;
 
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeWeeklyStatus;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -23,6 +26,20 @@ public interface ChallengeWeeklyStatusRepository extends JpaRepository<Challenge
     List<ChallengeWeeklyStatus> findByUser_IdAndWeekStartDate(
             Long userId,
             LocalDate weekStartDate
+    );
+
+    // 챌린지 주간 상태의 값 중, 그 주의 총 인증 횟수를 유저 id와 챌린지 id로 검색하여 페이지 크기만큼 내림차순으로 반환한다.
+    @Query("""
+        select ws.successCount
+        from ChallengeWeeklyStatus ws
+        where ws.user.id = :userId
+          and ws.challenge.id = :challengeId
+        order by ws.weekStartDate desc
+    """)
+    List<Integer> findRecentSuccessCounts(
+            @Param("userId") Long userId,
+            @Param("challengeId") Long challengeId,
+            Pageable pageable
     );
 
     // 유저 id와 챌린지 id로 이번주 상태를 삭제한다.

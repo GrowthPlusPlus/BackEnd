@@ -19,6 +19,15 @@ import java.util.Optional;
     챌린지 로그를 저장하는 DB로, 테이블에 매핑되는 엔티티 타입은 ChallengeDailyLog, 엔티티의 pk 타입은 Long이다.
  */
 public interface ChallengeDailyLogRepository extends JpaRepository<ChallengeDailyLog, Long> {
+    // 특정 유저가 특정 날짜에 하나라도 인증했는지 판단하는 쿼리문이다.
+    boolean existsByUser_IdAndPostDate(Long userId, LocalDate postDate);
+
+    /*
+        주간 집계를 위해 사용한다. 해당 주에 한 번도 인증을 하지 않으면 weeklyStatus DB가 존재하지 않으므로 이것을 보완한다.
+        유저 id, 챌린지 id로 해당 유저가 날짜 사이에 수행한 인증 횟수를 검색한다.
+     */
+    long countByUser_IdAndChallenge_IdAndPostDateBetween(Long userId, Long challengeId, LocalDate start, LocalDate end);
+
     // 유저의 오늘 하루의 post 로그를 조회하기 위한 쿼리문이다. 챌린지가 없는 경우 제외한다.
     @Query("""
         select cdl

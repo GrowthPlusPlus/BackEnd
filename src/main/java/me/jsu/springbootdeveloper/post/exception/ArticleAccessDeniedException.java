@@ -3,7 +3,7 @@
 package me.jsu.springbootdeveloper.post.exception;
 
 /*
-    게시글 작성자와 요청자의 이메일이 달라 요청이 실패한 경우에 관한 예외처리 클래스이다.
+    인증글에 관해 허용되지 않은 접근을 하는 경우에 관한 예외처리 클래스이다.
  */
 public class ArticleAccessDeniedException extends RuntimeException {
     private final String errorCode;
