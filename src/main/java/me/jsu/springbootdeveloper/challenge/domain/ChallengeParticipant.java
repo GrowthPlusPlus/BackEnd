@@ -167,13 +167,26 @@ public class ChallengeParticipant {
         }
 
         // 최대 연속 기록을 처리한다.
-        if (maxStreakEndDate != null &&
-                maxStreakEndDate.equals(today)) {  // 오늘 삭제한 연속일수가 최대기록의 마지막 날인지 확인한다. 맞다면 최대 연속일수를 무효화 한다.
-            // 현재는 과거 최대 streak를 복원할 수 없으므로 명시적으로 무효화 한다.
-            maxStreakStartDate = null;
-            maxStreakEndDate = null;
-            maxStreakDays = 0;
+        if (maxStreakEndDate != null && maxStreakEndDate.equals(today)) {  // 오늘 삭제한 연속일수가 최대기록의 마지막 날인지 확인한다.
+            if (maxStreakDays == 1) {  // 최대 연속 일수가 하루였다면 초기화 한다.ㅊ
+                maxStreakStartDate = null;
+                maxStreakEndDate = null;
+                maxStreakDays = 0;
+            }
+            else {  // 최대 연속 일수를 하루 줄인다.
+                maxStreakEndDate = today.minusDays(1);
+                maxStreakDays--;
+            }
         }
+    }
+
+    /*
+        인증글을 연속으로 올리지 않았을 경우, 현재 연속 일수를 초기화 하는 함수이다.
+     */
+    public void initCurrentStreakDays() {
+        currentStreakStartDate = null;
+        currentStreakEndDate = null;
+        currentStreakDays = 0;
     }
 
     /*
@@ -197,5 +210,18 @@ public class ChallengeParticipant {
      */
     public void increaseSuccessWeeks() {
         successWeeks++;
+    }
+
+    /*
+        챌린지의 총 주차수와 성공 주차수를 비교하여 주간 실패율을 계산한다.
+        실패한 챌린지가 아니라면 의미 없는 값이 반환된다.
+     */
+    public double getFailureRateByWeek() {
+        if (totalWeeks == 0) {  // 0으로 나누는 것을 방지하기 위해 사용한다.
+            return 0.0;
+        }
+
+        int failedWeeks = Math.max(0, totalWeeks - successWeeks);
+        return (double) failedWeeks / (double) totalWeeks;
     }
 }

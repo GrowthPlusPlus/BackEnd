@@ -4,11 +4,13 @@ package me.jsu.springbootdeveloper.user.repository;
 
 import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.user.domain.UserStatistics;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 /*
@@ -16,6 +18,18 @@ import java.util.Optional;
  */
 public interface UserStatisticsRepository extends JpaRepository<UserStatistics, Long> {
     Optional<UserStatistics> findByUser_Id(Long userId);  // 유저 정보로 유저 통계를 검색한다.
+
+    // 유저 id로 통계를 배치 단위로 검색한다.
+    @Query("""
+        select us
+        from UserStatistics us
+        where us.id > :lastId
+        order by us.id asc
+    """)
+    List<UserStatistics> findAllAfterId(
+            @Param("lastId") Long lastId,
+            Pageable pageable
+    );
 
     /*
         유저 통계 테이블에서 user가 특정 유저인 모든 행에 대해 user_id 칼럼을 null로 바꾸는 쿼리문이다.

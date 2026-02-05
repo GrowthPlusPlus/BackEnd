@@ -21,10 +21,18 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
     @Query("""
         select cp
         from ChallengeParticipant cp
+        where cp.user.id = :userId
+          and cp.status = 'IN_PROGRESS'
+    """)
+    List<ChallengeParticipant> findByUser_IdForCpInProgress(@Param("userId") Long userId);  // 유저 id로 유저가 참여한 진행중인 챌린지들을 검색한다.
+
+    @Query("""
+        select cp
+        from ChallengeParticipant cp
         join fetch cp.challenge
         where cp.user.id = :userId
     """)
-    List<ChallengeParticipant> findWithChallengeByUserId(@Param("userId") Long userId);  // 유저 id로 유저가 참여한 챌린지들을 검색한다.
+    List<ChallengeParticipant> findWithChallengeByUserId(@Param("userId") Long userId);  // 유저 id로 유저가 참여한 챌린지들을 검색한다. 챌린지 자체 정보도 함께 가져온다.
 
     @Query("""
         select cp
@@ -132,5 +140,6 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
         order by cp.id asc
     """)
     List<ChallengeParticipant> findEndedInProgressAfterId(@Param("lastId") Long lastId, @Param("today") LocalDate today, Pageable pageable);
+
     boolean existsByChallenge_IdAndUser_Id(Long challengeId, Long userId);
 }

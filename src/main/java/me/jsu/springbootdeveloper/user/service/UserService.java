@@ -2,6 +2,7 @@
 
 package me.jsu.springbootdeveloper.user.service;
 
+import me.jsu.springbootdeveloper.user.domain.UserStatistics;
 import me.jsu.springbootdeveloper.user.dto.MyProfileResponse;
 import me.jsu.springbootdeveloper.user.exception.DuplicateNicknameException;
 import me.jsu.springbootdeveloper.user.exception.UserNotFoundException;
@@ -76,7 +77,7 @@ public class UserService {
         @return 찾거나 생성된 User 엔티티
      */
     public User findOrCreate(String email, String name) {
-        return userRepository.findByEmail(email)
+        User user = userRepository.findByEmail(email)
                 // .map(user -> user) 기존 유저가 존재하는 경우이다. 여기선 사용하지 않으므로 주석처리한다.
                 .orElseGet(() ->  // 신규 유저인 경우이다.
                         userRepository.save(
@@ -87,6 +88,14 @@ public class UserService {
                                         .build()
                         )
                 );
+
+        // 유저의 통계 DB를 생성한다.
+        UserStatistics userStats = userStatisticsRepository.findByUser_Id(user.getId())
+                .orElseGet(() -> userStatisticsRepository.save(UserStatistics.builder()
+                        .user(user)
+                        .build()));
+
+        return user;
     }
 
     /*

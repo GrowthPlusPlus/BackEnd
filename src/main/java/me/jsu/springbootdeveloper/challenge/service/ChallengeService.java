@@ -10,6 +10,8 @@ import me.jsu.springbootdeveloper.challenge.domain.ChallengeInvite;
 import me.jsu.springbootdeveloper.challenge.repository.*;
 import me.jsu.springbootdeveloper.challenge.dto.SearchChallengeResponse;
 import me.jsu.springbootdeveloper.notification.enumType.NotificationType;
+import me.jsu.springbootdeveloper.user.domain.UserStatistics;
+import me.jsu.springbootdeveloper.user.exception.UserStatisticsNotFoundException;
 import me.jsu.springbootdeveloper.user.repository.FriendshipRepository;
 import me.jsu.springbootdeveloper.user.repository.UserProfilePictureRepository;
 import me.jsu.springbootdeveloper.notification.service.NotificationService;
@@ -17,6 +19,7 @@ import me.jsu.springbootdeveloper.challenge.exception.ChallengeNotFoundException
 import me.jsu.springbootdeveloper.challenge.exception.ChallengeNotInProgressException;
 import me.jsu.springbootdeveloper.challenge.exception.ChallengeOwnerCannotLeaveException;
 import me.jsu.springbootdeveloper.challenge.exception.NotAllowedChallengeActionException;
+import me.jsu.springbootdeveloper.user.repository.UserStatisticsRepository;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.domain.Challenge;
@@ -73,6 +76,8 @@ public class ChallengeService {
     private final NotificationService notificationService;
     private final UserProfilePictureRepository userProfilePictureRepository;
     private final FriendshipRepository friendshipRepository;
+    private final UserStatisticsRepository userStatisticsRepository;  // 순환 참조를 방지하기 위해 직접 사용한다.
+
     //챌린지 생성 기능
     @Transactional
     public CreateChallengeResponse createChallenge(String email, CreateChallengeRequest dto) {
@@ -101,7 +106,7 @@ public class ChallengeService {
 
         //챌린지 객체 db에 저장
         Challenge savedChallenge = challengeRepository.save(challenge);
-        
+
         // 생성자는 해당 챌린지에 참여
         boolean joinchallenge = joinChallenge(savedChallenge, user);
 
@@ -145,10 +150,10 @@ public class ChallengeService {
         challengeInviteRepository.save(invite);
 
     }
-    //챌린지 참여하기
-    //반환 값: 참여 성공하면 true, 실패하면 false
+    // 챌린지 참여하기
+    // 반환 값: 참여 성공하면 true, 실패하면 false
     public boolean joinChallenge(Challenge challenge, User user) {
-        //해당 챌린지 인원수 체크
+        // 해당 챌린지 인원수 체크
         // 내가 참여했을 때 challenge 의 maxParticipant를 초과하면 들어가지 못함
         if (!challenge.checkIfOverMaxParticipantNumber()){
             LocalDate today = LocalDate.now();
@@ -157,13 +162,21 @@ public class ChallengeService {
              case 2. 참여하는 사람이 챌린지 시작일 후에 들어오면 -> joinDate는 들어온 날짜
             * */
             LocalDate joinDate = today.isBefore(challenge.getStartDate()) ? challenge.getStartDate() : today;
-            //totalWeeks 값:  6일 챌린지 -> 0, 7일 챌린지 -> 1,  8일 챌린지 -> 1
+            // totalWeeks 값:  6일 챌린지 -> 0, 7일 챌린지 -> 1,  8일 챌린지 -> 1
             int totalWeeks = (int) ChronoUnit.WEEKS.between(joinDate, challenge.getEndDate());
-            //챌린지 참여자 객체 생성
+            // 챌린지 참여자 객체 생성
             ChallengeParticipant challengeParticipant = new ChallengeParticipant(challenge, user, joinDate, totalWeeks);
             challengeParticipantRepository.save(challengeParticipant);
-            //챌린지 참여자 수 업데이트
+            // 챌린지 참여자 수 업데이트
             challenge.updateParticipate();
+
+            // 유저 통계의 참여 챌린지 개수를 업데이트 한다. 없다면 생성한다.
+            UserStatistics userStatistics = userStatisticsRepository.findByUser_Id(user.getId())
+                    .orElseGet(() -> userStatisticsRepository.save(UserStatistics.builder()
+                            .user(user)
+                            .build()));
+            userStatistics.increaseChallengeCount();
+
             return true;
         }
         else
@@ -228,7 +241,14 @@ public class ChallengeService {
     }
 
     /*
-        유저 id로 유저가 참여한 챌린지 중, 현재 진행중인 챌린지를 반환해주는 함수이다.
+        유저 id로 유저가 참여한 챌린지 중, 현재 진행중인 챌린지를 반환하는 함수이다.
+     */
+    public List<ChallengeParticipant> findByUser_IdForCpInProgress(Long userId) {
+        return challengeParticipantRepository.findByUser_IdForCpInProgress(userId);
+    }
+
+    /*
+        유저 id로 유저가 참여한 챌린지 중, 현재 진행중인 챌린지를 반환해주는 함수이다. 챌린지 정보도 포함하여 리턴한다.
      */
     public List<ChallengeParticipant> findInProgressWithChallengeByUserId(Long userId) {
         return challengeParticipantRepository.findInProgressWithChallengeByUserId(userId);
@@ -344,10 +364,10 @@ public class ChallengeService {
         특정 챌린지를 완수한 경우, 연속 챌린지 달성 일수와 총 챌린지 일수를 업데이트하기 위해 호출하는 함수이다.
         반드시 하루에 최대 한 번만 수행한다.
      */
-    public void succeedChallenge(Long userId, Long challengeId) {
+    public void succeedChallenge(Long userId, Long challengeId, LocalDate postDate) {
         // 챌린지 참여 DB를 검색한다.
         ChallengeParticipant challengeParticipant = findByUser_IdAndChallenge_IdForParticipant(userId, challengeId);
-        challengeParticipant.recordDailySuccess(LocalDate.now());  // 챌린지 참여 DB를 업데이트 한다.
+        challengeParticipant.recordDailySuccess(postDate);  // 챌린지 참여 DB를 업데이트 한다.
     }
 
     /*
@@ -415,6 +435,11 @@ public class ChallengeService {
 
         // 챌린지의 전체 참여자 수를 감소시킨다.
         challenge.updateLeave();
+
+        // 유저가 참여한 총 챌린지 개수를 감소시킨다.
+        UserStatistics userStatistics = userStatisticsRepository.findByUser_Id(userId)
+                .orElseThrow(() -> new UserStatisticsNotFoundException("통계를 찾을 수 없음"));
+        userStatistics.decreaseChallengeCount();
     }
 
     /*
@@ -667,5 +692,26 @@ public class ChallengeService {
         }
 
         return weeks;
+    }
+
+    /*
+        유저가 해당 날짜에 로그가 하나라도 존재하는지 검색하는 함수이다.
+     */
+    public boolean existsByUser_IdAndPostDateForLog(Long userId, LocalDate postDate) {
+        return challengeDailyLogRepository.existsByUser_IdAndPostDate(userId, postDate);
+    }
+
+    /*
+        유저 id와 챌린지 id로 날짜 사이에 존재하는 로그 개수를 반환하는 함수이다.
+     */
+    public long countByUser_IdAndChallenge_IdAndPostDateBetween(Long userId, Long challengeId, LocalDate start, LocalDate end) {
+        return challengeDailyLogRepository.countByUser_IdAndChallenge_IdAndPostDateBetween(userId, challengeId, start, end);
+    }
+
+    /*
+        유저 id, 챌린지 id로 해당 챌린지의 주간 상태에서 주마다의 인증 횟수를 리스트로 반환하는 함수이다.
+     */
+    public List<Integer> findRecentSuccessCounts(Long userId, Long challengeId, Pageable pageable) {
+        return challengeWeeklyStatusRepository.findRecentSuccessCounts(userId, challengeId, pageable);
     }
 }

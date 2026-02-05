@@ -27,5 +27,6 @@ public class ChallengeMaintenanceScheduler {
         challengeMaintenanceService.syncToday(today);  // 진행중인 챌린지 날짜를 동기화 한다.
         challengeMaintenanceService.failWeeklyStatuses(today);  // 이번주 챌린지 성공/실패 여부를 판단한다.
         challengeMaintenanceService.finalizeChallenges(today);  // 챌린지 종료를 판단한다.
+        challengeMaintenanceService.resetStreakIfBroken(today);  // 연속 일수가 깨졌는지 판단한다.
     }
 }
