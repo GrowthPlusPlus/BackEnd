@@ -40,7 +40,7 @@ public class TestTokenApiController {
                             .build()); // 생성자 내부에서 userStatus = UserStatus.NEW 가 설정됨
                 });
 
-        // 24시간 동안 유효한 토큰 생성
-        return tokenProvider.generateToken(user, Duration.ofDays(1));
+        // 1년 동안 유효한 토큰 생성 (원할한 테스트를 위함)
+        return tokenProvider.generateToken(user, Duration.ofDays(365));
     }
 }

@@ -45,10 +45,12 @@ public class FriendService {
         }
 
         // 중복 신청 방지 (existsRequested 활용)
+        // 받는측에서 요청 거절하거나 보낸측에서 취소했을때는 재신청 가능
         if (friendRequestRepository.existsRequested(fromUser, toUser)) {
-            throw new IllegalStateException("이미 대기 중인 신청이 있습니다.");
+            FriendRequest request = friendRequestRepository.findByFromUserAndToUser(fromUser, toUser);
+            if (request.getStatus().equals(FriendRequestStatus.REQUESTED))
+                throw new IllegalStateException("이미 대기 중인 신청이 있습니다.");
         }
-
         FriendRequest friendRequest = FriendRequest.builder()
                 .fromUser(fromUser)
                 .toUser(toUser)
