@@ -93,6 +93,9 @@ dependencies {
 
     // 디버깅을 위한 로깅 의존성
     implementation 'io.github.oshai:kotlin-logging:6.0.3'
+
+    // 스케줄러의 초기화되지 않은 DB 참조 방지를 위한 AOP 의존성
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
 }
 
 test {

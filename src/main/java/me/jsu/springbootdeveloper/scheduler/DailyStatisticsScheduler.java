@@ -3,6 +3,7 @@
 package me.jsu.springbootdeveloper.scheduler;
 
 import lombok.RequiredArgsConstructor;
+import me.jsu.springbootdeveloper.scheduler.schema.RequireUserStatisticsSchema;
 import me.jsu.springbootdeveloper.user.service.UserDailyStatisticsService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -19,6 +20,7 @@ public class DailyStatisticsScheduler {
     private final UserDailyStatisticsService userDailyStatisticsService;
 
     @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
+    @RequireUserStatisticsSchema  // 스키마 준비가 안 됐으면 바로 종료한다.
     public void runDailySettlement() {
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
 
