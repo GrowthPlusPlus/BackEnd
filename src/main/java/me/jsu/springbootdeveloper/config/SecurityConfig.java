@@ -72,7 +72,7 @@ public class SecurityConfig {
                         // 테스트용 토큰 발급 API는 인증 없이 접근 가능하도록 허용
                         .requestMatchers(new AntPathRequestMatcher("/api/test/token")).permitAll()
                         //태그 생성 API 인증 절차 없이 접근 가능
-                        .requestMatchers(new AntPathRequestMatcher("/api/tag/create")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/api/tags/create")).permitAll()
                         // 리프레시 토큰 기반으로 엑세스 토큰을 재발급 해주기도 한다.
                         .requestMatchers(new AntPathRequestMatcher("/api/token")).permitAll()
                         // 사용자가 Google OAuth(PKCE)로 로그인할 때 이다.
