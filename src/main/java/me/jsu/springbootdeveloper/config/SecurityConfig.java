@@ -71,13 +71,15 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 테스트용 토큰 발급 API는 인증 없이 접근 가능하도록 허용
                         .requestMatchers(new AntPathRequestMatcher("/api/test/token")).permitAll()
+                        //태그 생성 API 인증 절차 없이 접근 가능
+                        .requestMatchers(new AntPathRequestMatcher("/api/tag/create")).permitAll()
                         // 리프레시 토큰 기반으로 엑세스 토큰을 재발급 해주기도 한다.
                         .requestMatchers(new AntPathRequestMatcher("/api/token")).permitAll()
                         // 사용자가 Google OAuth(PKCE)로 로그인할 때 이다.
                         // OAuth 로그인/토큰 교환 엔드포인트이다. 즉 jwt인 엑세스 토큰, 리프레시 토큰이 아직 없는 상황이다.
                         // 엑세스 토큰, 리프레시 토큰 생성 등의 일을 한다.
                         .requestMatchers(new AntPathRequestMatcher("/api/oauth/**")).permitAll()
-                        // 위의 두 케이스를 제외한 api는 모두 인증이 필요하다.
+                        // 위의 케이스를 제외한 api는 모두 인증이 필요하다.
                         .requestMatchers(new AntPathRequestMatcher("/api/**")).authenticated()
                         // 추가: 에러 페이지 접근 허용
                         .requestMatchers(new AntPathRequestMatcher("/error")).permitAll()

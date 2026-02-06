@@ -2,6 +2,7 @@
 
 package me.jsu.springbootdeveloper.tag.service;
 
+import me.jsu.springbootdeveloper.tag.domain.TagCategory;
 import me.jsu.springbootdeveloper.tag.exception.TagNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -29,13 +30,33 @@ public class TagService {
     private final TagToUserRepository tagToUserRepository;
     private final TagToChallengeRepository tagToChallengeRepository;
     private final UserService userService;
+    /*
+        새로운 태그를 저장한다. 이미 존재하는 태그 이름이면 예외를 던진다.
+     */
+    @Transactional
+    public TagResponse createTag(String tagName, TagCategory tagCategory) {
+        // 태그 이름 중복 검사
+        if (tagRepository.existsByTagName(tagName)) {
+            throw new IllegalArgumentException("이미 존재하는 태그입니다: " + tagName);
+        }
+        //태그 생성
+        Tag tag = Tag.builder()
+                .tagName(tagName)
+                .tagCategory(tagCategory)
+                .build();
+
+        Tag savedTag = tagRepository.save(tag);
+
+        return new TagResponse(savedTag.getId(), savedTag.getTagName(), savedTag.getTagCategory());
+    }
 
     /*
         클라이언트에게 전체 태그 목록을 제공한다.
         TagResponse로 정제해서 반환한다.
      */
     public List<TagResponse> getAllTags() {
-        return tagRepository.findAll()  // 모든 태그를 List로 리턴받는다.
+        return tagRepository.findAllByOrderByTagCategoryAscTagNameAsc
+                        ()  // 모든 태그를 List로 리턴받는다.
                 .stream()  // List를 stream 형태로 바꾼다.
                 .map(tag -> new TagResponse(  // tag를 TagResponse에 매핑한다.
                         tag.getId(),

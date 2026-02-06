@@ -71,6 +71,7 @@ public class ChallengeApiController {
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+    //챌린지 생성하면서 db에 저장된 태그 반환
 
 
     //챌린지 초대 - 친구 목록 with 초대 상태
