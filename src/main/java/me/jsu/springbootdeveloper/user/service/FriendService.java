@@ -44,13 +44,19 @@ public class FriendService {
             throw new IllegalStateException("자기 자신에게는 친구 신청을 할 수 없습니다.");
         }
 
-        // 중복 신청 방지 (existsRequested 활용)
-        // 받는측에서 요청 거절하거나 보낸측에서 취소했을때는 재신청 가능
-        if (friendRequestRepository.existsRequested(fromUser, toUser)) {
-            FriendRequest request = friendRequestRepository.findByFromUserAndToUser(fromUser, toUser);
-            if (request.getStatus().equals(FriendRequestStatus.REQUESTED))
+        FriendRequest existingRequest = friendRequestRepository.findByFromUserAndToUser(fromUser, toUser);
+
+        //FriendRequest 테이블에 행이 존재한다면
+        if (existingRequest != null) {
+            // 아직 대기 중인 신청이면 중복 신청을 차단한다.
+            if (existingRequest.getStatus().equals(FriendRequestStatus.REQUESTED)) {
                 throw new IllegalStateException("이미 대기 중인 신청이 있습니다.");
+            }
+            // 취소 또는 거절 상태이면 기존 행을 삭제하고 재신청한다.
+            friendRequestRepository.delete(existingRequest);
+            friendRequestRepository.flush();  // DELETE를 즉시 DB에 반영하여 unique 제약 위반을 방지한다.
         }
+
         FriendRequest friendRequest = FriendRequest.builder()
                 .fromUser(fromUser)
                 .toUser(toUser)
@@ -112,9 +118,7 @@ public class FriendService {
             throw new IllegalStateException("본인에게 온 요청만 수락할 수 있습니다.");
         }
 
-        // 상태 변경 및 Friendship 생성
-        request.friendRequestAccepted();
-
+       //friendship 생성
         User user1 = (request.getFromUser().getId() < request.getToUser().getId())
                 ? request.getFromUser() : request.getToUser();
         User user2 = (request.getFromUser().getId() < request.getToUser().getId())

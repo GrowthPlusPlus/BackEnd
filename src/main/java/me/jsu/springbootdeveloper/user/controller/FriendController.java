@@ -64,7 +64,7 @@ public class FriendController {
             description = """
         """
     )
-    @PatchMapping("/request/accept/{userNickname}")
+    @PatchMapping("/request/accept/{requestId}")
     public ResponseEntity<String> acceptRequest(
             @PathVariable Long requestId,
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -80,7 +80,7 @@ public class FriendController {
             description = """
         """
     )
-    @PatchMapping("/request/reject/{rejectId}")
+    @PatchMapping("/request/reject/{requestId}")
     public ResponseEntity<String> rejectRequest(
             @PathVariable Long requestId,
             @AuthenticationPrincipal UserDetails userDetails) {
