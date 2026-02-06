@@ -117,7 +117,7 @@ public class ChallengeService {
         List<FriendListResponse> friends = friendService.getFriendList(email);
 
         //(1) url 링크, (2)친구 목록 반환하기
-        return new CreateChallengeResponse(inviteUrl, friends);
+        return new CreateChallengeResponse(savedChallenge,inviteUrl, friends);
 
     }
     /*

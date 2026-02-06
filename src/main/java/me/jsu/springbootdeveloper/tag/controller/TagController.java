@@ -5,7 +5,9 @@ package me.jsu.springbootdeveloper.tag.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import me.jsu.springbootdeveloper.tag.dto.CreateTagRequest;
 import me.jsu.springbootdeveloper.tag.dto.TagResponse;
 import me.jsu.springbootdeveloper.tag.dto.TagSelectRequest;
 import me.jsu.springbootdeveloper.tag.service.TagService;
@@ -38,7 +40,7 @@ public class TagController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "태그 목록 조회 성공")
     })
-    @GetMapping("/api/tags")
+    @GetMapping("/api/tags/all")
     public ResponseEntity<List<TagResponse>> getTags() {
         return ResponseEntity.ok(tagService.getAllTags());
     }
@@ -66,4 +68,23 @@ public class TagController {
         tagService.selectTags(userDetails.getUsername(), request.getTagIds());
         return ResponseEntity.noContent().build();
     }
+
+    //태그 생성하기
+    @Operation(
+            summary = "태그 생성하기",
+            description = """
+        새로운 태그를 생성한다. 태그 이름과 카테고리를 입력받는다.
+        ex) POST /api/tags
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "태그 생성 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청 (이름 누락, 중복 등)")
+    })
+    @PostMapping("/api/tags/create")
+    public ResponseEntity<TagResponse> createTag(@Valid @RequestBody CreateTagRequest request) {
+        TagResponse response = tagService.createTag(request.getTagName(), request.getTagCategory());
+        return ResponseEntity.status(201).body(response);
+    }
+
 }
