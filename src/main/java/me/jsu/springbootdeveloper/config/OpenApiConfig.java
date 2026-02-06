@@ -18,11 +18,11 @@ public class OpenApiConfig {
                 .info(new Info()
                         .title("해냄 API 목록")
                         .description("")
-                        .version("v1.0.0"))
+                        )
                 .servers(List.of(
                         new Server()
-                                .url("http://localhost:8080")
-                                .description("개발용 서버")
+                                .url("https://hanaem.onrender.com")
+                                .description("배포용 서버")
                 ));
     }
 

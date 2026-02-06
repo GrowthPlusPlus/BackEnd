@@ -134,6 +134,12 @@ public class ChallengeApiController {
       챌린지 참여하기
       - 유저가 '참여하기'를 누르면 해당 유저를 ChallengeParticipant에 등록한다
      */
+    @Operation(
+            summary = "챌린지 참여하기",
+            description = """
+        유저가 챌린지 탐색 탭에서 참여하기를 누르면 해당 유저를 ChallengeParticipant 에 등록하여 챌린지에 참여 시킨다."
+        """
+    )
     @PostMapping("api/challenges/{challengeId}/participate")
     public ResponseEntity<Void> joinChallenge(
             @AuthenticationPrincipal UserDetails userDetails,
