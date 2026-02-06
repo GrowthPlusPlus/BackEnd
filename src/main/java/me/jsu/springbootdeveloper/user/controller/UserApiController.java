@@ -35,6 +35,20 @@ public class UserApiController {
     private final UserRepository userRepository;
 
     //유저 검색-> 나와 해당 유저와의 관계 상태도 같이 반환
+    @Operation(
+            summary = "닉네임으로 유저 검색",
+            description = """
+        유저 검색 탭에서 닉네임으로 검색하면 해당 검색 글자를 포함하는 유저를 모두 반환한다. 
+        유저당 반환되는 정보
+        1. 유저id
+        2. 유저닉네임
+        3. 유저 프로필 이미지 url
+        4. 나와 해당 유저와의 관계 상태 ( FRIEND, PENDING_SENT, PENDING_RECEIVED, NONE 중 하나)
+   
+        ex) GET /api/users/search/안녕난유저
+        """
+    )
+
     @GetMapping("/api/users/search")
     public ResponseEntity<List<UserSearchResponse>> searchUsers(
             @RequestParam String nickname,
@@ -60,13 +74,19 @@ public class UserApiController {
             summary = "닉네임으로 유저 조회",
             description = """
         닉네임을 이용해 유저 정보를 조회한다.
+        
+        해당 api 는 단순 유저 검색으로 프로필 이미지, 나와 해당 유저와의 관계 상태 등을 반환하지 않습니다
+        api/users/search 와 상황에 맞게 구분하여 사용해 주세요
+        
+        반환되는 정보
+        1. 유저id
+        2. 유저 이메일
+        3. 유저 닉네임
+        4. 유저 권한 (ROLE_USER, ROLE_ADMIN 중 하나)
+        
         ex) GET /api/users/nickname/안녕난유저
         """
     )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "유저 조회 성공"),
-            @ApiResponse(responseCode = "404", description = "유저를 찾을 수 없음")
-    })
     @GetMapping("/api/users/nickname/{nickname}")
     public ResponseEntity<UserResponse> findUserByNickname(
             @Parameter(description = "검색할 유저의 닉네임", required = true, example = "안녕난유저")
