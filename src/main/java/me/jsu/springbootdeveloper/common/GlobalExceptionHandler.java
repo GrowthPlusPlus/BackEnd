@@ -425,6 +425,21 @@ public class GlobalExceptionHandler {
     }
 
     /*
+        CLIP 서버 응답의 예외를 처리하는 핸들러이다.
+     */
+    @ExceptionHandler(ClipServerException.class)
+    public ResponseEntity<ErrorResponse> handleChallengeNotInProgress(
+            ClipServerException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_GATEWAY)
+                .body(new ErrorResponse(
+                        "EMPTY_RESPONSE",
+                        e.getMessage()
+                ));
+    }
+
+    /*
         위에서 정의하지 않은 모든 기타 서버 오류들을 처리해준다.
         spring 기본 처리에 예외를 맡기는 것이 좋다. 따라서 비활성화 한다.
 
