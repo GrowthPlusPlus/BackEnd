@@ -25,6 +25,9 @@ spring:
     console:
       enabled: false
 
+  jackson:  # clip 서버의 snake_case를 처리하기 위한 값이다.
+    property-naming-strategy: SNAKE_CASE
+
 # data.sql을 실행하지 않는다.
   sql:
     init:
@@ -82,3 +85,6 @@ logging:
     root: INFO
     org.springframework.security: DEBUG
     org.springframework.web: DEBUG
+
+clip:
+  base-url: http://localhost:8000  # 로컬 CLIP 서버 주소로 랜더 운영시에는 변경

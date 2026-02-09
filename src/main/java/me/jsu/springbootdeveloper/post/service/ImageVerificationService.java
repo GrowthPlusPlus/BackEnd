@@ -2,10 +2,23 @@
 
 package me.jsu.springbootdeveloper.post.service;
 
-import lombok.RequiredArgsConstructor;
+import me.jsu.springbootdeveloper.challenge.domain.Challenge;
+import me.jsu.springbootdeveloper.challenge.service.ChallengeService;
+import me.jsu.springbootdeveloper.post.dto.ImageVerificationResponse;
+import me.jsu.springbootdeveloper.post.dto.ImageVerificationResult;
+import me.jsu.springbootdeveloper.post.exception.ClipServerException;
 import me.jsu.springbootdeveloper.post.exception.InvalidImageException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.beans.factory.annotation.Value;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -16,9 +29,24 @@ import java.util.Set;
 /*
     클라이언트가 보낸 사진을 검증하는 서비스이다.
  */
-@RequiredArgsConstructor
 @Service
 public class ImageVerificationService {
+    private static final Logger log = LoggerFactory.getLogger(ImageVerificationService.class);
+
+    private final WebClient webClient;
+    private final ChallengeService challengeService;
+
+    // 의존성을 주입한다. config를 사용하면 default값이 주입되므로 직접 주입한다.
+    public ImageVerificationService(
+            @Value("${clip.base-url}") String clipBaseUrl,
+            ChallengeService challengeService
+    ) {
+        this.webClient = WebClient.builder()
+                .baseUrl(clipBaseUrl)
+                .build();
+        this.challengeService = challengeService;
+    }
+
     private static final long MAX_FILE_SIZE = 5 * 1024 * 1024;  // 최대 이미지 크기이다.
     private static final Set<String> ALLOWED_MIME_TYPES = Set.of(  // 서버가 허용하는 이미지 유형이다.
             "image/jpeg",
@@ -29,7 +57,7 @@ public class ImageVerificationService {
     /*
         사용자가 업로드한 이미지를 검증하는 함수이다.
      */
-    public void verify(MultipartFile image) {
+    public ImageVerificationResponse verify(Long challengeId, MultipartFile image) {
         // 이미지가 없는 경우이다.
         if (image == null || image.isEmpty()) {
             throw new InvalidImageException("EMPTY_IMAGE");
@@ -38,11 +66,12 @@ public class ImageVerificationService {
         validateFileSize(image);
         validateMimeType(image);
         validateImageDecoding(image);
-        // verifyWithCLIP(image)  CLIP를 통한 AI 검사 방식으로 현재는 미구현이다.
+
+        return verifyWithCLIP(challengeId, image);
     }
 
     /*
-        사용자가 업로드 한 이미지가 과도하게 크진 않은지 검사한다.
+        사용자가 업로드 한 이미지가 과도하게 크진 않은지 검사한다.s
      */
     private void validateFileSize(MultipartFile image) {
         if (image.getSize() > MAX_FILE_SIZE) {
@@ -72,6 +101,51 @@ public class ImageVerificationService {
             }
         } catch (IOException e) {  // 이미지 디코딩이 실패한 경우이다.
             throw new InvalidImageException("IMAGE_DECODING_FAILED");
+        }
+    }
+
+    /*
+        clip 서버에 챌린지 제목과 이미지를 보내 검증 결과를 얻는 함수이다.
+     */
+    public ImageVerificationResponse verifyWithCLIP(Long challengeId, MultipartFile image) {
+        Challenge challenge = challengeService.findById(challengeId);
+
+        // 보낼 값을 map으로 만든다.
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("title", challenge.getTitle() );
+        try {
+            body.add("image", new ByteArrayResource(image.getBytes()) {  // 파일명을 명시적으로 지정한다.
+                @Override
+                public String getFilename() {
+                    return image.getOriginalFilename();
+                }
+            });
+        } catch (IOException e) {
+            throw new ClipServerException("Failed to read image bytes");
+        }
+
+        try {
+            // clip 서버에 검증 요청을 보내고 결과를 돌려받는다.
+            ImageVerificationResult result = webClient.post()
+                    .uri("/verify")
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .body(BodyInserters.fromMultipartData(body))
+                    .retrieve()
+                    .bodyToMono(ImageVerificationResult.class)
+                    .block();
+
+            if (result == null) {  // 응답이 비어있는 경우이다.
+                log.error("CLIP returned empty response");
+                throw new ClipServerException("CLIP server error");
+            }
+
+            return ImageVerificationResponse.builder()
+                    .passed(result.passed())
+                    .build();
+
+        } catch (Exception e) {  // 그 외의 예외 처리이다.
+            log.error("CLIP verification failed", e);
+            throw e;
         }
     }
 }

@@ -15,6 +15,7 @@ import me.jsu.springbootdeveloper.post.service.PostLikeService;
 import me.jsu.springbootdeveloper.post.service.PostService;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -43,21 +44,23 @@ public class PostApiController {
             description = """
         챌린지 인증을 위해 올린 사진을 검사한다. 사진 1장을 사용자가 올릴 때마다 수행한다.
         현재 하는 검사는 이미지 크기 검사, 이미지 포멧 검사, 손상된 이미지 업로드 차단 이다. AI 검사는 추후에 추가해야 한다.
-        ex) POST /api/image/verify"
+        ex) POST /api/image/verify?challengeId=3
         """
     )
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "이미지 요청 검증 성공"),
             @ApiResponse(responseCode = "400", description = "이미지 검증 실패")
     })
-    @PostMapping("/api/image/verify")
-    public ResponseEntity<Void> verify(
+    @PostMapping(value = "/api/image/verify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ImageVerificationResponse> verify(
+            @Parameter(description = "이미지가 사용되는 챌린지 번호", required = true)
+            @RequestParam Long challengeId,
             @Parameter(description = "검사할 이미지 파일", required = true)
-            @RequestPart("images") MultipartFile image
+            @RequestPart("image") MultipartFile image
     ) {
-        imageVerificationService.verify(image);
+        ImageVerificationResponse response = imageVerificationService.verify(challengeId, image);
 
-        return ResponseEntity.noContent().build();  // 인증이 성공한 경우이다.
+        return ResponseEntity.ok(response);  // 사진 인증 결과를 반환한다.
     }
 
     /*
