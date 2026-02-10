@@ -35,6 +35,10 @@ public class OAuthLoginService {
         Google OAuth (Authorization Code + PKCE) 로그인의 유스케이스를 한 번에 수행하는 함수이다.
      */
     public LoginResponse loginWithGoogle(String code, String codeVerifier, String clientId) {
+        if (clientId == null) {  // client ID가 null이면 예외처리한다.
+            throw new OAuthLoginException("CLIENT_ID_MISSING");
+        }
+
         // clientId 검증과 함께 redirectUri 주소를 정의한다.
         String redirectUri;
         if (clientId.equals("433865217738-m3uqqdv9lumpf1ne8e3bkpsbtsa6919i.apps.googleusercontent.com")) {
