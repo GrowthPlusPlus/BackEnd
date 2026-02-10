@@ -44,8 +44,8 @@ public class FriendService {
             throw new IllegalStateException("자기 자신에게는 친구 신청을 할 수 없습니다.");
         }
 
+        //나->상대방 신청 보낸게 잇는지 확인
         FriendRequest existingRequest = friendRequestRepository.findByFromUserAndToUser(fromUser, toUser);
-
         //FriendRequest 테이블에 행이 존재한다면
         if (existingRequest != null) {
             // 아직 대기 중인 신청이면 중복 신청을 차단한다.
@@ -124,6 +124,7 @@ public class FriendService {
         User user2 = (request.getFromUser().getId() < request.getToUser().getId())
                 ? request.getToUser() : request.getFromUser();
 
+        //이미 친구상태인지 체크
         if (!friendshipRepository.existsByUser1AndUser2(user1, user2)) {
             friendshipRepository.save(Friendship.builder().user1(user1).user2(user2).build());
         }
@@ -131,6 +132,11 @@ public class FriendService {
         // 삭제를 하면 '받은 요청'이나 '보낸 요청' 목록 조회 시 더 이상 나타나지 않습니다.
         friendRequestRepository.delete(request);
 
+        //내가 상대방한테 보낸 친구신청이 있으면 삭제
+        if (friendRequestRepository.existsRequested(request.getToUser(), request.getFromUser())){
+            FriendRequest friendRequest = friendRequestRepository.findByFromUserAndToUser(request.getToUser(), request.getFromUser());
+            friendRequestRepository.delete(friendRequest);
+        }
     }
 
     /**
