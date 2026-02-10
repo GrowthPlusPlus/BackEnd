@@ -62,4 +62,15 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
         order by c.id asc
     """)
     List<Challenge> findActiveChallengesAfterId(@Param("today") LocalDate today, @Param("lastId") Long lastId, Pageable pageable);
+
+    // 공개 챌린지를 검색한다. AI 추천 기능에서 사용한다.
+    @Query("""
+        select c
+        from Challenge c
+        where c.challengeVisibility = 'PUBLIC'
+          and c.startDate <= :today
+          and c.endDate >= :today
+        order by c.startDate desc
+    """)
+    List<Challenge> findPublicChallenges(@Param("today") LocalDate today);
 }
