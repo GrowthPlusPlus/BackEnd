@@ -43,7 +43,10 @@ public class FriendService {
         if (fromUser.equals(toUser)) {
             throw new IllegalStateException("자기 자신에게는 친구 신청을 할 수 없습니다.");
         }
-
+        //이미 친구인지 확인
+        if (friendshipRepository.existsByUser1AndUser2(fromUser, toUser)){
+            throw new IllegalStateException("이미 친구인 사용자입니다.");
+        }
         //나->상대방 신청 보낸게 잇는지 확인
         FriendRequest existingRequest = friendRequestRepository.findByFromUserAndToUser(fromUser, toUser);
         //FriendRequest 테이블에 행이 존재한다면
