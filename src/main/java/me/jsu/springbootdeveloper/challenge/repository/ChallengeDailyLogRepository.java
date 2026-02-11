@@ -91,4 +91,18 @@ public interface ChallengeDailyLogRepository extends JpaRepository<ChallengeDail
         where log.challenge = :challenge
     """)
     void detachChallenge(@Param("challenge") Challenge challenge);
+
+    /*
+        오늘 해당 챌린지를 수행한 유저의 로그를 검색하여 유저 정보를 얻는다.
+     */
+    @Query("""
+        select log.user
+        from ChallengeDailyLog log
+        where log.challenge.id = :challengeId
+          and log.postDate = :today
+    """)
+    List<User> findTodaySuccessUsers(
+            @Param("challengeId") Long challengeId,
+            @Param("today") LocalDate today
+    );
 }

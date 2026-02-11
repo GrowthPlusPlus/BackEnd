@@ -69,7 +69,7 @@ public class Article {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @LastModifiedDate  // 게시글이 수정된 시간이다. 필드를 수정하면 자동으로 업데이트 된다.
+    // 사용자에게 보여주기 위한 게시글의 생성/수정 시각이다.
     @Column(name = "updated_at")
     private LocalDateTime updateAt;
 
@@ -91,6 +91,9 @@ public class Article {
 
     @Column(name = "comment_number")
     private long commentNumber;  // 게시글의 댓글 수이다.
+
+    @Column(name = "is_edited")
+    private Boolean isEdited;  // 인증글의 수정 여부이다.
 
     /*
         다음 코드는 CASCADE 설정으로 User 엔티티를 fk값으로 가지고 있는 DB들을 자동으로 삭제해주는 설정이다.
@@ -115,22 +118,26 @@ public class Article {
             .build();
      */
     @Builder
-    public Article(String content, User user, Challenge challenge, LocalDate postDate) {
+    public Article(String content, User user, Challenge challenge, LocalDateTime updateAt, LocalDate postDate) {
         this.content = content;
         this.user = user;
         this.challenge = challenge;
+        this.updateAt = updateAt;
         this.postDate = postDate;
         this.likeNumber = 0;  // 초기엔 둘 다 0이다.
         this.commentNumber = 0;
+        this.isEdited = false;
     }
 
     /*
         내용을 업데이트 한다.
      */
-    public void updateContent(String content) {
+    public void updateContent(String content, LocalDateTime updateAt) {
         if (content != null) {
             this.content = content;
         }
+        this.updateAt = updateAt;
+        this.isEdited = true;
     }
 
     /*

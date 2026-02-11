@@ -17,6 +17,8 @@ public class CommentResponse {
     private String userNickname;
     private String userPicture;
     private String contents;
+    private LocalDateTime updatedAt;
     private LocalDateTime createdAt;
+    private boolean isEdited;
     private boolean mine;
 }

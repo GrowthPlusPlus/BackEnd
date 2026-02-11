@@ -2,15 +2,15 @@
 
 package me.jsu.springbootdeveloper.challenge.service;
 
-import me.jsu.springbootdeveloper.challenge.dto.ChallengeSettingsResponse;
+import me.jsu.springbootdeveloper.challenge.dto.*;
 import me.jsu.springbootdeveloper.challenge.enumType.ChallengeVisibility;
 import me.jsu.springbootdeveloper.challenge.enumType.Status;
 import me.jsu.springbootdeveloper.challenge.dto.ChallengeFriendInviteListResponse;
 import me.jsu.springbootdeveloper.challenge.dto.ChallengeInviteResponse;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeInvite;
 import me.jsu.springbootdeveloper.challenge.repository.*;
-import me.jsu.springbootdeveloper.challenge.dto.SearchChallengeResponse;
 import me.jsu.springbootdeveloper.notification.enumType.NotificationType;
+import me.jsu.springbootdeveloper.tag.domain.TagToChallenge;
 import me.jsu.springbootdeveloper.user.domain.UserStatistics;
 import me.jsu.springbootdeveloper.user.exception.UserStatisticsNotFoundException;
 import me.jsu.springbootdeveloper.user.repository.FriendshipRepository;
@@ -30,7 +30,6 @@ import me.jsu.springbootdeveloper.challenge.domain.ChallengeWeeklyStatus;
 import me.jsu.springbootdeveloper.post.domain.Article;
 import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.user.domain.UserProfilePicture;
-import me.jsu.springbootdeveloper.challenge.dto.ChallengeMemberResponse;
 import me.jsu.springbootdeveloper.tag.dto.TagResponse;
 import me.jsu.springbootdeveloper.post.repository.PostRepository;
 import me.jsu.springbootdeveloper.user.service.UserService;
@@ -40,14 +39,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import me.jsu.springbootdeveloper.user.dto.FriendListResponse;
-import me.jsu.springbootdeveloper.challenge.dto.CreateChallengeRequest;
-import me.jsu.springbootdeveloper.challenge.dto.CreateChallengeResponse;
 import me.jsu.springbootdeveloper.user.repository.UserRepository;
 import me.jsu.springbootdeveloper.user.service.FriendService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.WeekFields;
 import java.util.List;
@@ -239,6 +237,51 @@ public class ChallengeService {
             return new SearchChallengeResponse(challenge, tags);
         });
 
+    }
+
+    /*
+        챌린지의 상세 정보를 반환하는 함수이다.
+     */
+    public ChallengeDetailResponse getChallengeDetail(Long challengeId) {
+        Challenge challenge = findById(challengeId);
+
+        // 챌린지의 태그를 조회한다.
+        List<TagToChallenge> tags = tagService.searchChallengeTags(challengeId);
+        List<String> tagNames = tags.stream()
+                .map(tc -> tc.getTag().getTagName())  // 태그 이름만 추출한다.
+                .toList();
+
+        // 오늘 인증한 유저 정보를 조회한다.
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
+        List<User> successUsers = getTodaySuccessUsers(challengeId, today);
+
+        return new ChallengeDetailResponse(
+                challenge.getTitle(),
+                challenge.getStartDate(),
+                challenge.getEndDate(),
+                challenge.getRequiredWeeklyCount(),
+                challenge.isPhotoRequired(),
+                tagNames,
+                challenge.getContent(),
+                new ChallengeDetailResponse.HostInfo(
+                        challenge.getUser().getNickname(),
+                        challenge.getUser().getProfileImageUrl()
+                ),
+                challenge.getParticipantNumber(),  // 참여자 수
+                successUsers.stream()
+                        .map(u -> new ChallengeDetailResponse.UserSummary(
+                                u.getNickname(),
+                                u.getProfileImageUrl()
+                        ))
+                        .toList()
+        );
+    }
+
+    /*
+        오늘 해당 챌린지를 수행한 유저를 로그의 존재 여부로 조회한다.
+     */
+    public List<User> getTodaySuccessUsers(Long challengeId, LocalDate today) {
+        return challengeDailyLogRepository.findTodaySuccessUsers(challengeId, today);
     }
 
     /*

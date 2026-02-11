@@ -110,7 +110,9 @@ public abstract class AbstractFeedService {
                     .userImageUrl(
                             profile == null ? null : profile.getImageUrl()
                     )
+                    .updatedAt(article.getUpdateAt())
                     .createdAt(article.getCreatedAt())
+                    .isEdited(Boolean.TRUE.equals(article.getIsEdited()))
                     .likeNumber(article.getLikeNumber())
                     .commentNumber(article.getCommentNumber())
                     .liked(likedPostIds.contains(article.getId()))

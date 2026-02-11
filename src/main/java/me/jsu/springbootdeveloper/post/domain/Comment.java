@@ -64,21 +64,32 @@ public class Comment {
     @Column(columnDefinition = "TEXT", nullable = false)  // varchar(255)보다 더 많은 내용이 들어갈 수 있다.
     private String contents;  // 댓글 내용이다.
 
+    @Column(name = "is_edited")
+    private Boolean isEdited;  // 댓글의 수정 여부이다.
+
+    // 사용자에게 보여주기 위한 댓글의 생성/수정 시각이다.
+    @Column(name = "updated_at")
+    private LocalDateTime updateAt;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     
     @Builder
-    public Comment(User user, Article article, String contents) {
+    public Comment(User user, Article article, String contents, LocalDateTime updateAt) {
         this.user = user;
         this.article = article;
         this.contents = contents;
+        this.updateAt = updateAt;
+        this.isEdited = false;
     }
 
     /*
         댓글 내용을 업데이트하는 함수이다.
      */
-    public void updateContents(String contents) {
+    public void updateContents(String contents, LocalDateTime updateAt) {
         this.contents = contents;
+        this.updateAt = updateAt;
+        this.isEdited = true;
     }
 }
