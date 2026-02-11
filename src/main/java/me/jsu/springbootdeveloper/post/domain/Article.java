@@ -93,7 +93,7 @@ public class Article {
     private long commentNumber;  // 게시글의 댓글 수이다.
 
     @Column(name = "is_edited")
-    private boolean isEdited;  // 인증글의 수정 여부이다.
+    private Boolean isEdited;  // 인증글의 수정 여부이다.
 
     /*
         다음 코드는 CASCADE 설정으로 User 엔티티를 fk값으로 가지고 있는 DB들을 자동으로 삭제해주는 설정이다.

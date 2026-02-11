@@ -112,7 +112,7 @@ public abstract class AbstractFeedService {
                     )
                     .updatedAt(article.getUpdateAt())
                     .createdAt(article.getCreatedAt())
-                    .isEdited(article.isEdited())
+                    .isEdited(Boolean.TRUE.equals(article.getIsEdited()))
                     .likeNumber(article.getLikeNumber())
                     .commentNumber(article.getCommentNumber())
                     .liked(likedPostIds.contains(article.getId()))

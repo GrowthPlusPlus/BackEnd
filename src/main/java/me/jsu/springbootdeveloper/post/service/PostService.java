@@ -245,7 +245,7 @@ public class PostService {
                 .userImageUrl(userImageUrl)  // 게시글 작성자의 사진이다.
                 .updatedAt(article.getUpdateAt())
                 .createdAt(article.getCreatedAt())
-                .isEdited(article.isEdited())
+                .isEdited(Boolean.TRUE.equals(article.getIsEdited()))
                 .likeNumber(article.getLikeNumber())  // 좋아요 개수이다.
                 .commentNumber(article.getCommentNumber())  // 댓글 개수이다.
                 .liked(liked)
