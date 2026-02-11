@@ -31,8 +31,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
 /*
     챌린지에 관련된 일을 수행하는 api 컨트롤러이다.
  */
@@ -56,7 +54,9 @@ public class ChallengeApiController {
     @Operation(
             summary = "챌린지 생성하기",
             description = """
-        요청: 챌린지 생성 화면에 있는 필드 순서대로 값 보내기 -> 응답: (1) 챌린지 방 링크 (2) 친구 목록 with 초대상태
+        요청: 챌린지 생성 화면에 있는 필드 순서대로 값 보내기
+        응답 
+            (1) 챌린지 방 링크 (2) 친구 목록 with 초대상태
         ex) POST /api/challenges/create
         """
     )
@@ -74,21 +74,28 @@ public class ChallengeApiController {
     //챌린지 생성하면서 db에 저장된 태그 반환
 
 
-    //챌린지 초대 - 친구 목록 with 초대 상태
+    //챌린지 초대 탭
     @Operation(
-            summary = "챌린지 초대 탭 - 친구 목록과 각 친구의 초대 상태 불러오기",
+            summary = "챌린지 초대 탭 - 초대 링크, 친구 목록 불러오기",
             description = """
+        반환 정보
+        1. 초대 링크
+        2. 친구 목록(초대 상태 포함)
+            a. 유저id
+            b. 유저 닉네임
+            b. 유저 프로필 이미지 url
+            c. 이미 해당 챌린지에 초대되었는지에 대한 여부
         """
     )
 
     @GetMapping("/api/challenges/{challengeId}/invite")
-    public ResponseEntity<List<ChallengeFriendInviteListResponse>> getFriendList_with_InviteStatus (@AuthenticationPrincipal UserDetails userDetails,
+    public ResponseEntity<ChallengeInviteResponse> getFriendList_with_InviteStatus (@AuthenticationPrincipal UserDetails userDetails,
                                                                               @PathVariable Long challengeId)
 
     {
-        List<ChallengeFriendInviteListResponse> responses = challengeService.getFriendList_with_InviteStatus(userDetails.getUsername(), challengeId);
-
-        return ResponseEntity.ok(responses);
+        ChallengeInviteResponse response = challengeService.getFriendList_with_InviteStatus(userDetails.getUsername(), challengeId);
+        
+        return ResponseEntity.ok(response);
     }
 
     //챌린지 초대 - 친구 초대하기
