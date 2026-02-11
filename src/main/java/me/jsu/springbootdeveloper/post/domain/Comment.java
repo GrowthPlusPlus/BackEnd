@@ -65,7 +65,7 @@ public class Comment {
     private String contents;  // 댓글 내용이다.
 
     @Column(name = "is_edited")
-    private boolean isEdited;  // 댓글의 수정 여부이다.
+    private Boolean isEdited;  // 댓글의 수정 여부이다.
 
     // 사용자에게 보여주기 위한 댓글의 생성/수정 시각이다.
     @Column(name = "updated_at")

@@ -65,7 +65,7 @@ public class CommentService {
                 .contents(comment.getContents())  // 댓글 내용이다.
                 .updatedAt(comment.getUpdateAt())
                 .createdAt(comment.getCreatedAt())
-                .isEdited(comment.isEdited())
+                .isEdited(Boolean.TRUE.equals(comment.getIsEdited()))
                 .mine(comment.getUser().getId().equals(user.getId()))  // 해당 댓글이 접속한 유저와 같은지 검사한다.
                 .build()
         );
