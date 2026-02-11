@@ -7,17 +7,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import me.jsu.springbootdeveloper.tag.dto.CreateTagRequest;
-import me.jsu.springbootdeveloper.tag.dto.TagResponse;
-import me.jsu.springbootdeveloper.tag.dto.TagSelectRequest;
+import me.jsu.springbootdeveloper.tag.dto.*;
 import me.jsu.springbootdeveloper.tag.service.TagService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -52,7 +47,7 @@ public class TagController {
             summary = "유저 태그 선택",
             description = """
         로그인한 사용자가 선택한 태그들을 자신의 프로필과 연결한다.
-        ex) PUT /api/users/me/tags
+        ex) POST /api/users/me/tags
         """
     )
     @ApiResponses({
@@ -63,9 +58,81 @@ public class TagController {
     @PostMapping("/api/users/me/tags")
     public ResponseEntity<Void> selectTags(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody TagSelectRequest request
+            @RequestBody AddUserTagRequest request
     ) {
         tagService.selectTags(userDetails.getUsername(), request.getTagIds());
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(
+            summary = "유저 태그 삭제",
+            description = """
+        로그인한 사용자가 선택한 태그들을 챌린지와 해제한다.
+        ex) DELETE /api/users/me/tags
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "태그 선택 완료"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "404", description = "유저 또는 태그를 찾을 수 없음")
+    })
+    @DeleteMapping("/api/users/me/tags")
+    public ResponseEntity<Void> deleteUserTags(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody @Valid DeleteUserTagRequest request
+    ) {
+        tagService.deleteTags(userDetails.getUsername(), request.getTagIds());
+
+        return ResponseEntity.noContent().build();
+    }
+
+    /*
+        유저가 선택한 태그가 챌린지와 연결되도록하는 컨트롤러이다.
+     */
+    @Operation(
+            summary = "챌린지 태그 선택",
+            description = """
+        로그인한 사용자가 선택한 태그들을 챌린지와 연결한다.
+        ex) POST /api/challenge/tags
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "태그 선택 완료"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "404", description = "유저 또는 태그를 찾을 수 없음")
+    })
+    @PostMapping("/api/challenge/tags")
+    public ResponseEntity<Void> selectChallengeTags(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody @Valid AddChallengeTagRequest request
+    ) {
+        tagService.selectChallengeTags(userDetails.getUsername(), request.getChallengeId(), request.getTagIds());
+
+        return ResponseEntity.ok().build();
+    }
+
+    /*
+        유저가 선택한 태그가 챌린지와 연결이 해제되도록 하는 컨트롤러이다.
+     */
+    @Operation(
+            summary = "챌린지 태그 삭제",
+            description = """
+        로그인한 사용자가 선택한 태그들을 챌린지와 연결해제 한다.
+        ex) DELETE /api/challenge/tags
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "태그 선택 완료"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "404", description = "유저 또는 태그를 찾을 수 없음")
+    })
+    @DeleteMapping("/api/challenge/tags")
+    public ResponseEntity<Void> deleteChallengeTags(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody @Valid DeleteChallengeTagRequest request
+    ) {
+        tagService.deleteChallengeTags(userDetails.getUsername(), request.getChallengeId(), request.getTagIds());
+
         return ResponseEntity.noContent().build();
     }
 

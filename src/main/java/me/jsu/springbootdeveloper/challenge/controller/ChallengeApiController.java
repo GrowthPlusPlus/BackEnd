@@ -131,6 +131,27 @@ public class ChallengeApiController {
         Page<SearchChallengeResponse> response = challengeService.searchChallenges(keyword, page);
         return ResponseEntity.ok(response);
     }
+
+    /*
+        챌린지 상세 정보를 반환하는 컨트롤러이다.
+     */
+    @Operation(
+            summary = "챌린지 상세 정보 조회",
+            description = """
+        챌린지 id로 해당 챌린지의 상세정보를 조회한다.
+        ex) GET /api/challenge/1
+        """
+    )
+    @GetMapping("/api/challenge/{challengeId}")
+    public ResponseEntity<ChallengeDetailResponse> getChallengeDetail(
+            @Parameter(description = "챌린지 번호", required = true, example = "1")
+            @PathVariable Long challengeId
+    ) {
+        ChallengeDetailResponse response = challengeService.getChallengeDetail(challengeId);
+
+        return ResponseEntity.ok(response);
+    }
+
     /*
       챌린지 참여하기
       - 유저가 '참여하기'를 누르면 해당 유저를 ChallengeParticipant에 등록한다

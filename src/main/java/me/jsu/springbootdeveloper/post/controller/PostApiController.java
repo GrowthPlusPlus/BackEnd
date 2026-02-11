@@ -93,8 +93,8 @@ public class PostApiController {
             // 안정성을 위하여 Principal 대신 사용한다.
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestPart("data") @Valid AddArticleRequest request,
-            @Parameter(description = "업로드할 인증 이미지 파일 목록", required = true)
-            @RequestPart("image") List<MultipartFile> images
+            @Parameter(description = "업로드할 인증 이미지 파일 목록")
+            @RequestPart(value = "image", required = false) List<MultipartFile> images
     ) {
         ArticleDetailResponse response = postService.save(userDetails.getUsername(), request.getContent(), request.getChallengeId(), images);
 
@@ -182,7 +182,7 @@ public class PostApiController {
             @Parameter(description = "게시글 ID", required = true, example = "1")
             @PathVariable Long postId,
             @RequestPart("request") @Valid UpdateArticleRequest request,
-            @RequestPart("images") List<MultipartFile> images
+            @RequestPart(value = "image", required = false) List<MultipartFile> images
     ) {
         ArticleDetailResponse response = postService.update(userDetails.getUsername(), postId, request.getContent(), request.getDeleteImageIds(), images);
 

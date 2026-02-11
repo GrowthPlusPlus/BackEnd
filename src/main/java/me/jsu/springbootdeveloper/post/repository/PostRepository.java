@@ -53,8 +53,8 @@ public interface PostRepository extends JpaRepository<Article, Long> {
           and exists (
                 select 1
                 from Friendship fs
-                where (fs.user1.id = :viewerId and fs.user2.id = a.user.id)
-                   or (fs.user2.id = :viewerId and fs.user1.id = a.user.id)
+                where fs.user1.id = least(:viewerId, a.user.id)
+                  and fs.user2.id = greatest(:viewerId, a.user.id)
           )
     """)
     Page<Article> findFriendFeed(

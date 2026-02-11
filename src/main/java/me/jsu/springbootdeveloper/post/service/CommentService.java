@@ -18,6 +18,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+
 /*
     게시글의 댓글을 관리하는 서비스 클래스이다.
  */
@@ -60,7 +63,9 @@ public class CommentService {
                 // 유저 사진이 없으면 null, 있으면 사진의 주소를 넣는다.
                 .userPicture(comment.getUser().getUserProfilePicture() != null ? comment.getUser().getUserProfilePicture().getImageUrl() : null)
                 .contents(comment.getContents())  // 댓글 내용이다.
+                .updatedAt(comment.getUpdateAt())
                 .createdAt(comment.getCreatedAt())
+                .isEdited(comment.isEdited())
                 .mine(comment.getUser().getId().equals(user.getId()))  // 해당 댓글이 접속한 유저와 같은지 검사한다.
                 .build()
         );
@@ -74,10 +79,14 @@ public class CommentService {
         User user = userService.findByEmail(email);
         Article article = postService.findById(postId);  // 댓글을 달려는 게시글을 검색한다.
 
+        // 댓글을 작성한 정확한 시간이다.
+        LocalDateTime postDateTime = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+
         Comment comment = Comment.builder()
                 .user(user)
                 .article(article)
                 .contents(contents)
+                .updateAt(postDateTime)
                 .build();
 
         commentRepository.save(comment);  // 작성한 댓글을 저장한다.
@@ -92,9 +101,10 @@ public class CommentService {
         User user = userService.findByEmail(email);
         Comment comment = findById(commentId);
 
-        authorizeCommentAuthor(comment, user);  // 작성자 검증한다.
+        authorizeCommentAuthor(comment, user);  // 작성자를 검증한다.
 
-        comment.updateContents(contents);  // 댓글 내용을 수정한다.
+        LocalDateTime postDateTime = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+        comment.updateContents(contents, postDateTime);  // 댓글 내용을 수정한다.
     }
 
     /*
