@@ -5,6 +5,8 @@ package me.jsu.springbootdeveloper.challenge.service;
 import me.jsu.springbootdeveloper.challenge.dto.*;
 import me.jsu.springbootdeveloper.challenge.enumType.ChallengeVisibility;
 import me.jsu.springbootdeveloper.challenge.enumType.Status;
+import me.jsu.springbootdeveloper.challenge.dto.ChallengeFriendInviteListResponse;
+import me.jsu.springbootdeveloper.challenge.dto.ChallengeInviteResponse;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeInvite;
 import me.jsu.springbootdeveloper.challenge.repository.*;
 import me.jsu.springbootdeveloper.notification.enumType.NotificationType;
@@ -183,16 +185,18 @@ public class ChallengeService {
     /**
      * 친구 목록과 챌린지 초대 상태 조회
      * 이미 참여 중인 유저는 제외하고, 초대됨/초대 가능 상태인 유저만 반환한다.
+     * 초대 링크도 함께 반환한다.
      */
     @Transactional(readOnly = true)
-    public List<ChallengeFriendInviteListResponse> getFriendList_with_InviteStatus(String email, Long challengeId) {
+    public ChallengeInviteResponse getFriendList_with_InviteStatus(String email, Long challengeId) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
         //전체 친구 목록 조회
         List<User> friends = friendshipRepository.findAllFriendsByUserId(user.getId());
 
-        return friends.stream()
+        // 친구 목록과 초대 상태를 조회한다.
+        List<ChallengeFriendInviteListResponse> friendList = friends.stream()
                 //이미 참여 중인 친구는 제외
                 .filter(friend-> !challengeParticipantRepository.existsByChallenge_IdAndUser_Id(challengeId, friend.getId()))
                 .map(friend -> {
@@ -206,6 +210,12 @@ public class ChallengeService {
                     return new ChallengeFriendInviteListResponse(friend, profileUrl, inviteStatus);
                 })
                 .collect(Collectors.toList());
+
+        // 챌린지 초대 링크를 생성한다.
+        String inviteLink = baseUrl + "/challenges/" + challengeId;
+
+        // 초대 링크와 친구 목록을 함께 반환한다.
+        return new ChallengeInviteResponse(inviteLink, friendList);
     }
 
     /**
