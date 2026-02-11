@@ -21,7 +21,9 @@ public class ArticleDetailResponse {
     private List<ArticleImageResponse> images;
     private String userNickname;
     private String userImageUrl;
+    private LocalDateTime updatedAt;
     private LocalDateTime createdAt;
+    private boolean isEdited;
 
     private long likeNumber;
     private long commentNumber;

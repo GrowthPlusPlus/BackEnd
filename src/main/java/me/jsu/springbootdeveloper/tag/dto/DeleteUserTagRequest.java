@@ -1,6 +1,7 @@
 // 정성우
 
 package me.jsu.springbootdeveloper.tag.dto;
+import jakarta.validation.constraints.NotEmpty;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -8,10 +9,11 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 /*
-    클라이언트에게 태그 id를 받아서 유저와 태그를 연결하도록 요청한다.
+    유저에 저장된 태그를 삭제하는 dto이다.
  */
 @Getter
 @NoArgsConstructor
-public class TagSelectRequest {
+public class DeleteUserTagRequest {
+    @NotEmpty
     private List<Long> tagIds;
 }

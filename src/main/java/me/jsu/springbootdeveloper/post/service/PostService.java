@@ -34,6 +34,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
@@ -66,7 +67,10 @@ public class PostService {
         challengeService.challengeStatusInProgress(user.getId(), challengeId);
 
         // 챌린지 인증 시각을 정확하게 보기 위해 생성 시각과는 다른 인증 날짜 도메인을 생성한다.
-        LocalDate postDate = LocalDate.now(ZoneId.of("Asia/Seoul"));
+        LocalDateTime postDateTime = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+
+        // 인증날짜용 도메인이다.
+        LocalDate postDate = postDateTime.toLocalDate();
 
         // 하루 1회로 인증을 제한한다.
         boolean alreadyPosted = postRepository.existsByUser_IdAndChallenge_IdAndPostDate(user.getId(), challenge.getId(), postDate);
@@ -93,6 +97,7 @@ public class PostService {
                 .content(content)
                 .user(user)
                 .challenge(challenge)
+                .updateAt(postDateTime)
                 .postDate(postDate)
                 .build());
 
@@ -128,6 +133,9 @@ public class PostService {
         // 이미지가 없는 경우엔 if문을 실행하지 않는다.
         if (!images.isEmpty()) {
             for (MultipartFile multipartFile : images) {
+                if (multipartFile.isEmpty()) {  // 파일이 비어있으면 수행하지 않는다. (방어코드)
+                    continue;
+                }
                 // 인증글 이미지를 클라우디너리에 업로드하고 정보를 반환받는다.
                 ImageUploadResult imageUploadResult = cloudinaryService.uploadImage(multipartFile);
 
@@ -235,7 +243,9 @@ public class PostService {
                 .images(images)  // 게시글의 사진, id이다.
                 .userNickname(article.getUser().getNickname())
                 .userImageUrl(userImageUrl)  // 게시글 작성자의 사진이다.
+                .updatedAt(article.getUpdateAt())
                 .createdAt(article.getCreatedAt())
+                .isEdited(article.isEdited())
                 .likeNumber(article.getLikeNumber())  // 좋아요 개수이다.
                 .commentNumber(article.getCommentNumber())  // 댓글 개수이다.
                 .liked(liked)
@@ -312,6 +322,9 @@ public class PostService {
 
         authorizeArticleAuthor(article, user);  // 글 작성자인지 확인한다.
 
+        // 이미지가 비어있는 경우 빈 리스트로 정규화 한다.
+        images = (images == null) ? List.of() : images;
+
         // 기존 사진 객체를 검색한다.
         List<PostPicture> postPictures = postPictureRepository.findAllById(deleteImageIds);
 
@@ -337,8 +350,11 @@ public class PostService {
             throw new InvalidImageException("MAX_IMAGE_COUNT_EXCEEDED");
         }
 
+        // 업데이트 되는 시간이다.
+        LocalDateTime postDateTime= LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+
         // 인증글 내용을 업데이트 한다.
-        article.updateContent(content);
+        article.updateContent(content, postDateTime);
 
         // 인증글의 기존 이미지를 삭제한다.
         deleteImages(postPictures);

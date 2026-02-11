@@ -2,6 +2,9 @@
 
 package me.jsu.springbootdeveloper.tag.service;
 
+import me.jsu.springbootdeveloper.challenge.exception.ChallengeNotFoundException;
+import me.jsu.springbootdeveloper.challenge.exception.NotAllowedChallengeActionException;
+import me.jsu.springbootdeveloper.challenge.repository.ChallengeRepository;
 import me.jsu.springbootdeveloper.tag.domain.TagCategory;
 import me.jsu.springbootdeveloper.tag.exception.TagNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +32,7 @@ public class TagService {
     private final TagRepository tagRepository;
     private final TagToUserRepository tagToUserRepository;
     private final TagToChallengeRepository tagToChallengeRepository;
+    private final ChallengeRepository challengeRepository;  // 순환참조를 방지하기 위해 사용한다.
     private final UserService userService;
     /*
         새로운 태그를 저장한다. 이미 존재하는 태그 이름이면 예외를 던진다.
@@ -93,10 +97,26 @@ public class TagService {
     }
 
     /*
+        유저의 관심 태그를 삭제하는 함수이다.
+     */
+    @Transactional
+    public void deleteTags(String userEmail, List<Long> tagIds) {
+        User user = userService.findByEmail(userEmail);
+
+        if (tagIds == null || tagIds.isEmpty()) {
+            return;
+        }
+
+        for (Long tagId : tagIds) {  // 관심 태그를 삭제한다.
+            tagToUserRepository.deleteByUser_IdAndTag_Id(user.getId(), tagId);
+        }
+    }
+
+    /*
         해당 챌린지와 관련된 태그를 반환한다.
      */
     public List<TagResponse> getChallengeTags(Long challengeId) {
-        return tagToChallengeRepository.findWithTagByChallengeId(challengeId)
+        return searchChallengeTags(challengeId)
                 .stream()
                 .map(tagToChallenge -> {
                     Tag tag = tagToChallenge.getTag();
@@ -106,9 +126,63 @@ public class TagService {
     }
 
     /*
-        유저가 선택한 태그들을 챌린지의 태그로 저장한다.
+        챌린지와 관련된 태그를 검색한다.
+     */
+    public List<TagToChallenge> searchChallengeTags(Long challengeId) {
+        return tagToChallengeRepository.findWithTagByChallengeId(challengeId);
+    }
+
+    /*
+        선택한 챌린지를 연결하는 함수로, 컨트롤러와 실제로 매핑되는 부분이다.
+        재사용을 위해 실제 태그를 저장하는 부분과 분리한다.
      */
     @Transactional
+    public void selectChallengeTags(String email, Long challengeId, List<Long> tagIds) {
+        User user = userService.findByEmail(email);
+
+        Challenge challenge = authentication(user.getId(), challengeId, tagIds);  // 검증한다.
+        updateChallengeTags(tagIds, challenge);  // 태그를 저장한다.
+    }
+
+    /*
+        선택한 챌린지 태그들을 해제하는 함수이다.
+     */
+    @Transactional
+    public void deleteChallengeTags(String email, Long challengeId, List<Long> tagIds) {
+        User user = userService.findByEmail(email);
+
+        // 챌린지의 태그를 삭제할 권한이 있는지 검사한다.
+        authentication(user.getId(), challengeId, tagIds);
+
+        // 태그가 빈 리스트인지 검사한다.
+        if (tagIds == null || tagIds.isEmpty()) {
+            return;
+        }
+
+        // 챌린지 태그를 삭제한다.
+        for (Long tagId : tagIds) {
+            tagToChallengeRepository.deleteByChallenge_IdAndTag_Id(challengeId, tagId);  // 태그를 삭제한다.
+        }
+    }
+
+    /*
+        챌린지를 연결/해제 하기 위해서 수행하는 검증 함수이다.
+     */
+    public Challenge authentication(Long userId, Long challengeId, List<Long> tagIds) {
+        Challenge challenge = challengeRepository.findById(challengeId)  // 챌린지를 검색한다.
+                .orElseThrow(() -> new ChallengeNotFoundException("CHALLENGE_NOT_FOUND_FOR_ID"));
+
+        boolean owner = challengeRepository.existsByIdAndUser_Id(challengeId, userId);
+        if (!owner) {  // 방장이 아니면 태그를 선택할 수 없다.
+            throw new NotAllowedChallengeActionException("NOT_CHALLENGE_OWNER");
+        }
+
+        return challenge;
+    }
+
+    /*
+        유저가 선택한 태그들을 챌린지의 태그로 실제로 저장한다.
+     */
     public void updateChallengeTags(List<Long> tagIds, Challenge challenge) {
         if (tagIds == null || tagIds.isEmpty()) {  // 빈 리스트가 들어온 경우 리턴한다.
             return;

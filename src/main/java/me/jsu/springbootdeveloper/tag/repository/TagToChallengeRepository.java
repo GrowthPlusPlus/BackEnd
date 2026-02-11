@@ -25,4 +25,7 @@ public interface TagToChallengeRepository extends JpaRepository<TagToChallenge, 
     void deleteByChallenge_Id(Long challengeId);  // 챌린지 id로 해당 챌린지의 모든 태그를 삭제한다.
 
     boolean existsByChallenge_IdAndTag_Id(Long challengeId, Long tagId);  // 이미 챌린지에 중복된 태그가 존재하는지 검사한다.
+
+    // 챌린지 id와 태그 id로 관계를 삭제한다.
+    void deleteByChallenge_IdAndTag_Id(Long challengeId, Long tagId);
 }
