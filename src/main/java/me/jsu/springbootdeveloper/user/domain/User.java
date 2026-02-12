@@ -7,6 +7,8 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import me.jsu.springbootdeveloper.post.domain.ReportArticle;
+import me.jsu.springbootdeveloper.post.domain.ReportComment;
 import me.jsu.springbootdeveloper.token.domain.RefreshToken;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeInviteLink;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;

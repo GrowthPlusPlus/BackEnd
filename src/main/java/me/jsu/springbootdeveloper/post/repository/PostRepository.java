@@ -4,6 +4,7 @@ package me.jsu.springbootdeveloper.post.repository;
 
 import me.jsu.springbootdeveloper.challenge.domain.Challenge;
 import me.jsu.springbootdeveloper.post.domain.Article;
+import me.jsu.springbootdeveloper.post.dto.ReportedArticleResponse;
 import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.view.dto.ChallengeCalendarPhotoResponse;
 import me.jsu.springbootdeveloper.view.dto.ChallengeCalendarPostResponse;
@@ -80,7 +81,13 @@ public interface PostRepository extends JpaRepository<Article, Long> {
             i.imageUrl
         )
         from Article p
-        left join PostPicture i on i.article = p
+        left join PostPicture i
+            on i.article = p
+            and i.id = (
+                select min(pp.id)
+                from PostPicture pp
+                where pp.article = p
+            )
         where p.user.id = :userId
           and p.challenge.id = :challengeId
           and p.postDate between :start and :end
@@ -157,4 +164,18 @@ public interface PostRepository extends JpaRepository<Article, Long> {
 
     // 유저 id, 챌린지 id, 인증 날짜로 같은 날에 두 번 인증하는지 검사한다.
     boolean existsByUser_IdAndChallenge_IdAndPostDate(Long userId, Long challengeId, LocalDate postDate);
+
+    // 신고된 인증글들을 한 번에 조회한다.
+    @Query("""
+        select new me.jsu.springbootdeveloper.post.dto.ReportedArticleResponse(
+            a.id,
+            c.title,
+            COALESCE(a.totalReport, 0)
+        )
+        from Article a
+        left join a.challenge c
+        where a.totalReport > 0
+        order by a.totalReport desc
+    """)
+    List<ReportedArticleResponse> findReportedArticles();
 }

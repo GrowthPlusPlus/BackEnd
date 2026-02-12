@@ -289,6 +289,7 @@ public class GlobalExceptionHandler {
                         e.getErrorCode()
                 ));
     }
+
     /*
         현재 챌린지의 상태가 올바르지 않은 경우를 처리하는 핸들러이다.
      */
@@ -419,7 +420,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse(
-                        "INVALID_QUERY_FORMAT",
+                        "USERSTATISTICS_NOT_FOUND",
                         e.getMessage()
                 ));
     }
@@ -435,6 +436,51 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.BAD_GATEWAY)
                 .body(new ErrorResponse(
                         "EMPTY_RESPONSE",
+                        e.getMessage()
+                ));
+    }
+
+    /*
+        신고를 검색하지 못한 경우의 예외를 처리하는 핸들러이다.
+     */
+    @ExceptionHandler(ReportNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleChallengeNotInProgress(
+            ReportNotFoundException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(
+                        "REPORT_NOT_FOUND",
+                        e.getMessage()
+                ));
+    }
+
+    /*
+        같은 신고에 대해 중복하여 신고하는 경우를 처리하는 핸들러이다.
+    */
+    @ExceptionHandler(DuplicateReportException.class)
+    public ResponseEntity<ErrorResponse>  handleCloudinaryError(
+            DuplicateReportException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)  // 409
+                .body(new ErrorResponse(
+                        "DUPLICATION_REPORT_ERROR",
+                        e.getErrorCode()
+                ));
+    }
+
+    /*
+        객체와 신고내역의 객체 id가 같지 않은 경우의 예외를 처리하는 핸들러이다.
+     */
+    @ExceptionHandler(InvalidReportTargetException.class)
+    public ResponseEntity<ErrorResponse> handleChallengeNotInProgress(
+            InvalidReportTargetException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(
+                        "NOT_EQUAL_ID",
                         e.getMessage()
                 ));
     }

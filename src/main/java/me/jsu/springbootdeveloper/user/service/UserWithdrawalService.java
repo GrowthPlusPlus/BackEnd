@@ -2,6 +2,7 @@
 
 package me.jsu.springbootdeveloper.user.service;
 
+import me.jsu.springbootdeveloper.post.service.ReportService;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.user.domain.User;
@@ -21,12 +22,12 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class UserWithdrawalService {
     private final UserService userService;
-    private final RefreshTokenService refreshTokenService;
     private final ChallengeService challengeService;
     private final PostService postService;
     private final CommentService commentService;
     private final PostLikeService postLikeService;
     private final CloudinaryService cloudinaryService;
+    private final ReportService reportService;
 
     @Transactional
     public void withdraw(String email) {
@@ -41,6 +42,8 @@ public class UserWithdrawalService {
         commentService.detachCommentToUser(user);  // 댓글 해제
         postLikeService.detachLikeToUser(user);  // 좋아요 해제
         userService.detachStatistics(user);  // 통계 해제
+        reportService.detachReportArticleToUser(user.getId());  // 유저의 인증글 신고 해제
+        reportService.detachReportCommentToUser(user.getId());  // 유저의 댓글 신고 해제
 
         // 참여한 챌린지에서 나온다. CASCADE에 의존하지 않고 직접 구현한 챌린지 서비스의 삭제를 사용한다.
         challengeService.deleteParticipant(user.getId());
