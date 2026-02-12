@@ -3,6 +3,7 @@
 package me.jsu.springbootdeveloper.post.repository;
 
 import me.jsu.springbootdeveloper.post.domain.Comment;
+import me.jsu.springbootdeveloper.post.dto.ReportedCommentResponse;
 import me.jsu.springbootdeveloper.user.domain.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -43,4 +44,19 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
             @Param("postId") Long postId,
             Pageable pageable
     );
+
+    // 신고된 댓글들을 한 번에 조회한다.
+    @Query("""
+        select new me.jsu.springbootdeveloper.post.dto.ReportedCommentResponse(
+            c.id,
+            challenge.title,
+            COALESCE(a.totalReport, 0)
+        )
+        from Comment c
+        join c.article a
+        left join a.challenge challenge
+        where c.totalReport > 0
+        order by c.totalReport desc
+    """)
+    List<ReportedCommentResponse> findReportedComments();
 }

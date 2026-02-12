@@ -15,6 +15,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import static jakarta.persistence.CascadeType.REMOVE;
+
 /*
     게시글에 달리는 댓글에 대한 정보를 가진 도메인 클래스이다.
     현재는 답글 쓰기 기능을 구현하지 않으므로 parent, children 부분은 사용되지 않는다.
@@ -67,6 +69,9 @@ public class Comment {
     @Column(name = "is_edited")
     private Boolean isEdited;  // 댓글의 수정 여부이다.
 
+    @Column(name = "total_report")
+    private Integer totalReport;  // 총 신고된 횟수이다.
+
     // 사용자에게 보여주기 위한 댓글의 생성/수정 시각이다.
     @Column(name = "updated_at")
     private LocalDateTime updateAt;
@@ -74,6 +79,13 @@ public class Comment {
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    /*
+        다음 코드는 CASCADE 설정으로 Comment 엔티티를 fk값으로 가지고 있는 DB들을 자동으로 삭제해주는 설정이다.
+        댓글 삭제 시, 밑의 정보들도 함께 전부 삭제된다.
+     */
+    @OneToMany(mappedBy = "comment", cascade = REMOVE)  // 댓글이 삭제되면 신고수도 자동으로 삭제된다.
+    private List<ReportComment> reportComments;
     
     @Builder
     public Comment(User user, Article article, String contents, LocalDateTime updateAt) {
@@ -82,6 +94,7 @@ public class Comment {
         this.contents = contents;
         this.updateAt = updateAt;
         this.isEdited = false;
+        this.totalReport = 0;
     }
 
     /*
@@ -91,5 +104,27 @@ public class Comment {
         this.contents = contents;
         this.updateAt = updateAt;
         this.isEdited = true;
+    }
+
+    /*
+        신고를 받은 경우, 신고 수를 증가시킨다.
+     */
+    public void plusTotalReport() {
+        if (totalReport == null) {
+            totalReport = 0;
+        }
+
+        totalReport++;
+    }
+
+    /*
+        신고 처리를 완료한 경우, 신고 수를 감소시킨다.
+     */
+    public void minusTotalReport() {
+        if (totalReport == null || totalReport == 0) {
+            return;
+        }
+
+        totalReport--;
     }
 }

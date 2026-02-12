@@ -8,9 +8,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.domain.Challenge;
+import me.jsu.springbootdeveloper.post.repository.ReportArticleRepository;
 import me.jsu.springbootdeveloper.user.domain.User;
 import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
@@ -95,8 +95,11 @@ public class Article {
     @Column(name = "is_edited")
     private Boolean isEdited;  // 인증글의 수정 여부이다.
 
+    @Column(name = "total_report")
+    private Integer totalReport;  // 총 신고된 횟수이다.
+
     /*
-        다음 코드는 CASCADE 설정으로 User 엔티티를 fk값으로 가지고 있는 DB들을 자동으로 삭제해주는 설정이다.
+        다음 코드는 CASCADE 설정으로 Article 엔티티를 fk값으로 가지고 있는 DB들을 자동으로 삭제해주는 설정이다.
         게시글 삭제 시, 밑의 정보들도 함께 전부 삭제된다.
      */
     @OneToMany(mappedBy = "article", cascade = REMOVE)
@@ -107,6 +110,9 @@ public class Article {
 
     @OneToMany(mappedBy = "article", cascade = REMOVE)
     private List<PostPicture> postPictures;
+
+    @OneToMany(mappedBy = "article", cascade = REMOVE)  // 인증글이 삭제되면 신고수도 자동으로 삭제된다.
+    private List<ReportArticle> reportArticles;
 
     /*
         @Builder로 빌더 패턴으로 객체를 생성할 수 있게 해준다.
@@ -127,6 +133,7 @@ public class Article {
         this.likeNumber = 0;  // 초기엔 둘 다 0이다.
         this.commentNumber = 0;
         this.isEdited = false;
+        this.totalReport = 0;
     }
 
     /*
@@ -166,5 +173,27 @@ public class Article {
      */
     public void minusCommentNumber() {
         commentNumber--;
+    }
+
+    /*
+        신고를 받은 경우, 신고 수를 증가시킨다.
+     */
+    public void plusTotalReport() {
+        if (totalReport == null) {
+            totalReport = 0;
+        }
+
+        totalReport++;
+    }
+
+    /*
+        신고 처리를 완료한 경우, 신고 수를 감소시킨다.
+     */
+    public void minusTotalReport() {
+        if (totalReport == null || totalReport == 0) {
+            return;
+        }
+
+        totalReport--;
     }
 }
