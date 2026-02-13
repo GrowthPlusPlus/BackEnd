@@ -2,6 +2,8 @@
 
 package me.jsu.springbootdeveloper.user.service;
 
+import me.jsu.springbootdeveloper.tag.domain.TagToUser;
+import me.jsu.springbootdeveloper.tag.repository.TagToUserRepository;
 import me.jsu.springbootdeveloper.user.domain.UserStatistics;
 import me.jsu.springbootdeveloper.user.dto.MyProfileResponse;
 import me.jsu.springbootdeveloper.user.exception.DuplicateNicknameException;
@@ -22,6 +24,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 import static me.jsu.springbootdeveloper.user.enumType.Role.ROLE_USER;
 
 /*
@@ -34,6 +38,7 @@ public class UserService {
     private final UserProfilePictureRepository userProfilePictureRepository;
     private final CloudinaryService cloudinaryService;
     private final UserStatisticsRepository userStatisticsRepository;
+    private final TagToUserRepository tagToUserRepository;
 
     /*
         회원가입을 구현한 함수이다. 현재는 OAuth 인증 방식을 사용하므로 사용되지 않는다.
@@ -229,12 +234,19 @@ public class UserService {
 
         UserProfilePicture profilePicture = findByUserIdForProfile(user.getId());
 
+        // 유저가 저장한 관심 태그를 반환한다.
+        List<TagToUser> tagToUsers = tagToUserRepository.findWithTagByUserId(user.getId());
+        List<String> tagNames = tagToUsers.stream()  // 관심태그의 내용 중 이름만 추출한다.
+                .map(tagToUser -> tagToUser.getTag().getTagName())
+                .toList();
+
         return MyProfileResponse.builder()
                 .nickname(user.getNickname())
                 .introduction(user.getIntroduction())
                 .profileImageUrl(  // 프로필 사진 객체가 null이면 Url을 반환하지 않는다.
                         profilePicture != null ? profilePicture.getImageUrl() : null
                 )
+                .tags(tagNames)
                 .build();
     }
 }
