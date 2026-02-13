@@ -122,7 +122,7 @@ public class AiChallengeRecommendService {
         sb.append("추천 가능한 공개 챌린지 정보:\n");
         LocalDate today = LocalDate.now();
         List<Challenge> publicChallenges = challengeRepository.findPublicChallenges(today);
-        
+
         if (publicChallenges.isEmpty()) {
             sb.append("- 현재 진행 중인 공개 챌린지가 없습니다.\n");
         } else {

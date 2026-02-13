@@ -18,6 +18,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);  // 이메일 정보로 사용자 정보를 가져올 수 있게 하는 쿼리문을 작성 가능하게 한다.
     Optional<User> findByNickname(String nickname);  // 닉네임 정보로 사용자 정보를 가져온다.
     boolean existsByNickname(String nickname);  // 닉네임이 이미 존재하는지 검사한다.
+    Optional<User> findByFcmToken(String fcmToken);  // FCM 토큰으로 사용자를 찾는다. 만료된 토큰 삭제 시 사용한다.
 
     //유저 닉네임 검색 시 해당 유저와 나의 관계 보여주기
     @Query("""

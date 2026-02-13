@@ -2,6 +2,7 @@ package me.jsu.springbootdeveloper.user.service;
 
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeInviteRepository;
+import me.jsu.springbootdeveloper.fcm.service.FcmService;
 import me.jsu.springbootdeveloper.user.dto.FriendListResponse;
 import me.jsu.springbootdeveloper.user.dto.FriendRequestResponse_Received;
 import me.jsu.springbootdeveloper.user.dto.FriendRequestResponse_Sent;
@@ -30,6 +31,7 @@ public class FriendService {
     private final UserProfilePictureRepository userProfilePictureRepository;
     private final ChallengeInviteRepository challengeInviteRepository;
     private final ChallengeParticipantRepository challengeParticipantRepository;
+    private final FcmService fcmService;  // FCM 푸시 알림 발송을 위한 서비스
     /**
      * 1. 친구 신청 보내기
      */
@@ -66,6 +68,13 @@ public class FriendService {
                 .build();
 
         friendRequestRepository.save(friendRequest);
+
+        // 친구 요청을 받은 사용자(toUser)에게 푸시 알림을 발송한다.
+        if (toUser.getFcmToken() != null && !toUser.getFcmToken().isBlank()) {
+            String title = "친구 신청";
+            String message = fromUser.getNickname() + "로부터 친구 신청이 왔습니다.";
+            fcmService.sendMessageTo(toUser.getFcmToken(), title, message);
+        }
     }
     /**
      * 나에게 온 친구 요청 목록 조회 (PENDING 상태)
@@ -139,6 +148,17 @@ public class FriendService {
         if (friendRequestRepository.existsRequested(request.getToUser(), request.getFromUser())){
             FriendRequest friendRequest = friendRequestRepository.findByFromUserAndToUser(request.getToUser(), request.getFromUser());
             friendRequestRepository.delete(friendRequest);
+        }
+
+        // 친구 신청을 보낸 사용자(fromUser)에게 푸시 알림을 발송한다.
+        // 푸시 알림이 활성화되어 있고, FCM 토큰이 있는 경우에만 발송한다.
+        User fromUser = request.getFromUser();
+        if (fromUser.isFriendPushNotificationEnabled() 
+                && fromUser.getFcmToken() != null 
+                && !fromUser.getFcmToken().isBlank()) {
+            String title = "친구 신청 수락";
+            String message = request.getToUser().getNickname() + "님이 친구 신청을 수락하였습니다.";
+            fcmService.sendMessageTo(fromUser.getFcmToken(), title, message);
         }
     }
 
