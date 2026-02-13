@@ -85,3 +85,7 @@ logging:
 
 clip:
   base-url: http://localhost:8000  # 로컬 CLIP 서버 주소로 랜더 운영시에는 변경
+
+#Firebase
+fcm:
+  firebase_config_path : firebase/hanaem-firebase-firebase-adminsdk-fbsvc-6e6bb5943d.json

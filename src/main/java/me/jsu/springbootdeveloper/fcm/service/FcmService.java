@@ -1,0 +1,201 @@
+// 정성우
+
+package me.jsu.springbootdeveloper.fcm.service;
+
+import com.google.firebase.messaging.FirebaseMessaging;
+import com.google.firebase.messaging.FirebaseMessagingException;
+import com.google.firebase.messaging.Message;
+import com.google.firebase.messaging.Notification;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import me.jsu.springbootdeveloper.fcm.dto.FcmMessageDto;
+import me.jsu.springbootdeveloper.user.repository.UserRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.concurrent.TimeUnit;
+
+/*
+    Firebase Cloud Messaging을 통해 푸시 알림을 발송하는 서비스이다.
+ */
+@Slf4j
+@RequiredArgsConstructor
+@Service
+public class FcmService {
+    private static final int MAX_RETRY_ATTEMPTS = 3;  // 최대 재시도 횟수
+    private static final long RETRY_DELAY_MS = 1000;  // 재시도 간격 (1초)
+    
+    private final UserRepository userRepository;  // 만료된 토큰 삭제를 위해 사용
+    /*
+        특정 사용자의 FCM 토큰으로 푸시 알림을 발송한다.
+        푸시 알림 발송 실패 시에도 예외를 던지지 않고 로그만 남긴다.
+        이는 푸시 알림 실패가 메인 비즈니스 로직(친구 신청 수락 등)에 영향을 주지 않도록 하기 위함이다.
+        일시적 오류 발생 시 자동으로 재시도한다.
+        
+        @param fcmToken: 수신자의 FCM 토큰
+        @param messageDto: 푸시 알림 제목과 내용을 담은 DTO
+        @return: 푸시 알림 발송 성공 여부
+     */
+    public boolean sendMessageTo(String fcmToken, FcmMessageDto messageDto) {
+        // FCM 토큰이 없으면 알림을 보낼 수 없다.
+        if (fcmToken == null || fcmToken.isBlank()) {
+            log.debug("FCM 토큰이 없어 푸시 알림을 발송할 수 없습니다.");
+            return false;
+        }
+
+        // 재시도 로직을 포함하여 푸시 알림을 발송한다.
+        return sendMessageWithRetry(fcmToken, messageDto, 0);
+    }
+
+    /*
+        재시도 로직을 포함하여 푸시 알림을 발송한다.
+        
+        @param fcmToken: 수신자의 FCM 토큰
+        @param messageDto: 푸시 알림 제목과 내용을 담은 DTO
+        @param attempt: 현재 시도 횟수
+        @return: 푸시 알림 발송 성공 여부
+     */
+    private boolean sendMessageWithRetry(String fcmToken, FcmMessageDto messageDto, int attempt) {
+        try {
+            // Firebase Cloud Messaging 메시지를 생성한다.
+            Message message = Message.builder()
+                    .setToken(fcmToken)  // 수신자의 FCM 토큰을 설정한다.
+                    .setNotification(Notification.builder()
+                            .setTitle(messageDto.getTitle())  // 알림 제목을 설정한다.
+                            .setBody(messageDto.getBody())  // 알림 내용을 설정한다.
+                            .build())
+                    .build();
+
+            // Firebase를 통해 푸시 알림을 발송한다.
+            String response = FirebaseMessaging.getInstance().send(message);
+            log.info("푸시 알림 발송 성공 - 토큰: {}, 응답: {}", 
+                    fcmToken.substring(0, Math.min(10, fcmToken.length())) + "...", response);
+            return true;
+        } catch (FirebaseMessagingException e) {
+            // FCM 발송 중 오류가 발생한 경우 에러 코드에 따라 처리한다.
+            return handleFirebaseMessagingExceptionWithRetry(e, fcmToken, messageDto, attempt);
+        } catch (Exception e) {
+            // 예상치 못한 오류가 발생한 경우 로그를 남긴다.
+            log.error("푸시 알림 발송 중 예상치 못한 오류 발생: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /*
+        FirebaseMessagingException을 처리하고 재시도 로직을 포함한다.
+        에러 코드에 따라 적절한 처리를 수행한다.
+        
+        @param e: FirebaseMessagingException
+        @param fcmToken: 실패한 FCM 토큰
+        @param messageDto: 푸시 알림 메시지 DTO
+        @param attempt: 현재 시도 횟수
+        @return: 푸시 알림 발송 성공 여부
+     */
+    private boolean handleFirebaseMessagingExceptionWithRetry(
+            FirebaseMessagingException e, 
+            String fcmToken, 
+            FcmMessageDto messageDto, 
+            int attempt
+    ) {
+        // 에러 코드를 문자열로 변환하여 처리한다.
+        String errorCode = e.getErrorCode() != null ? e.getErrorCode().name() : "UNKNOWN";
+        String errorMessage = e.getMessage();
+        
+        // 에러 코드에 따라 분기 처리한다.
+        if (errorCode.contains("UNREGISTERED") || errorCode.contains("INVALID_TOKEN")) {
+            // 앱이 삭제되었거나 토큰이 더 이상 유효하지 않은 경우
+            log.warn("FCM 토큰이 등록되지 않았거나 만료되었습니다. 토큰: {}...", 
+                    fcmToken.substring(0, Math.min(10, fcmToken.length())));
+            
+            // DB에서 해당 토큰을 가진 사용자의 FCM 토큰을 삭제한다.
+            deleteExpiredToken(fcmToken);
+            return false;
+        } else if (errorCode.contains("INVALID_ARGUMENT")) {
+            // 잘못된 인자(토큰 형식 오류 등)
+            log.error("FCM 토큰 형식이 잘못되었습니다. 토큰: {}...", 
+                    fcmToken.substring(0, Math.min(10, fcmToken.length())));
+            return false;
+        } else if (errorCode.contains("UNAVAILABLE") || errorCode.contains("INTERNAL")) {
+            // Firebase 서비스가 일시적으로 사용 불가능한 경우 또는 내부 오류
+            // 재시도 가능한 오류이므로 재시도 로직을 실행한다.
+            return handleRetry(fcmToken, messageDto, attempt, errorCode, errorMessage);
+        } else {
+            // 기타 오류
+            log.error("푸시 알림 발송 실패 - 에러 코드: {}, 메시지: {}", errorCode, errorMessage, e);
+            return false;
+        }
+    }
+
+    /*
+        재시도 로직을 처리한다.
+        최대 재시도 횟수 내에서 일정 간격을 두고 재시도한다.
+        
+        @param fcmToken: 수신자의 FCM 토큰
+        @param messageDto: 푸시 알림 메시지 DTO
+        @param attempt: 현재 시도 횟수
+        @param errorCode: 에러 코드
+        @param errorMessage: 에러 메시지
+        @return: 푸시 알림 발송 성공 여부
+     */
+    private boolean handleRetry(String fcmToken, FcmMessageDto messageDto, int attempt, String errorCode, String errorMessage) {
+        // 최대 재시도 횟수를 초과한 경우 재시도하지 않는다.
+        if (attempt >= MAX_RETRY_ATTEMPTS) {
+            log.error("푸시 알림 발송 실패 - 최대 재시도 횟수({}) 초과. 에러 코드: {}, 메시지: {}", 
+                    MAX_RETRY_ATTEMPTS, errorCode, errorMessage);
+            return false;
+        }
+
+        // 재시도 간격만큼 대기한다.
+        try {
+            log.warn("푸시 알림 발송 실패 - {}초 후 재시도 ({}/{}). 에러 코드: {}", 
+                    RETRY_DELAY_MS / 1000, attempt + 1, MAX_RETRY_ATTEMPTS, errorCode);
+            TimeUnit.MILLISECONDS.sleep(RETRY_DELAY_MS);
+        } catch (InterruptedException ie) {
+            // 재시도 대기 중 인터럽트가 발생한 경우
+            Thread.currentThread().interrupt();
+            log.error("푸시 알림 재시도 대기 중 인터럽트 발생", ie);
+            return false;
+        }
+
+        // 재시도한다.
+        return sendMessageWithRetry(fcmToken, messageDto, attempt + 1);
+    }
+
+    /*
+        만료된 FCM 토큰을 DB에서 삭제한다.
+        해당 토큰을 가진 사용자의 FCM 토큰을 null로 설정한다.
+        @Transactional을 사용하여 JPA의 더티 체킹(dirty checking)을 활용한다.
+        엔티티의 필드를 변경하면 트랜잭션 커밋 시 자동으로 UPDATE가 실행된다.
+        
+        @param fcmToken: 만료된 FCM 토큰
+     */
+    @Transactional
+    private void deleteExpiredToken(String fcmToken) {
+        try {
+            // FCM 토큰으로 사용자를 찾는다.
+            userRepository.findByFcmToken(fcmToken)
+                    .ifPresent(user -> {
+                        // 사용자의 FCM 토큰을 삭제한다.
+                        // @Transactional이 있으므로 엔티티 필드 변경 시 JPA의 더티 체킹으로 자동 UPDATE된다.
+                        user.clearFcmToken();
+                        // save()를 명시적으로 호출하지 않아도 트랜잭션 커밋 시 자동으로 UPDATE된다.
+                        log.info("만료된 FCM 토큰을 DB에서 삭제했습니다. 사용자: {}", user.getEmail());
+                    });
+        } catch (Exception e) {
+            // 토큰 삭제 중 오류가 발생해도 메인 로직에 영향을 주지 않도록 로그만 남긴다.
+            log.error("만료된 FCM 토큰 삭제 중 오류 발생: {}", e.getMessage(), e);
+        }
+    }
+
+    /*
+        특정 사용자의 FCM 토큰으로 푸시 알림을 발송한다. (간편 메서드)
+        
+        @param fcmToken: 수신자의 FCM 토큰
+        @param title: 푸시 알림 제목
+        @param body: 푸시 알림 내용
+        @return: 푸시 알림 발송 성공 여부
+     */
+    public boolean sendMessageTo(String fcmToken, String title, String body) {
+        return sendMessageTo(fcmToken, new FcmMessageDto(title, body));
+    }
+}

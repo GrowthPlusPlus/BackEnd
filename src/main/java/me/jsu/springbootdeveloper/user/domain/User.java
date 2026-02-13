@@ -72,6 +72,12 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
     @Column(name = "introduction", columnDefinition = "TEXT")
     private String introduction;  // 유저의 한 줄 소개이다.
 
+    @Column(name = "fcm_token", columnDefinition = "TEXT")
+    private String fcmToken;  // Firebase Cloud Messaging 토큰이다. 푸시 알림 발송 시 사용한다.
+
+    @Column(name = "friend_push_notification_enabled", nullable = false)
+    private boolean friendPushNotificationEnabled = true;  // 친구 관련 푸시 알림 활성화 여부이다. 기본값은 true이다.
+
     @CreatedDate  // 유저가 생성된 시간이다.
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -152,6 +158,29 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
      */
     public void updateIntroduction(String introduction) {
         this.introduction = introduction;
+    }
+
+    /*
+        유저의 FCM 토큰을 업데이트하는 함수이다.
+        앱에서 FCM 토큰을 받아 서버에 저장할 때 사용한다.
+     */
+    public void updateFcmToken(String fcmToken) {
+        this.fcmToken = fcmToken;
+    }
+
+    /*
+        유저의 FCM 토큰을 삭제하는 함수이다.
+        로그아웃 시 사용한다.
+     */
+    public void clearFcmToken() {
+        this.fcmToken = null;
+    }
+
+    /*
+        친구 관련 푸시 알림 활성화 여부를 설정하는 함수이다.
+     */
+    public void setFriendPushNotificationEnabled(boolean enabled) {
+        this.friendPushNotificationEnabled = enabled;
     }
 
     /*

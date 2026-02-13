@@ -43,3 +43,4 @@ bin/
 
 # Cursor personal rules
 Ha-personal-rules.mdc
+/src/main/resources/firebase/hanaem-firebase-firebase-adminsdk-fbsvc-6e6bb5943d.json

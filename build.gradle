@@ -96,6 +96,9 @@ dependencies {
 
     // 스케줄러의 초기화되지 않은 DB 참조 방지를 위한 AOP 의존성
     implementation 'org.springframework.boot:spring-boot-starter-aop'
+
+    //firebase FCM의존성
+    implementation 'com.google.firebase:firebase-admin:9.2.0'
 }
 
 test {

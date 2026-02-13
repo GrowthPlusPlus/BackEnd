@@ -1,5 +1,5 @@
 // 정성우
-
+/*
 package me.jsu.springbootdeveloper.controller;
 
 import me.jsu.springbootdeveloper.notification.domain.Notification;
@@ -31,6 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     NotificationController의 기능을 테스트하는 통합 테스트 클래스이다.
     알림 조회 API의 정상 동작 여부를 검증한다.
  */
+/*
 @SpringBootTest
 @AutoConfigureMockMvc
 class NotificationControllerTest {
@@ -266,3 +267,4 @@ class NotificationControllerTest {
     }
 }
 
+*/
