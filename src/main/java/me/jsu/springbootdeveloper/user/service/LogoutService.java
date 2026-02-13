@@ -5,6 +5,7 @@ package me.jsu.springbootdeveloper.user.service;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.token.service.RefreshTokenService;
+import me.jsu.springbootdeveloper.fcm.service.FcmService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class LogoutService {
     private final UserService userService;
     private final RefreshTokenService refreshTokenService;
+    private final FcmService fcmService;
 
     @Transactional
     public void logout(String email) {
@@ -28,6 +30,6 @@ public class LogoutService {
         refreshTokenService.deleteByUser_Id(user.getId());
 
         // FCM 토큰을 삭제하여 로그아웃 후 푸시 알림을 받지 않도록 한다.
-        userService.clearFcmToken(email);
+        fcmService.clearToken(email);
     }
 }

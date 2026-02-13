@@ -12,6 +12,7 @@ import me.jsu.springbootdeveloper.oauth.dto.GoogleTokenResponse;
 import me.jsu.springbootdeveloper.oauth.dto.LoginResponse;
 import me.jsu.springbootdeveloper.user.service.UserService;
 import me.jsu.springbootdeveloper.token.service.RefreshTokenService;
+import me.jsu.springbootdeveloper.fcm.service.FcmService;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -30,11 +31,18 @@ public class OAuthLoginService {
     private final TokenProvider tokenProvider;
     private final RefreshTokenService refreshTokenService;
     private final GoogleOAuthProperties googleOAuthProperties;
+    private final FcmService fcmService;  // FCM 토큰 등록을 위한 서비스
 
     /*
         Google OAuth (Authorization Code + PKCE) 로그인의 유스케이스를 한 번에 수행하는 함수이다.
+        로그인 시 FCM 토큰이 함께 전달되면 자동으로 등록한다.
+        
+        @param code: 구글 Authorization Server가 발급한 authorization code
+        @param codeVerifier: PKCE에서 사용하는 code_verifier
+        @param clientId: OAuth 클라이언트 ID
+        @param fcmToken: Firebase Cloud Messaging 토큰 (옵셔널). 제공되면 로그인 성공 시 자동으로 등록된다.
      */
-    public LoginResponse loginWithGoogle(String code, String codeVerifier, String clientId) {
+    public LoginResponse loginWithGoogle(String code, String codeVerifier, String clientId, String fcmToken) {
         if (clientId == null) {  // client ID가 null이면 예외처리한다.
             throw new OAuthLoginException("CLIENT_ID_MISSING");
         }
@@ -93,9 +101,30 @@ public class OAuthLoginService {
         refreshTokenService.saveForOAuth(user, refreshToken);
 
         /*
+            FCM 토큰이 제공된 경우, 로그인 성공 시 자동으로 등록한다.
+            FCM 토큰은 앱에서 Firebase SDK를 통해 생성되며, 로그인 요청과 함께 전달될 수 있다.
+            프론트엔드 개발자 편의를 위해 로그인 시 FCM 토큰을 함께 보낼 수 있도록 옵셔널로 지원한다.
+         */
+        boolean fcmTokenRegistered = false;
+        if (fcmToken != null && !fcmToken.isBlank()) {
+            try {
+                fcmService.registerOrUpdateToken(user.getEmail(), fcmToken);
+                fcmTokenRegistered = true;
+            } catch (Exception e) {
+                // FCM 토큰 등록 실패해도 로그인은 성공으로 처리한다.
+                // FCM 토큰은 나중에 별도 API로 등록할 수 있으므로 로그인 실패로 처리하지 않는다.
+                // 로그만 남기고 계속 진행한다.
+            }
+        } else {
+            // FCM 토큰이 로그인 요청에 포함되지 않은 경우, 기존에 등록된 토큰이 있는지 확인한다.
+            fcmTokenRegistered = (user.getFcmToken() != null && !user.getFcmToken().isBlank());
+        }
+
+        /*
             생성한 리프레시 토큰과 엑세스 토큰을 LoginResponse 클래스 형태로 가공하여 컨트롤러에 반환한다.
             또한 처음 우리 서비스에 로그인한 사람에게 초기 설정을 할 수 있도록 상태 값도 반환한다.
+            fcmTokenRegistered 플래그를 포함하여 프론트엔드가 FCM 토큰 등록이 필요한지 알 수 있도록 한다.
          */
-        return new LoginResponse(accessToken, refreshToken, user.getUserStatus());
+        return new LoginResponse(accessToken, refreshToken, user.getUserStatus(), fcmTokenRegistered);
     }
 }

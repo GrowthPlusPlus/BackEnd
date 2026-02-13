@@ -64,7 +64,8 @@ public class GoogleOAuthController {
         LoginResponse response = oauthLoginService.loginWithGoogle(
                 request.getCode(),
                 request.getCodeVerifier(),
-                request.getClientId()
+                request.getClientId(),
+                request.getFcmToken()  // FCM 토큰이 있으면 로그인 시 자동으로 등록된다.
         );
 
         return ResponseEntity.ok(response);  // 200 OK + json 응답을 반환한다.

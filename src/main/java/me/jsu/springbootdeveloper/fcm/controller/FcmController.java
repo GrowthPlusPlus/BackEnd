@@ -9,7 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.fcm.dto.FcmNotificationSettingDto;
 import me.jsu.springbootdeveloper.fcm.dto.FcmTokenRequestDto;
-import me.jsu.springbootdeveloper.user.service.UserService;
+import me.jsu.springbootdeveloper.fcm.service.FcmService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -23,19 +23,34 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @RequestMapping("/api/fcm")
 public class FcmController {
-    private final UserService userService;
+    private final FcmService fcmService;
 
     /*
         FCM 토큰을 등록하거나 업데이트하는 API이다.
-        앱에서 FCM 토큰을 받아 서버에 저장한다.
+        
+        [중요] FCM 토큰은 클라이언트(앱)에서 Firebase SDK를 통해 생성된다.
+        서버는 앱에서 생성된 토큰을 받아서 DB에 저장만 한다.
+        
+        호출 시점:
+        - 앱 설치 후 최초 로그인 시
+        - 앱 실행 시 (토큰이 없거나 갱신된 경우)
+        - FCM 토큰이 갱신된 경우 (Firebase에서 주기적으로 갱신됨)
      */
     @Operation(
             summary = "FCM 토큰 등록/업데이트",
             description = """
         로그인한 사용자의 FCM 토큰을 등록하거나 업데이트한다.
-        앱 설치 후 또는 토큰 갱신 시 호출한다.
+        
+        [중요] FCM 토큰은 앱에서 Firebase SDK를 통해 생성되며, 
+        서버는 앱에서 생성된 토큰을 받아서 저장만 한다.
+        
+        호출 시점:
+        - 앱 설치 후 최초 로그인 시
+        - 앱 실행 시 (토큰이 없거나 갱신된 경우)
+        - FCM 토큰이 갱신된 경우
+        
         ex) PUT /api/fcm/token
-        요청 본문: { "fcmToken": "사용자의_FCM_토큰" }
+        요청 본문: { "fcmToken": "앱에서_생성된_FCM_토큰" }
         """
     )
     @ApiResponses({
@@ -48,7 +63,7 @@ public class FcmController {
             @Valid @RequestBody FcmTokenRequestDto request
     ) {
         // 로그인한 사용자의 FCM 토큰을 등록하거나 업데이트한다.
-        userService.updateFcmToken(userDetails.getUsername(), request.getFcmToken());
+        fcmService.registerOrUpdateToken(userDetails.getUsername(), request.getFcmToken());
         return ResponseEntity.ok().build();
     }
 
@@ -73,7 +88,7 @@ public class FcmController {
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         // 로그인한 사용자의 FCM 토큰을 삭제한다.
-        userService.clearFcmToken(userDetails.getUsername());
+        fcmService.clearToken(userDetails.getUsername());
         return ResponseEntity.noContent().build();
     }
 
@@ -100,7 +115,7 @@ public class FcmController {
             @Valid @RequestBody FcmNotificationSettingDto request
     ) {
         // 로그인한 사용자의 친구 관련 푸시 알림 활성화 여부를 설정한다.
-        userService.setFriendPushNotificationEnabled(userDetails.getUsername(), request.isEnabled());
+        fcmService.setFriendPushNotificationEnabled(userDetails.getUsername(), request.isEnabled());
         return ResponseEntity.ok().build();
     }
 }

@@ -238,32 +238,4 @@ public class UserService {
                 .build();
     }
 
-    /*
-        유저의 FCM 토큰을 업데이트하는 함수이다.
-        앱에서 FCM 토큰을 받아 서버에 저장할 때 사용한다.
-     */
-    @Transactional
-    public void updateFcmToken(String email, String fcmToken) {
-        User user = findByEmail(email);
-        user.updateFcmToken(fcmToken);
-    }
-
-    /*
-        유저의 FCM 토큰을 삭제하는 함수이다.
-        로그아웃 시 사용한다.
-     */
-    @Transactional
-    public void clearFcmToken(String email) {
-        User user = findByEmail(email);
-        user.clearFcmToken();
-    }
-
-    /*
-        친구 관련 푸시 알림 활성화 여부를 설정하는 함수이다.
-     */
-    @Transactional
-    public void setFriendPushNotificationEnabled(String email, boolean enabled) {
-        User user = findByEmail(email);
-        user.setFriendPushNotificationEnabled(enabled);
-    }
 }

@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 
     code: 구글 Authorization Server가 발급한 authorization code로 1회성이며, 짧은 수명을 가진다.
     codeVerifier: PKCE에서 사용하는 값으로 앱이 처음에 생성한 값이다. Google이 내부에 저장해둔 code_challenge와 비교한다.
+    fcmToken: Firebase Cloud Messaging 토큰 (옵셔널). 로그인 시 함께 전달하면 자동으로 등록된다.
  */
 @Getter
 @NoArgsConstructor
@@ -19,4 +20,5 @@ public class GoogleCodeExchangeRequest {
     private String code;
     private String codeVerifier;
     private String clientId;
+    private String fcmToken;  // FCM 토큰 (옵셔널). 로그인 시 함께 전달하면 자동으로 등록된다.
 }

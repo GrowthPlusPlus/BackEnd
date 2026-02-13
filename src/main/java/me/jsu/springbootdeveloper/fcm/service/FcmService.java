@@ -25,7 +25,7 @@ public class FcmService {
     private static final int MAX_RETRY_ATTEMPTS = 3;  // 최대 재시도 횟수
     private static final long RETRY_DELAY_MS = 1000;  // 재시도 간격 (1초)
     
-    private final UserRepository userRepository;  // 만료된 토큰 삭제를 위해 사용
+    private final UserRepository userRepository;  // FCM 토큰 등록/업데이트/삭제 및 만료된 토큰 삭제를 위해 사용
     /*
         특정 사용자의 FCM 토큰으로 푸시 알림을 발송한다.
         푸시 알림 발송 실패 시에도 예외를 던지지 않고 로그만 남긴다.
@@ -197,5 +197,93 @@ public class FcmService {
      */
     public boolean sendMessageTo(String fcmToken, String title, String body) {
         return sendMessageTo(fcmToken, new FcmMessageDto(title, body));
+    }
+
+    /*
+        사용자의 FCM 토큰을 등록하거나 업데이트한다.
+        
+        [중요] FCM 토큰은 서버에서 자동으로 생성되지 않는다.
+        FCM 토큰 생성 흐름:
+        1. 클라이언트(앱)에서 Firebase SDK를 통해 FCM 토큰 생성
+        2. 앱이 로그인 후 또는 앱 실행 시 생성된 토큰을 서버에 전송 (PUT /api/fcm/token)
+        3. 서버는 받은 토큰을 DB에 저장만 함
+        
+        회원가입 시점:
+        - User 엔티티 생성 시 fcmToken = null (정상)
+        - 회원가입 시 FCM 토큰이 자동으로 생성되지 않음
+        
+        토큰 등록 시점:
+        - 앱이 로그인 후 또는 앱 실행 시 Firebase SDK로 토큰 생성
+        - 앱이 PUT /api/fcm/token API를 호출하여 토큰 등록
+        - 이 메서드가 호출되어 DB에 토큰 저장
+        
+        @param email: 사용자 이메일
+        @param fcmToken: Firebase Cloud Messaging 토큰 (앱에서 생성된 토큰)
+     */
+    @Transactional
+    public void registerOrUpdateToken(String email, String fcmToken) {
+        userRepository.findByEmail(email)
+                .ifPresentOrElse(
+                        user -> {
+                            // 새로운 사용자는 처음에 FCM 토큰이 null이므로, null인 경우 새로 등록한다.
+                            boolean isNewRegistration = (user.getFcmToken() == null || user.getFcmToken().isBlank());
+                            
+                            // FCM 토큰을 등록하거나 업데이트한다.
+                            // null이든 값이 있든 상관없이 user.updateFcmToken()이 정상 작동한다.
+                            user.updateFcmToken(fcmToken);
+                            
+                            if (isNewRegistration) {
+                                log.info("FCM 토큰을 새로 등록했습니다. 사용자: {} (기존 토큰: 없음)", email);
+                            } else {
+                                log.info("FCM 토큰을 업데이트했습니다. 사용자: {} (기존 토큰 존재)", email);
+                            }
+                        },
+                        () -> {
+                            log.warn("FCM 토큰 등록/업데이트 실패: 사용자를 찾을 수 없습니다. 이메일: {}", email);
+                            throw new IllegalArgumentException("사용자를 찾을 수 없습니다: " + email);
+                        }
+                );
+    }
+
+    /*
+        사용자의 FCM 토큰을 삭제한다.
+        로그아웃 시 호출하여 더 이상 푸시 알림을 받지 않도록 한다.
+        
+        @param email: 사용자 이메일
+     */
+    @Transactional
+    public void clearToken(String email) {
+        userRepository.findByEmail(email)
+                .ifPresentOrElse(
+                        user -> {
+                            user.clearFcmToken();
+                            log.info("FCM 토큰을 삭제했습니다. 사용자: {}", email);
+                        },
+                        () -> {
+                            log.warn("FCM 토큰 삭제 실패: 사용자를 찾을 수 없습니다. 이메일: {}", email);
+                            // 사용자를 찾을 수 없어도 예외를 던지지 않는다. (로그아웃 시 이미 삭제된 경우 등)
+                        }
+                );
+    }
+
+    /*
+        친구 관련 푸시 알림 활성화 여부를 설정한다.
+        
+        @param email: 사용자 이메일
+        @param enabled: 푸시 알림 활성화 여부
+     */
+    @Transactional
+    public void setFriendPushNotificationEnabled(String email, boolean enabled) {
+        userRepository.findByEmail(email)
+                .ifPresentOrElse(
+                        user -> {
+                            user.setFriendPushNotificationEnabled(enabled);
+                            log.info("친구 관련 푸시 알림 설정을 변경했습니다. 사용자: {}, 활성화: {}", email, enabled);
+                        },
+                        () -> {
+                            log.warn("푸시 알림 설정 변경 실패: 사용자를 찾을 수 없습니다. 이메일: {}", email);
+                            throw new IllegalArgumentException("사용자를 찾을 수 없습니다: " + email);
+                        }
+                );
     }
 }
