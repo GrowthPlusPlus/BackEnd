@@ -270,7 +270,7 @@ public class UserApiController {
      */
     @Operation(
             summary = "내 프로필 조회",
-            description = "로그인한 사용자의 프로필 사진, 이름, 한 줄 소개를 조회한다."
+            description = "로그인한 사용자의 프로필 사진, 이름, 한 줄 소개, 관심 태그를 조회한다."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "프로필 조회 성공"),
