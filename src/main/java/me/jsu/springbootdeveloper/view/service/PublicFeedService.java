@@ -19,8 +19,8 @@ import java.time.LocalDate;
  */
 @Service
 public class PublicFeedService extends AbstractFeedService {
-    public PublicFeedService(UserService userService, PostService postService, PostLikeService postLikeService, ChallengeService challengeService) {
-        super(userService, postService, postLikeService, challengeService);
+    public PublicFeedService(UserService userService, PostService postService, ChallengeService challengeService, PostFeedMapper postFeedMapper) {
+        super(userService, postService, challengeService, postFeedMapper);
     }
 
     @Override

@@ -1,6 +1,6 @@
 // 정성우
 
-package me.jsu.springbootdeveloper;
+package me.jsu.springbootdeveloper.config.fcm;
 
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;

@@ -30,24 +30,37 @@ public interface PostRepository extends JpaRepository<Article, Long> {
     );
 
     // 최신순으로 공개 피드의 인증글을 보여주기 위한 쿼리문이다. 날짜를 받아 챌린지 기간을 구별한다.
-    @Query("""
+    @Query(value = """
         select a
         from Article a
-        join a.challenge c
+        left join fetch a.user u
+        left join fetch u.userProfilePicture
+        left join fetch a.challenge c
         where c.startDate <= :targetDate
           and c.endDate >= :targetDate
           and c.challengeVisibility = 'PUBLIC'
-    """)
+    """,
+    countQuery = """
+            select count(a)
+            from Article a
+            join a.challenge c
+            where c.startDate <= :targetDate
+              and c.endDate >= :targetDate
+              and c.challengeVisibility = 'PUBLIC'
+        """
+    )
     Page<Article> findPublicFeed(
             @Param("targetDate") LocalDate targetDate,
             Pageable pageable
     );
 
     // 최신 순으로 친구 공개 피드의 인증글을 보여주기 위한 쿼리문이다.
-    @Query("""
+    @Query(value = """
         select a
         from Article a
-        join a.challenge c
+        left join fetch a.user u
+        left join fetch u.userProfilePicture
+        left join fetch a.challenge c
         where c.startDate <= :targetDate
           and c.endDate >= :targetDate
           and c.challengeVisibility = 'FRIENDS_ONLY'
@@ -57,10 +70,47 @@ public interface PostRepository extends JpaRepository<Article, Long> {
                 where fs.user1.id = least(:viewerId, a.user.id)
                   and fs.user2.id = greatest(:viewerId, a.user.id)
           )
-    """)
+    """,
+    countQuery = """
+            select count(a)
+            from Article a
+            join a.challenge c
+            where c.startDate <= :targetDate
+              and c.endDate >= :targetDate
+              and c.challengeVisibility = 'FRIENDS_ONLY'
+              and exists (
+                    select 1
+                    from Friendship fs
+                    where fs.user1.id = least(:viewerId, a.user.id)
+                      and fs.user2.id = greatest(:viewerId, a.user.id)
+              )
+        """
+    )
     Page<Article> findFriendFeed(
             @Param("viewerId") Long viewerId,
             @Param("targetDate") LocalDate targetDate,
+            Pageable pageable
+    );
+
+    // 챌린지 id로 챌린지 맴버들의 인증글들을 보여주기 위한 쿼리문이다.
+    @Query(
+            value = """
+        select a
+        from Article a
+        left join fetch a.user u
+        left join fetch u.userProfilePicture
+        left join fetch a.challenge c
+        where c.id = :challengeId
+    """,
+    countQuery = """
+            select count(a)
+            from Article a
+            join a.challenge c
+            where c.id = :challengeId
+        """
+    )
+    Page<Article> findChallengeFeed(
+            @Param("challengeId") Long challengeId,
             Pageable pageable
     );
 
@@ -113,9 +163,11 @@ public interface PostRepository extends JpaRepository<Article, Long> {
                 (
                     select i.imageUrl
                     from PostPicture i
-                    where i.article = p
-                    order by i.id asc
-                    limit 1
+                     where i.id = (
+                         select min(i2.id)
+                         from PostPicture i2
+                         where i2.article = p
+                    )
                 ),
                 p.content
             )

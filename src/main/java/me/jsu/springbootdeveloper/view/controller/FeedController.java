@@ -9,12 +9,14 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.post.dto.ArticleDetailResponse;
 import me.jsu.springbootdeveloper.view.service.FriendFeedService;
+import me.jsu.springbootdeveloper.view.service.MemberFeedService;
 import me.jsu.springbootdeveloper.view.service.PublicFeedService;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -26,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class FeedController {
     private final PublicFeedService publicFeedService;
     private final FriendFeedService friendFeedService;
+    private final MemberFeedService memberFeedService;
 
     /*
         전체 인증글 중, 공개 범위의 인증글을 조회 한 뒤에 반환해주는 함수로, 챌린지 피드에서 모든 유저의 게시글을 최신순으로 보고 싶을 때 사용한다.
@@ -76,6 +79,34 @@ public class FeedController {
             @RequestParam int page
     ) {
         Page<ArticleDetailResponse> response = friendFeedService.findFeed(userDetails.getUsername(), page);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /*
+        챌린지 맴버들의 인증글을 조회 한 뒤에 반환해주는 컨트롤러이다.
+     */
+    @Operation(
+            summary = "챌린지 맴버 인증글 조회",
+            description = """
+        챌린지 맴버의 인증글을 최신순으로 페이징 조회하여 인증글 리스트를 20개씩 페이지 형태로 반환한다.
+        챌린지 id로 검색한다.
+        ex) GET /api/feed/challengeMember/1?page=0
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "게시글 목록 조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
+    })
+    @GetMapping("/api/feed/challengeMember/{challengeId}")
+    public ResponseEntity<Page<ArticleDetailResponse>> getChallengePosts(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Parameter(description = "챌린지 id", required = true, example = "1")
+            @PathVariable Long challengeId,
+            @Parameter(description = "페이지 번호 (0부터 시작)", required = true, example = "0")
+            @RequestParam int page
+    ) {
+        Page<ArticleDetailResponse> response = memberFeedService.findMemberFeed(userDetails.getUsername(), challengeId, page);
 
         return ResponseEntity.ok(response);
     }
