@@ -6,11 +6,8 @@ import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeService;
 import me.jsu.springbootdeveloper.post.domain.Article;
 import me.jsu.springbootdeveloper.post.dto.ArticleDetailResponse;
-import me.jsu.springbootdeveloper.post.dto.ArticleImageResponse;
-import me.jsu.springbootdeveloper.post.service.PostLikeService;
 import me.jsu.springbootdeveloper.post.service.PostService;
 import me.jsu.springbootdeveloper.user.domain.User;
-import me.jsu.springbootdeveloper.user.domain.UserProfilePicture;
 import me.jsu.springbootdeveloper.user.service.UserService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -27,7 +24,6 @@ import java.util.*;
 public class MemberFeedService {
     private final UserService userService;
     private final PostService postService;
-    private final ChallengeService challengeService;
     private final PostFeedMapper postFeedMapper;
 
     /*

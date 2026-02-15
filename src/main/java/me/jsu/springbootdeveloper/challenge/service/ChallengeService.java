@@ -8,6 +8,7 @@ import me.jsu.springbootdeveloper.challenge.enumType.Status;
 import me.jsu.springbootdeveloper.challenge.dto.ChallengeFriendInviteListResponse;
 import me.jsu.springbootdeveloper.challenge.dto.ChallengeInviteResponse;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeInvite;
+import me.jsu.springbootdeveloper.challenge.exception.*;
 import me.jsu.springbootdeveloper.challenge.repository.*;
 import me.jsu.springbootdeveloper.notification.enumType.NotificationType;
 import me.jsu.springbootdeveloper.tag.domain.TagToChallenge;
@@ -16,10 +17,6 @@ import me.jsu.springbootdeveloper.user.exception.UserStatisticsNotFoundException
 import me.jsu.springbootdeveloper.user.repository.FriendshipRepository;
 import me.jsu.springbootdeveloper.user.repository.UserProfilePictureRepository;
 import me.jsu.springbootdeveloper.notification.service.NotificationService;
-import me.jsu.springbootdeveloper.challenge.exception.ChallengeNotFoundException;
-import me.jsu.springbootdeveloper.challenge.exception.ChallengeNotInProgressException;
-import me.jsu.springbootdeveloper.challenge.exception.ChallengeOwnerCannotLeaveException;
-import me.jsu.springbootdeveloper.challenge.exception.NotAllowedChallengeActionException;
 import me.jsu.springbootdeveloper.user.repository.UserStatisticsRepository;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -566,6 +563,13 @@ public class ChallengeService {
 
         // 대상 유저를 추방한다.
         leaveChallengeInternal(targetUserId, challengeId);
+
+        // 추방하려는 유저의 챌린지 초대 튜플을 검색한다.
+        ChallengeInvite challengeInvite = challengeInviteRepository.findByChallenge_IdAndInvitee_Id(challengeId, targetUserId)
+                .orElseThrow(() -> new ChallengeInviteNotFoundException("초대 정보가 존재하지 않습니다."));
+
+        // 초대 상태가 됐던 유저의 챌린지 초대 DB를 삭제한다.
+        challengeInviteRepository.delete(challengeInvite);
     }
 
     /*

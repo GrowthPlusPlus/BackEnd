@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.domain.Challenge;
 import me.jsu.springbootdeveloper.post.domain.Article;
 import me.jsu.springbootdeveloper.user.domain.User;
-import me.jsu.springbootdeveloper.user.domain.UserProfilePicture;
 import me.jsu.springbootdeveloper.post.dto.ArticleDetailResponse;
 import me.jsu.springbootdeveloper.post.dto.ArticleImageResponse;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeService;
