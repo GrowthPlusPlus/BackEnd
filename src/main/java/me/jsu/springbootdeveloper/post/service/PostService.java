@@ -184,6 +184,14 @@ public class PostService {
     }
 
     /*
+        챌린지 맴버들의 인증글 목록을 조회한다.
+        맴버 현황에 사용된다.
+     */
+    public Page<Article> findChallengeFeed(Long challengeId, Pageable pageable) {
+        return postRepository.findChallengeFeed(challengeId, pageable);
+    }
+
+    /*
         인증글 id 여러 개로 그 인증글과 관련된 이미지들을 구한다.
         피드 생성에 사용된다.
      */

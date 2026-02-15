@@ -2,11 +2,8 @@
 
 package me.jsu.springbootdeveloper.common;
 
+import me.jsu.springbootdeveloper.challenge.exception.*;
 import me.jsu.springbootdeveloper.post.exception.*;
-import me.jsu.springbootdeveloper.challenge.exception.ChallengeNotFoundException;
-import me.jsu.springbootdeveloper.challenge.exception.ChallengeNotInProgressException;
-import me.jsu.springbootdeveloper.challenge.exception.ChallengeOwnerCannotLeaveException;
-import me.jsu.springbootdeveloper.challenge.exception.NotAllowedChallengeActionException;
 import me.jsu.springbootdeveloper.cloudinary.exception.CloudinaryDeleteException;
 import me.jsu.springbootdeveloper.cloudinary.exception.CloudinaryUploadException;
 import me.jsu.springbootdeveloper.oauth.exception.OAuthLoginException;
@@ -481,6 +478,21 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse(
                         "NOT_EQUAL_ID",
+                        e.getMessage()
+                ));
+    }
+
+    /*
+        챌린지 초대를 검색하지 못한 경우의 예외를 처리하는 핸들러이다.
+     */
+    @ExceptionHandler(ChallengeInviteNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleChallengeNotInProgress(
+            ChallengeInviteNotFoundException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(
+                        "CHALLENGE_INVITE_NOT_FOUND",
                         e.getMessage()
                 ));
     }
