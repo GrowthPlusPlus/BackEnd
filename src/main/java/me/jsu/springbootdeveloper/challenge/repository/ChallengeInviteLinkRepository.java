@@ -26,7 +26,7 @@ public interface ChallengeInviteLinkRepository extends JpaRepository<ChallengeIn
         특정 챌린지의 활성화된 초대 링크를 조회한다.
      */
     List<ChallengeInviteLink> findAllByChallenge_IdAndActiveTrue(Long challengeId);
-
+    
     /*
         초대 코드로 초대 링크를 조회한다.
      */
@@ -45,6 +45,24 @@ public interface ChallengeInviteLinkRepository extends JpaRepository<ChallengeIn
         order by link.createdAt desc
     """)
     List<ChallengeInviteLink> findValidLinksByChallengeId(
+            @Param("challengeId") Long challengeId,
+            @Param("now") LocalDateTime now
+    );
+
+    /*
+        특정 챌린지의 유효한 초대 링크 중 첫 번째 링크를 조회한다.
+        유효한 링크: active = true이고, expiresAt이 아직 지나지 않은 링크
+        createdAt 내림차순으로 정렬된 결과 중 첫 번째를 반환한다.
+     */
+    @Query("""
+        select link
+        from ChallengeInviteLink link
+        where link.challenge.id = :challengeId
+          and link.active = true
+          and link.expiresAt > :now
+        order by link.createdAt desc
+    """)
+    Optional<ChallengeInviteLink> findFirstValidLinkByChallengeId(
             @Param("challengeId") Long challengeId,
             @Param("now") LocalDateTime now
     );
