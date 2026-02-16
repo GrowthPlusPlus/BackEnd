@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.rag.dto.QueryRequestDto;
 import me.jsu.springbootdeveloper.rag.dto.QueryResponseDto;
+import me.jsu.springbootdeveloper.rag.service.AiChallengeRecommendService;
 import me.jsu.springbootdeveloper.rag.service.AiCoachService;
 import me.jsu.springbootdeveloper.rag.service.DocumentService;
 import org.springframework.http.MediaType;
@@ -27,7 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class RagController {
     private final DocumentService documentService;
     private final AiCoachService aiCoachService;
-
+    private final AiChallengeRecommendService aiChallengeRecommendService;
     /*
         PDF 문서를 업로드하여 벡터 스토어에 저장하는 컨트롤러이다.
      */
@@ -120,6 +121,28 @@ public class RagController {
     ) {
         // 유저 정보를 통해 코칭 답변을 생성한다.
         QueryResponseDto response = aiCoachService.coach(userDetails.getUsername());
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "AI 챌린지 추천",
+            description = """
+        로그인한 유저의 관심사 태그와 참여 중인 챌린지를 바탕으로 챌린지를 추천한다.
+        ex) POST /api/v1/rag/recommend/query
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "질의 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    @PostMapping("/recommend/query")
+    public ResponseEntity<QueryResponseDto> recommendChallenge(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        // 유저 정보를 통해 코칭 답변을 생성한다.
+        QueryResponseDto response = aiChallengeRecommendService.recommend(userDetails.getUsername());
 
         return ResponseEntity.ok(response);
     }
