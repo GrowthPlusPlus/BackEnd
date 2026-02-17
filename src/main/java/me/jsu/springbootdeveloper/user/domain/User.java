@@ -7,6 +7,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import me.jsu.springbootdeveloper.challenge.domain.ChallengeInvite;
 import me.jsu.springbootdeveloper.post.domain.ReportArticle;
 import me.jsu.springbootdeveloper.post.domain.ReportComment;
 import me.jsu.springbootdeveloper.token.domain.RefreshToken;
@@ -88,6 +89,12 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
      */
     @OneToMany(mappedBy = "user", cascade = REMOVE)
     private List<ChallengeInviteLink> challengeInviteLinks;
+
+    @OneToMany(mappedBy = "inviter", cascade = CascadeType.REMOVE)
+    private List<ChallengeInvite> sentInvites;
+
+    @OneToMany(mappedBy = "invitee", cascade = CascadeType.REMOVE)
+    private List<ChallengeInvite> receivedInvites;
 
     @OneToMany(mappedBy = "user", cascade = REMOVE)
     private List<ChallengeWeeklyStatus> challengeWeeklyStatus;

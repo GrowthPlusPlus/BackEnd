@@ -112,6 +112,9 @@ public class Challenge {
     private List<ChallengeInviteLink> challengeInviteLinks;
 
     @OneToMany(mappedBy = "challenge", cascade = CascadeType.REMOVE)
+    private List<ChallengeInvite> challengeInvites;
+
+    @OneToMany(mappedBy = "challenge", cascade = CascadeType.REMOVE)
     private List<ChallengeWeeklyStatus> challengeWeeklyStatuses;
 
     @OneToMany(mappedBy = "challenge", cascade = CascadeType.REMOVE)

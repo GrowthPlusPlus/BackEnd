@@ -49,6 +49,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.WeekFields;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -357,8 +358,8 @@ public class ChallengeService {
     /*
         유저가 회원탈퇴를 하는 경우, 해당 유저가 오너인 챌린지가 삭제되지 않도록 다른 유저에게 위임한다.
      */
-    @Transactional
     public void handleOwnerWithdrawal(Long userId) {
+        List<Long> toDelete = new ArrayList<>();  // 삭제할 챌린지들의 id를 모은 배열이다.
         List<Challenge> challenges = findByUser_Id(userId);  // 현재 관리하는 챌린지들을 검색한다.
 
         for (Challenge challenge : challenges) {
@@ -367,16 +368,19 @@ public class ChallengeService {
 
             /*
                 참여자가 오너 말고 없다면 챌린지를 삭제한다.
-                단 챌린지를 삭제하는 행위는 또한 챌린지 CASCADE 설정이나 예외처리를 해야한다.
              */
             if (participants.isEmpty()) {
-                deleteChallengeInternal(challenge.getId());
-                continue;  // 다음 챌린지를 검색한다.
+                toDelete.add(challenge.getId());
             }
+            else {  // 가장 먼저 참여한 사람에게 권한을 위임한다.
+                User newMaster = participants.get(0).getUser();
+                challenge.updateUser(newMaster);
+            }
+        }
 
-            // 가장 먼저 참여한 사람에게 권한을 위임한다.
-            User newMaster = participants.get(0).getUser();
-            challenge.updateUser(newMaster);
+        // 반복 끝난 후 챌린지를 삭제한다.
+        for (Long id : toDelete) {
+            deleteChallengeInternal(id);
         }
     }
 
@@ -384,7 +388,6 @@ public class ChallengeService {
         모든 챌린지에서 유저가 나올때 사용하는 함수이다. 회원탈퇴 시에 사용된다.
         해당 함수는 방장 위임이 끝난 뒤에 사용해야 한다.
      */
-    @Transactional
     public void deleteParticipant(Long userId) {
         // 유저 아이디로 해당 유저가 참가한 챌린지들을 검색한다.
         List<ChallengeParticipant> participants = challengeParticipantRepository.findWithChallengeByUserId(userId);
