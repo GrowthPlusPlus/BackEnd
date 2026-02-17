@@ -216,19 +216,41 @@ public class PostService {
         Article article = postRepository.findWithUserAndProfileById(postId)  // 인증글과 작성자 정보, 사진을 함께 조회한다.
                 .orElseThrow(() -> new ArticleNotFoundException("ARTICLE_NOT_FOUND_FOR_ID"));
 
-        // 해당 챌린지의 총 인증 횟수를 구한다.
-        ChallengeParticipant challengeParticipant = challengeService.findByUser_IdAndChallenge_IdForParticipant(
-                article.getUser().getId(), article.getChallenge().getId());
-        int totalSuccessDays = challengeParticipant.getTotalSuccessDays();
+        // 챌린지나 유저가 삭제되었을 때를 위한 방어 코드이다.
+        User author = article.getUser();
+        Challenge challenge = article.getChallenge();
 
-        // 작성자의 프로필 사진이 없는 경우를 대비한다.
-        String userImageUrl;
-        UserProfilePicture userProfilePicture = article.getUser().getUserProfilePicture();
-        if (userProfilePicture == null) {
-            userImageUrl = null;
+        String userNickname;
+        String userImageUrl = null;  // 작성자의 프로필 사진이 없는 경우를 대비한다.
+        int totalSuccessDays = 0;
+        String challengeTitle = null;
+
+        if (author == null) {  // 작성자가 null인 경우를 방어한다.
+            userNickname = "탈퇴한 사용자";
+        } else {
+            userNickname = author.getNickname();
+
+            UserProfilePicture userProfilePicture = author.getUserProfilePicture();
+            if (userProfilePicture != null) {  // 프로필 사진이 존재하는지 검색한다.
+                userImageUrl = userProfilePicture.getImageUrl();
+            }
+
+            // participant 조회는 challenge가 존재할 때만 한다.
+            if (challenge != null) {
+                ChallengeParticipant challengeParticipant = challengeService.findByUser_IdAndChallenge_IdForParticipant(author.getId(), challenge.getId());
+
+                if (challengeParticipant != null) {
+                    totalSuccessDays = challengeParticipant.getTotalSuccessDays();  // 해당 챌린지의 총 인증 횟수를 구한다.
+                }
+            }
+        }
+
+        // 챌린지가 null인 경우를 방어한다.
+        if (challenge == null) {
+            challengeTitle = "삭제된 챌린지";
         }
         else {
-            userImageUrl = userProfilePicture.getImageUrl();
+            challengeTitle = challenge.getTitle();
         }
 
         // 인증글의 사진, id 리스트를 생성한다.
@@ -245,11 +267,11 @@ public class PostService {
 
         return ArticleDetailResponse.builder()
                 .postId(article.getId())
-                .challengeTitle(article.getChallenge().getTitle())
+                .challengeTitle(challengeTitle)
                 .totalSuccessDays(totalSuccessDays)  // 총 성공 일수이다.
                 .content(article.getContent())
                 .images(images)  // 게시글의 사진, id이다.
-                .userNickname(article.getUser().getNickname())
+                .userNickname(userNickname)
                 .userImageUrl(userImageUrl)  // 게시글 작성자의 사진이다.
                 .updatedAt(article.getUpdateAt())
                 .createdAt(article.getCreatedAt())
