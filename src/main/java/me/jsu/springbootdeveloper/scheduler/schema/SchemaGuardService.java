@@ -42,4 +42,26 @@ public class SchemaGuardService {
             return false;
         }
     }
+
+    /*
+        challenge_participant 테이블의 ranking_score 컬럼 존재 여부를 확인한다.
+     */
+    public boolean isRankingScoreSchemaReady() {
+        String sql = """
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_name = 'challenge_participant'
+              AND column_name = 'ranking_score'
+        """;
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            return rs.next();
+
+        } catch (SQLException e) {
+            return false;
+        }
+    }
 }

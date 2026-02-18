@@ -20,6 +20,7 @@ import java.time.ZoneId;
 public class WeeklyStatisticsScheduler {
     private final UserWeeklyStatisticsService userWeeklyStatisticsService;
 
+    //@Scheduled(cron = "*/20 * * * * *", zone = "Asia/Seoul")
     @Scheduled(cron = "0 0 0 ? * MON", zone = "Asia/Seoul")
     @RequireUserStatisticsSchema  // 스키마 준비가 안 됐으면 바로 종료한다.
     public void runWeeklySettlement() {

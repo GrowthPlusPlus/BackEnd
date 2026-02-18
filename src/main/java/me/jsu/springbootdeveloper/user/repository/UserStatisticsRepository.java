@@ -23,6 +23,7 @@ public interface UserStatisticsRepository extends JpaRepository<UserStatistics, 
     @Query("""
         select us
         from UserStatistics us
+        join fetch us.user u
         where us.id > :lastId
         order by us.id asc
     """)
@@ -41,4 +42,13 @@ public interface UserStatisticsRepository extends JpaRepository<UserStatistics, 
         where us.user = :user
     """)
     void detachUser(@Param("user") User user);
+
+    // 유저 id로 통계를 리스트로 통째로 조회하는 쿼리문이다. 탈퇴한 유저는 검색에서 제외한다.
+    @Query("""
+        select us
+        from UserStatistics us
+        join fetch us.user u
+        where us.user.id in :userIds
+    """)
+    List<UserStatistics> findAllByUserIds(@Param("userIds") List<Long> userIds);
 }

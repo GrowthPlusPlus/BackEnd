@@ -25,4 +25,15 @@ public class SchedulerSchemaGuardAspect {
         }
         return pjp.proceed();  // 조건을 통과하면 나머지 코드도 실행된다.
     }
+
+    // 챌린지 참여의 스코어 스키마가 존재하는지 검증한다.
+    @Around("@annotation(RequireRankingScoreSchema)")
+    public Object guardRankingScore(ProceedingJoinPoint pjp) throws Throwable {
+
+        if (!schemaGuardService.isRankingScoreSchemaReady()) {
+            return null;  // 스키마 준비 안되면 실행 안 함
+        }
+
+        return pjp.proceed();
+    }
 }
