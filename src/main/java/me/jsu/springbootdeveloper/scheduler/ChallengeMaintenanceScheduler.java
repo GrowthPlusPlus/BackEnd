@@ -20,6 +20,7 @@ import java.time.ZoneId;
 public class ChallengeMaintenanceScheduler {
     private final ChallengeMaintenanceService challengeMaintenanceService;
 
+    //@Scheduled(cron = "*/20 * * * * *", zone = "Asia/Seoul")
     @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
     public void dailyJob() {
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));

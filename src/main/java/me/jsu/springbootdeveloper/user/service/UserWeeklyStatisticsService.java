@@ -51,7 +51,7 @@ public class UserWeeklyStatisticsService {
                 updateMostFailedChallenge(userStats, userId, today);  // 실패 챌린지를 선정한다.
                 updateMostUnstableChallenge(userStats, userId,  WEEKS_TO_LOOK_BACK);  // 분산을 계산한다.
 
-                lastId = userStats.getUser().getId();
+                lastId = userStats.getId();
             }
         } while (!batch.isEmpty());
     }

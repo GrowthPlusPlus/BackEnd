@@ -3,6 +3,7 @@
 package me.jsu.springbootdeveloper.challenge.repository;
 
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
+import me.jsu.springbootdeveloper.challenge.dto.RankingResponse;
 import me.jsu.springbootdeveloper.challenge.enumType.Status;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -142,4 +143,65 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
     List<ChallengeParticipant> findEndedInProgressAfterId(@Param("lastId") Long lastId, @Param("today") LocalDate today, Pageable pageable);
 
     boolean existsByChallenge_IdAndUser_Id(Long challengeId, Long userId);
+
+    // 상위 랭커를 조회하는 쿼리문이다. 등수는 서비스에서 다시 계산한다.
+    @Query("""
+        select new me.jsu.springbootdeveloper.challenge.dto.RankingResponse(
+            u.id,
+            u.nickname,
+            p.imageUrl,
+            cp.rankingScore,
+            0
+        )
+        from ChallengeParticipant cp
+        join cp.user u
+        left join u.userProfilePicture p
+        where cp.challenge.id = :challengeId
+        order by cp.rankingScore desc
+    """)
+    List<RankingResponse> findTopRankers(
+            @Param("challengeId") Long challengeId,
+            Pageable pageable
+    );
+
+    /*
+        사용자의 이름, 프로필 사진, 스코어를 한 번에 조회하는 쿼리문이다.
+     */
+    @Query("""
+        select cp
+        from ChallengeParticipant cp
+        join fetch cp.user u
+        left join fetch u.userProfilePicture p
+        where cp.challenge.id = :challengeId
+        and u.id = :userId
+    """)
+    Optional<ChallengeParticipant> findMyParticipantWithFetch(
+            @Param("challengeId") Long challengeId,
+            @Param("userId") Long userId
+    );
+
+    // 해당 사용자의 등수를 검색한다.
+    @Query("""
+        select count(cp)
+        from ChallengeParticipant cp
+        where cp.challenge.id = :challengeId
+        and cp.rankingScore > :score
+    """)
+    long countHigherScore(
+            @Param("challengeId") Long challengeId,
+            @Param("score") double score
+    );
+
+    @Query("""
+        select cp
+        from ChallengeParticipant cp
+        join fetch cp.user u
+        where cp.id > :lastId
+          and cp.status = 'IN_PROGRESS'
+        order by cp.id asc
+    """)
+    List<ChallengeParticipant> findInProgressParticipantsAfterId(
+            @Param("lastId") Long lastId,
+            Pageable pageable
+    );
 }

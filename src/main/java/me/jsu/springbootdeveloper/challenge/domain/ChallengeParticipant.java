@@ -35,7 +35,11 @@ import java.time.LocalDateTime;
                         columnList = "user_id, status"),  // 유저 id, 챌린지 진행 여부로 검색하기 위한 인덱싱이다.
                 @Index(
                         name = "idx__status",
-                        columnList = "status")
+                        columnList = "status"),
+                @Index(
+                        name = "idx_cp_challenge_score",  // 챌린지 id와 score로 빠르게 정렬하며 검색하기 위해 사용하는 인덱싱이다.
+                        columnList = "challenge_id, ranking_score"
+                )
         }
 )
 @EntityListeners(AuditingEntityListener.class)  // 생성 및 수정시간을 감시하고 기록할 수 있게 해준다.
@@ -104,6 +108,10 @@ public class ChallengeParticipant {
     // 성공한 주차 수
     @Column(name = "success_weeks", nullable = false)
     private int successWeeks;
+
+    // 해당 챌린지의 랭킹 점수
+    @Column(name = "ranking_score")
+    private Double rankingScore = 0.0;
 
     @Builder
     public ChallengeParticipant(Challenge challenge, User user, LocalDate joinDate, int totalWeeks) {
@@ -223,5 +231,12 @@ public class ChallengeParticipant {
 
         int failedWeeks = Math.max(0, totalWeeks - successWeeks);
         return (double) failedWeeks / (double) totalWeeks;
+    }
+
+    /*
+        사용자의 랭킹 점수를 업데이트 한다.
+     */
+    public void updateRankingScore(double score) {
+        this.rankingScore = score;
     }
 }

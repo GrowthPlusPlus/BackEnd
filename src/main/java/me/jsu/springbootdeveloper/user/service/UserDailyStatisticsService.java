@@ -42,7 +42,7 @@ public class UserDailyStatisticsService {
                     userStats.recordDailyFail();
                 }
 
-                lastId = userStats.getUser().getId();
+                lastId = userStats.getId();
             }
         } while (!batch.isEmpty());
     }
