@@ -99,6 +99,8 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
     @Query("""
         select cp
         from ChallengeParticipant cp
+        join fetch cp.challenge c
+        join fetch cp.user u
         where cp.status = 'IN_PROGRESS'
           and cp.id > :lastId
         order by cp.id asc
@@ -110,14 +112,13 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
         select cp
         from ChallengeParticipant cp
         join fetch cp.challenge c
+        join fetch cp.user u
         where cp.status = 'IN_PROGRESS'
           and c.endDate < :today
           and cp.id > :lastId
         order by cp.id asc
     """)
     List<ChallengeParticipant> findEndedInProgressAfterId(@Param("lastId") Long lastId, @Param("today") LocalDate today, Pageable pageable);
-
-    boolean existsByChallenge_IdAndUser_Id(Long challengeId, Long userId);
 
     // 상위 랭커를 조회하는 쿼리문이다. 등수는 서비스에서 다시 계산한다.
     @Query("""
@@ -179,5 +180,17 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
     List<ChallengeParticipant> findInProgressParticipantsAfterId(
             @Param("lastId") Long lastId,
             Pageable pageable
+    );
+
+    // 이미 챌린지에 참여 중인 친구 id를 한 번에 조회하는 쿼리문이다. 친구 목록과 챌린지 상태를 보여주기 위해 사용한다.
+    @Query("""
+        select cp.user.id
+        from ChallengeParticipant cp
+        where cp.challenge.id = :challengeId
+          and cp.user.id in :userIds
+    """)
+    List<Long> findParticipantUserIdsIn(
+            @Param("challengeId") Long challengeId,
+            @Param("userIds") List<Long> userIds
     );
 }

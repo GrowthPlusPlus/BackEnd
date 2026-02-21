@@ -33,13 +33,20 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     void detachUser(@Param("user") User user);
 
     // 댓글과 댓글을 작성한 유저, 유저의 프로필 사진을 함께 조회하는 쿼리문이다.
-    @Query("""
-        select c
-        from Comment c
-        join fetch c.user u
-        left join fetch u.userProfilePicture upp
-        where c.article.id = :postId
-    """)
+    @Query(
+        value = """
+            select c
+            from Comment c
+            join fetch c.user u
+            left join fetch u.userProfilePicture upp
+            where c.article.id = :postId
+        """,
+        countQuery = """
+            select count(c)
+            from Comment c
+            where c.article.id = :postId
+        """
+    )
     Page<Comment> findByArticleIdWithUser(
             @Param("postId") Long postId,
             Pageable pageable

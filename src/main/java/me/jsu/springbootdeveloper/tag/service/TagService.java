@@ -21,7 +21,10 @@ import me.jsu.springbootdeveloper.tag.repository.TagToUserRepository;
 import me.jsu.springbootdeveloper.user.service.UserService;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /*
     태그와 관련된 처리를 하는 서비스 클래스이다.
@@ -130,6 +133,26 @@ public class TagService {
      */
     public List<TagToChallenge> searchChallengeTags(Long challengeId) {
         return tagToChallengeRepository.findWithTagByChallengeId(challengeId);
+    }
+
+    /*
+        여러 챌린지들의 태그들을 한 번에 조회한다.
+        키워드로 챌린지를 검색하는 함수에서 사용한다.
+     */
+    public Map<Long, List<TagResponse>> getChallengeTagsByOnce(List<Long> challengeIds) {
+        List<TagToChallenge> mappings = tagToChallengeRepository.findWithTagByChallengeIdsByOnce(challengeIds);
+
+        Map<Long, List<TagResponse>> result = new HashMap<>();  // 챌린지 id로 해당 챌린지에 포함된 태그들을 매핑한다.
+        for (TagToChallenge ttc : mappings) {
+            Long challengeId = ttc.getChallenge().getId();
+            Tag tag = ttc.getTag();
+
+            result
+                    .computeIfAbsent(challengeId, k -> new ArrayList<>())
+                    .add(new TagResponse(tag.getId(), tag.getTagName(), tag.getTagCategory()));  // 챌린지 id에 매핑되는 태그들이다.
+        }
+
+        return result;
     }
 
     /*

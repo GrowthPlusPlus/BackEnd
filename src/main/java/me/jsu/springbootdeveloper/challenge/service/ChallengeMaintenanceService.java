@@ -10,17 +10,20 @@ import me.jsu.springbootdeveloper.challenge.repository.ChallengeParticipantRepos
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeRepository;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeWeeklyStatusRepository;
 import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeUtils;
-import me.jsu.springbootdeveloper.user.domain.UserStatistics;
 import me.jsu.springbootdeveloper.user.service.UserStatisticsService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.util.Pair;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 
 @Service
 @RequiredArgsConstructor
@@ -88,32 +91,56 @@ public class ChallengeMaintenanceService {
         Long lastId = 0L;
         List<ChallengeParticipant> batch;
 
-        do {
+        while (true) {
             // 진행중인 챌린지들을 배치 사이즈로 검색한다.
             batch = challengeParticipantRepository.findAllInProgressAfterId(lastId, PageRequest.of(0, BATCH_SIZE));
-            for (ChallengeParticipant cp : batch) {
-                checkWeeklyFailure(cp, today);  // 하나씩 검사한다.
+            if (batch.isEmpty()) {  // 조회된 데이터가 없다면 탈출한다.
+                break;
+            }
+
+            // userId를 모두 수집한다.
+            List<Long> userIds = batch.stream()
+                    .map(cp -> cp.getUser().getId())
+                    .distinct()
+                    .toList();
+
+            // challengeId를 모두 수집한다.
+            List<Long> challengeIds = batch.stream()
+                    .map(cp -> cp.getChallenge().getId())
+                    .distinct()
+                    .toList();
+
+            // 해당 주간 상태의 유효 범위를 구한다.
+            LocalDate weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));  // 날짜를 기준으로 해당 주를 구한다.
+            LocalDate weekEnd = weekStart.plusDays(6);
+
+            // 유저 id, 챌린지 id, 해당 주로 WeeklyStatus를 한 번에 조회한다. 주에 한 번도 챌린지를 수행하지 않은 유저는 값이 없다.
+            List<ChallengeWeeklyStatus> weeklyStatuses = challengeWeeklyStatusRepository.findAllByUsersAndChallenges(userIds, challengeIds, weekStart);
+
+            // 모든 유저의 (userId, challengeId)를 pair 키로 만들어 WeeklyStatus로 매핑한다.
+            Map<Pair<Long, Long>, ChallengeWeeklyStatus> weeklyMap =
+                    weeklyStatuses.stream()
+                            .collect(Collectors.toMap(
+                                    ws -> Pair.of(ws.getUser().getId(), ws.getChallenge().getId()),
+                                    ws -> ws,
+                                    (a, b) -> a  // 중복 방지를 위한 방어 코드이다.
+                            ));
+
+            for (ChallengeParticipant cp : batch) {  // 하나씩 검사한다.
+                Pair<Long, Long> key = Pair.of(cp.getUser().getId(), cp.getChallenge().getId());  // 유저 정보를 토대로 키를 생성한다.
+                ChallengeWeeklyStatus weeklyStatus = weeklyMap.get(key);  // 키를 아까 매핑한 map에 사용하여 반복적인 쿼리문 없이 주간 상태를 얻는다. 없으면 null이다.
+
+                checkWeeklyFailure(cp, weeklyStatus, today, weekStart, weekEnd);  // 하나씩 실패 판정을 수행한다.
                 lastId = cp.getId();  // 커서를 이동시킨다.
             }
-        } while (!batch.isEmpty());  // 조회할 데이터가 없을 때까지 반복한다.
+        }
     }
 
     /*
         하루가 지났을 때, 챌린지가 실패했는지 하나씩 검사해주는 함수이다.
      */
-    private void checkWeeklyFailure(ChallengeParticipant cp, LocalDate today) {
+    private void checkWeeklyFailure(ChallengeParticipant cp, ChallengeWeeklyStatus weeklyStatus, LocalDate today, LocalDate weekStart, LocalDate weekEnd) {
         Challenge challenge = cp.getChallenge();  // 해당 주간 상태가 속한 챌린지이다.
-
-        // 해당 주간 상태의 유효 범위를 구한다.
-        LocalDate weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));  // 날짜를 기준으로 해당 주를 구한다.
-        LocalDate weekEnd = weekStart.plusDays(6);
-
-        // 챌린지 주간 상태를 유저 id, 챌린지 id, 해당 주로 검색한다. 해당 값은 주에 한 번도 챌린지를 수행하지 않았다면 없을 수 있다.
-        ChallengeWeeklyStatus weeklyStatus = challengeWeeklyStatusRepository.findByUser_IdAndChallenge_IdAndWeekStartDate(
-                        cp.getUser().getId(),
-                        cp.getChallenge().getId(),
-                        weekStart
-        ).orElse(null);
 
         int successCount;
         if (weeklyStatus != null) {

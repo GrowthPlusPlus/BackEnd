@@ -47,10 +47,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
-import java.util.UUID;
+
 /*
     챌린지와 관련된 일을 처리하는 클래스이다.
  */
@@ -241,30 +240,38 @@ public class ChallengeService {
      */
     @Transactional(readOnly = true)
     public ChallengeInviteResponse getFriendList_with_InviteStatus(String email, Long challengeId) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+        User user = userService.findByEmail(email);
 
-        //전체 친구 목록 조회
+        // 전체 친구 목록을 조회한다. 유저 프로필까지 한 번에 조회한다.
         List<User> friends = friendshipRepository.findAllFriendsByUserId(user.getId());
+
+        // 친구의 id를 수집한다.
+        List<Long> friendIds = friends.stream()
+                .map(User::getId)
+                .toList();
+
+        // 수집한 친구 id들 중, 해당 챌린지에 참여 중인 친구 id를 다시 수집한다.
+        Set<Long> participantIds = new HashSet<>(challengeParticipantRepository.findParticipantUserIdsIn(challengeId, friendIds));
+
+        // 이미 초대한 친구들의 id를 수집한다.
+        Set<Long> invitedIds = new HashSet<>(challengeInviteRepository.findInvitedUserIdsIn(challengeId, friendIds));
 
         // 친구 목록과 초대 상태를 조회한다.
         List<ChallengeFriendInviteListResponse> friendList = friends.stream()
-                //이미 참여 중인 친구는 제외
-                .filter(friend-> !challengeParticipantRepository.existsByChallenge_IdAndUser_Id(challengeId, friend.getId()))
+                .filter(friend-> !participantIds.contains(friend.getId()))  // 이미 참여 중인 친구는 제외한다.
                 .map(friend -> {
-                    // 친구의 프로필 사진 조회
-                    String profileUrl = userProfilePictureRepository.findByUser_Id(friend.getId())
-                            .map(UserProfilePicture::getImageUrl)
-                            .orElse(null); // 사진이 없을 경우 기본값 처리
+                    // 친구의 프로필 사진을 조회한다.
+                    UserProfilePicture picture = friend.getUserProfilePicture();
+                    String profileUrl = (picture != null) ? picture.getImageUrl() : null;
 
-                    //해당 친구의 초대 상태 판별(1. 초대되거나 2.초대되지 않음 (해당 초대 테이블에 저장된 정보 없음))
-                    boolean inviteStatus = challengeInviteRepository.existsByChallenge_IdAndInvitee_Id(challengeId, friend.getId());
+                    // 해당 친구의 초대 상태 판별 (1. 초대되거나 2.초대되지 않음 (해당 초대 테이블에 저장된 정보 없음))
+                    boolean inviteStatus = invitedIds.contains(friend.getId());
                     return new ChallengeFriendInviteListResponse(friend, profileUrl, inviteStatus);
                 })
                 .collect(Collectors.toList());
 
         // 챌린지 초대 링크를 조회한다(1개라고 가정)
-        //유효한 챌린지 링크가 존재하지 않는다면 새로 생성하여 반환한다.
+        // 유효한 챌린지 링크가 존재하지 않는다면 새로 생성하여 반환한다.
         Optional<ChallengeInviteLink> challengeInviteLink = challengeInviteLinkRepository.findFirstValidLinkByChallengeId(challengeId, LocalDateTime.now());
         
         String link;
@@ -293,18 +300,24 @@ public class ChallengeService {
         Pageable pageable = PageRequest.of(page, 20);
 
         // 검색어가 포함된 공개 챌린지를 조회한다.
-        Page<Challenge> challenges = challengeRepository.searchChallenges(
-                keyword, ChallengeVisibility.PUBLIC, pageable);
+        Page<Challenge> challenges = challengeRepository.searchChallenges(keyword, ChallengeVisibility.PUBLIC, pageable);
 
-        // 2. DTO 변환 (생성자에서 필요한 모든 필드 매핑)
+        // 검색한 챌린지의 id 목록을 추출한다.
+        List<Long> challengeIds = challenges.getContent()
+                .stream()
+                .map(Challenge::getId)
+                .toList();
+
+        // 태그를 한 번에 조회한다.
+        Map<Long, List<TagResponse>> tagMap = tagService.getChallengeTagsByOnce(challengeIds);
+
+        // DTO로 변환한다. (생성자에서 필요한 모든 필드 매핑)
         return challenges.map(challenge -> {
-            // 태그 목록은 성능을 위해 별도로 fetch join하거나
-            // application.yml의 default_batch_fetch_size 설정을 권장합니다.
-            List<TagResponse> tags = tagService.getChallengeTags(challenge.getId());
+            // 맞는 챌린지 id키가 있으면 태그 리스트를 생성하고 없다면 빈 리스트를 생성한다.
+            List<TagResponse> tags = tagMap.getOrDefault(challenge.getId(), List.of());
 
             return new SearchChallengeResponse(challenge, tags);
         });
-
     }
 
     /*

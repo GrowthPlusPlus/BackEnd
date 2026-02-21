@@ -35,9 +35,11 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
             "WHERE c.challengeVisibility = :visibility " +
             "AND (c.title LIKE %:keyword% OR t.tagName LIKE %:keyword%) " +
             "ORDER BY c.startDate DESC")
-    Page<Challenge> searchChallenges(@Param("keyword") String keyword,
-                                     @Param("visibility") ChallengeVisibility visibility,
-                                     Pageable pageable);
+    Page<Challenge> searchChallenges(
+            @Param("keyword") String keyword,
+            @Param("visibility") ChallengeVisibility visibility,
+            Pageable pageable
+    );
 
     // 현재 진행중인 챌린지들을 배치 단위로 검색한다.
     @Query("""

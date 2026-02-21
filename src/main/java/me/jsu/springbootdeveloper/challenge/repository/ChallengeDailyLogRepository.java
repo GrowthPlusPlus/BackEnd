@@ -26,6 +26,7 @@ public interface ChallengeDailyLogRepository extends JpaRepository<ChallengeDail
     @Query("""
         select cdl
         from ChallengeDailyLog cdl
+        join fetch cdl.challenge ch
         where cdl.user.id = :userId
           and cdl.postDate = :postDate
           and cdl.challenge is not null
