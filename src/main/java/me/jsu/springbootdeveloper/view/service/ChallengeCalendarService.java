@@ -4,6 +4,8 @@ package me.jsu.springbootdeveloper.view.service;
 
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
+import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeMemberService;
+import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeQueryService;
 import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.view.dto.ChallengeCalendarPhotoResponse;
 import me.jsu.springbootdeveloper.view.dto.ChallengeCalendarPostResponse;
@@ -31,6 +33,8 @@ public class ChallengeCalendarService {
     private final UserService userService;
     private final ChallengeService challengeService;
     private final PostService postService;
+    private final ChallengeQueryService challengeQueryService;
+    private final ChallengeMemberService challengeMemberService;
 
     /*
         캘린더의 제일 상단의 완료 일수와 연속 일수를 찾아 반환해주는 함수이다.
@@ -40,10 +44,10 @@ public class ChallengeCalendarService {
         User user = userService.findByEmail(email);
 
         // 유저 id와 챌린지 id로 챌린지 참여 DB의 정보를 가져온다. 전체 완료 일수와 연속 일수를 가져오기 위함이다.
-        ChallengeParticipant challengeParticipant = challengeService.findByUser_IdAndChallenge_IdForParticipant(user.getId(), challengeId);
+        ChallengeParticipant challengeParticipant = challengeQueryService.findByUser_IdAndChallenge_IdForParticipant(user.getId(), challengeId);
 
         // 유저가 챌린지의 방장인지 검사한다.
-        boolean challengeOwner = challengeService.isOwner(user.getId(), challengeId);
+        boolean challengeOwner = challengeMemberService.isOwner(user.getId(), challengeId);
 
         return new ChallengeCalendarResponse(challengeParticipant.getChallenge().getTitle(), challengeParticipant.getTotalSuccessDays(), challengeParticipant.getCurrentStreakDays(), challengeOwner);
     }
@@ -56,7 +60,7 @@ public class ChallengeCalendarService {
         User user = userService.findByEmail(email);
 
         // 참여를 검증하여 참여자가 아니라면 예외처리 한다.
-        challengeService.findByUser_IdAndChallenge_IdForParticipant(user.getId(), challengeId);
+        challengeQueryService.findByUser_IdAndChallenge_IdForParticipant(user.getId(), challengeId);
 
         LocalDate start = LocalDate.of(year, month, 1);  // 받은 연, 월로 해당 월의 1일 날짜를 만든다.
         LocalDate end = start.withDayOfMonth(start.lengthOfMonth());  // start가 속한 연, 월을 유지한 채 day만 마지막 날로 변경한다.
@@ -73,7 +77,7 @@ public class ChallengeCalendarService {
         User user = userService.findByEmail(email);
 
         // 참여를 검증하여 참여자가 아니라면 예외처리 한다.
-        challengeService.findByUser_IdAndChallenge_IdForParticipant(user.getId(), challengeId);
+        challengeQueryService.findByUser_IdAndChallenge_IdForParticipant(user.getId(), challengeId);
 
         Pageable pageable = PageRequest.of(
                 page,           // page

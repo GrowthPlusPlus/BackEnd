@@ -6,6 +6,9 @@ import me.jsu.springbootdeveloper.challenge.domain.Challenge;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeDailyLog;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeWeeklyStatus;
+import me.jsu.springbootdeveloper.challenge.enumType.Status;
+import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeQueryService;
+import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeUtils;
 import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeMaintenanceService;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeService;
@@ -36,6 +39,7 @@ public class MainHomeService {
     private final NotificationService notificationService;
     private final ChallengeService challengeService;
     private final ChallengeMaintenanceService challengeMaintenanceService;
+    private final ChallengeQueryService challengeQueryService;
 
     public MainHomeResponse getMainHome(String userEmail, LocalDate today, LocalDate weekStartDate, LocalDate targetDate) {
         User user = userService.findByEmail(userEmail);
@@ -54,7 +58,7 @@ public class MainHomeService {
         Map<Long, ChallengeWeeklyStatus> weeklyStatusMap = Collections.emptyMap();
 
         // 내가 참여한 챌린지 중, 현재 진행중인 챌린지 목록을 가져온다. 시점은 상관없다.
-        List<ChallengeParticipant> joinedChallenges = challengeService.findInProgressWithChallengeByUserId(user.getId());
+        List<ChallengeParticipant> joinedChallenges = challengeQueryService.findStatusWithChallengeByUserIdAndStatus(user.getId(), Status.IN_PROGRESS);
         if (joinedChallenges.isEmpty()) {  // 아직 아무런 챌린지에도 참여하지 않는 경우 빈 리스트를 반환한다.
                 return new MainHomeResponse(Collections.emptyList(), notificationNumber);
         }
@@ -64,7 +68,7 @@ public class MainHomeService {
             과거, 현재의 경우에만 데일리 로그를 검색한다.
          */
         if (!isFuture) {
-            List<ChallengeDailyLog> challengeDailyLogs = challengeService.findByUser_IdAndPostDate(user.getId(), targetDate);
+            List<ChallengeDailyLog> challengeDailyLogs = challengeQueryService.findByUser_IdAndPostDate(user.getId(), targetDate);
             // 데일리 로그 list를 map으로 바꾸어서 챌린지 id와 데일리 로그의 챌린지 id를 바로 매핑한다.
             dailyLogMap = challengeDailyLogs.stream().collect(Collectors.toMap(
                     log -> log.getChallenge().getId(),  // 챌린지 id를 map key로 설정한다.
@@ -77,7 +81,7 @@ public class MainHomeService {
             오늘만 주간 상태가 의미가 있으므로, 현재가 아니면 처리하지 않는다.
          */
         if (isToday) {
-            List<ChallengeWeeklyStatus> challengeWeeklyStatuses = challengeService.findByUser_IdAndWeekStartDate(
+            List<ChallengeWeeklyStatus> challengeWeeklyStatuses = challengeQueryService.findByUser_IdAndWeekStartDate(
                     user.getId(), weekStartDate
             );
             // 위와 마찬가지로 챌린지 id를 매핑하기 위해 map을 사용한다.
@@ -119,8 +123,8 @@ public class MainHomeService {
                     successCount = 0;
                 }
 
-                // 부분 주를 계산한다. 다른 서비스의 함수를 사용한 것으로 리펙토링이 필요할 수 있다.
-                int adjustedRequiredWeeklyCount = challengeMaintenanceService.calculateAdjustedRequired(challenge, weekStartDate,weekStartDate.plusDays(6));
+                // 부분 주를 계산한다.
+                int adjustedRequiredWeeklyCount = ChallengeUtils.calculateAdjustedRequired(challenge, weekStartDate,weekStartDate.plusDays(6));
 
                 /*
                     effectiveStart와 effectiveEnd는 남은 가능 일수를 계산하기 위해 필요한 값이다.

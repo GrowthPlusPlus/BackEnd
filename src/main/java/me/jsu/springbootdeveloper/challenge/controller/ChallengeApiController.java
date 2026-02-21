@@ -9,15 +9,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import me.jsu.springbootdeveloper.challenge.domain.Challenge;
 import me.jsu.springbootdeveloper.challenge.dto.*;
 import me.jsu.springbootdeveloper.challenge.dto.CreateChallengeResponse;
 import me.jsu.springbootdeveloper.challenge.dto.CreateChallengeRequest;
-import me.jsu.springbootdeveloper.challenge.repository.ChallengeParticipantRepository;
-import me.jsu.springbootdeveloper.challenge.repository.ChallengeRepository;
-import me.jsu.springbootdeveloper.user.domain.User;
-import me.jsu.springbootdeveloper.user.repository.UserRepository;
-import me.jsu.springbootdeveloper.user.service.UserService;
+import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeDeleteService;
+import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeMemberService;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeService;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -38,10 +34,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class ChallengeApiController {
     private final ChallengeService challengeService;
-    private final ChallengeRepository challengeRepository;
-    private final ChallengeParticipantRepository challengeParticipantRepository;
-    private final UserService userService;
-    private final UserRepository userRepository;
+    private final ChallengeDeleteService challengeDeleteService;
+    private final ChallengeMemberService challengeMemberService;
 
     /*
         챌린지를 생성하는 POST 요청 API이다.
@@ -55,7 +49,7 @@ public class ChallengeApiController {
             summary = "챌린지 생성하기",
             description = """
         요청: 챌린지 생성 화면에 있는 필드 순서대로 값 보내기
-        응답 
+        응답
             (1) 챌린지 방 링크 (2) 친구 목록 with 초대상태
         ex) POST /api/challenges/create
         """
@@ -174,9 +168,7 @@ public class ChallengeApiController {
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Long challengeId
     ) {
-        User user = userRepository.findByEmail(userDetails.getUsername()).orElseThrow();
-        Challenge challenge = challengeRepository.findById(challengeId).orElseThrow();
-        challengeService.joinChallenge(challenge, user);
+        challengeService.joinChallengeController(userDetails.getUsername(), challengeId);
 
         return ResponseEntity.ok().build();
     }
@@ -206,7 +198,7 @@ public class ChallengeApiController {
             @Parameter(description = "챌린지 ID", required = true, example = "1")
             @PathVariable Long challengeId
     ) {
-        challengeService.leaveChallenge(userDetails.getUsername(), challengeId);
+        challengeMemberService.leaveChallenge(userDetails.getUsername(), challengeId);
 
         return ResponseEntity.noContent().build();
     }
@@ -242,7 +234,7 @@ public class ChallengeApiController {
             @Parameter(description = "닉네임 부분 검색 (미입력 시 전체 조회)", required = false, example = "김")
             @RequestParam(required = false) String nickname  // 필수가 아니다.
     ) {
-        Page<ChallengeMemberResponse> response = challengeService.getMembers(userDetails.getUsername(), challengeId, page, nickname);
+        Page<ChallengeMemberResponse> response = challengeMemberService.getMembers(userDetails.getUsername(), challengeId, page, nickname);
 
         return ResponseEntity.ok(response);
     }
@@ -271,7 +263,7 @@ public class ChallengeApiController {
             @PathVariable Long challengeId,
             @RequestBody @Valid ChallengeOwnerDelegateRequest request
     ) {
-        challengeService.delegateOwner(userDetails.getUsername(), challengeId, request.getDelegateMemberId());
+        challengeMemberService.delegateOwner(userDetails.getUsername(), challengeId, request.getDelegateMemberId());
 
         return ResponseEntity.noContent().build();
     }
@@ -300,7 +292,7 @@ public class ChallengeApiController {
             @PathVariable Long challengeId,
             @RequestBody @Valid KickMemberRequest request
     ) {
-        challengeService.kickMember(userDetails.getUsername(), challengeId, request.getTargetUserId());
+        challengeMemberService.kickMember(userDetails.getUsername(), challengeId, request.getTargetUserId());
 
         return ResponseEntity.noContent().build();
     }
@@ -327,7 +319,7 @@ public class ChallengeApiController {
             @Parameter(description = "챌린지 ID", required = true, example = "10")
             @PathVariable Long challengeId
     ) {
-        challengeService.deleteChallenge(userDetails.getUsername(), challengeId);
+        challengeDeleteService.deleteChallenge(userDetails.getUsername(), challengeId);
 
         return ResponseEntity.noContent().build();
     }

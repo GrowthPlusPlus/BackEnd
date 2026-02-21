@@ -4,7 +4,9 @@ package me.jsu.springbootdeveloper.user.service;
 
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
+import me.jsu.springbootdeveloper.challenge.enumType.Status;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeService;
+import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeQueryService;
 import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.user.domain.UserStatistics;
 import me.jsu.springbootdeveloper.user.exception.UserStatisticsNotFoundException;
@@ -21,8 +23,8 @@ import java.util.List;
 @RequiredArgsConstructor
 @Service
 public class UserStatisticsService {
-    private final ChallengeService challengeService;
     private final UserStatisticsRepository userStatisticsRepository;
+    private final ChallengeQueryService challengeQueryService;
 
     /*
        챌린지를 인증하여 로그가 확정됐을 때 수행하는 함수이다.
@@ -37,7 +39,7 @@ public class UserStatisticsService {
                         .build()));
 
         // 챌린지 참가 정보를 가져온다.
-        ChallengeParticipant participant = challengeService.findByUser_IdAndChallenge_IdForParticipant(user.getId(), challengeId);
+        ChallengeParticipant participant = challengeQueryService.findByUser_IdAndChallenge_IdForParticipant(user.getId(), challengeId);
 
         // 유저 전체 활동일수(오늘 활동 처리)
         userStats.markActiveToday(today);  // 유저 최근 활동 일수에서, 오늘 활동을 했음을 반영한다.
@@ -57,10 +59,8 @@ public class UserStatisticsService {
         // 유저 통계를 검색한다.
         UserStatistics userStats = findByUser_IdStatistics(userId);
 
-        ChallengeParticipant participant = challengeService.findByUser_IdAndChallenge_IdForParticipant(userId, challengeId);
-
         // 오늘 날짜에 유저가 수행한 다른 인증 로그가 남아있는지 확인한다.
-        boolean stillActiveToday = challengeService.existsByUser_IdAndPostDateForLog(userId, today);
+        boolean stillActiveToday = challengeQueryService.existsByUser_IdAndPostDateForLog(userId, today);
 
         // 오늘 활동이 완전히 0이 되었다면, 유저 활동일수/연속일수를 롤백한다.
         if (!stillActiveToday) {
@@ -79,7 +79,7 @@ public class UserStatisticsService {
        당일 취소로 score가 감소하면 2등이 누구였는지 모르므로 유저가 참여한 챌린지의 전체 스캔이 필요하다.
      */
     private void recomputeDominant(UserStatistics userStats, Long userId) {
-        List<ChallengeParticipant> participants = challengeService.findByUser_IdForCpInProgress(userId);
+        List<ChallengeParticipant> participants = challengeQueryService.findStatusWithChallengeByUserIdAndStatus(userId, Status.IN_PROGRESS);
 
         Long bestId = null;
         int bestScore = 0;

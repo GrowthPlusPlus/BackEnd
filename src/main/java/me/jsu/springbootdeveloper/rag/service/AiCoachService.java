@@ -5,6 +5,7 @@ package me.jsu.springbootdeveloper.rag.service;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.domain.Challenge;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeService;
+import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeQueryService;
 import me.jsu.springbootdeveloper.rag.dto.DocumentSearchResultDto;
 import me.jsu.springbootdeveloper.rag.dto.QueryResponseDto;
 import me.jsu.springbootdeveloper.user.domain.User;
@@ -26,7 +27,7 @@ public class AiCoachService {
     private final RagService ragService;
     private final UserService userService;
     private final UserStatisticsService userStatisticsService;
-    private final ChallengeService challengeService;
+    private final ChallengeQueryService challengeQueryService;
 
     public QueryResponseDto coach(String email) {
         User user = userService.findByEmail(email);
@@ -79,7 +80,7 @@ public class AiCoachService {
         sb.append("- 최근 30일 활동 일수: ").append(s.getMonthlyActiveDays()).append("일\n");
 
         if (s.getDominantChallengeId() != null) {
-            Challenge dominant = challengeService.findById(s.getDominantChallengeId());
+            Challenge dominant = challengeQueryService.findById(s.getDominantChallengeId());
 
             sb.append("- 진행중인 챌린지 중 가장 많이 수행한 챌린지: ").append(dominant.getTitle())
                     .append(" (수행횟수 ")
@@ -88,7 +89,7 @@ public class AiCoachService {
         }
 
         if (s.getMostFailedChallengeId() != null) {
-            Challenge failed = challengeService.findById(s.getMostFailedChallengeId());
+            Challenge failed = challengeQueryService.findById(s.getMostFailedChallengeId());
 
             sb.append("- 최근 실패한 챌린지 중 실패율 높았던 챌린지: ")
                     .append(failed.getTitle())
@@ -98,7 +99,7 @@ public class AiCoachService {
         }
 
         if (s.getMostUnstableChallengeId() != null) {
-            Challenge unstable = challengeService.findById(s.getMostUnstableChallengeId());
+            Challenge unstable = challengeQueryService.findById(s.getMostUnstableChallengeId());
 
             sb.append("- 수행 패턴 변동성이 큰 챌린지: ")
                     .append(unstable.getTitle())

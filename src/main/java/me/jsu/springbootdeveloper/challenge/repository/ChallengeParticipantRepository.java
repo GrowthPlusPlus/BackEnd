@@ -19,39 +19,14 @@ import java.util.Optional;
     챌린지 참여자를 관리하는 DB로, 테이블에 매핑되는 엔티티 타입은 ChallengeParticipant, 엔티티의 pk 타입은 Long이다.
  */
 public interface ChallengeParticipantRepository extends JpaRepository<ChallengeParticipant, Long> {
-    @Query("""
-        select cp
-        from ChallengeParticipant cp
-        where cp.user.id = :userId
-          and cp.status = 'IN_PROGRESS'
-    """)
-    List<ChallengeParticipant> findByUser_IdForCpInProgress(@Param("userId") Long userId);  // 유저 id로 유저가 참여한 진행중인 챌린지들을 검색한다.
-
+    // 유저 id로 유저가 참여한 챌린지들을 검색한다. 챌린지 자체 정보도 함께 가져온다.
     @Query("""
         select cp
         from ChallengeParticipant cp
         join fetch cp.challenge
         where cp.user.id = :userId
     """)
-    List<ChallengeParticipant> findWithChallengeByUserId(@Param("userId") Long userId);  // 유저 id로 유저가 참여한 챌린지들을 검색한다. 챌린지 자체 정보도 함께 가져온다.
-
-    @Query("""
-        select cp
-        from ChallengeParticipant cp
-        join fetch cp.user
-        where cp.challenge.id = :challengeId
-    """)
-    List<ChallengeParticipant> findWithUserByChallengeId(@Param("challengeId") Long challengeId);  // 챌린지 id로 챌린지에 참여한 유저들을 검색한다.
-
-    // 유저 id로 유저가 참여한 챌린지 중, 현재 진행중인 챌린지들을 검색한다.
-    @Query("""
-        select cp
-        from ChallengeParticipant cp
-        join fetch cp.challenge c
-        where cp.user.id = :userId
-          and cp.status = 'IN_PROGRESS'
-    """)
-    List<ChallengeParticipant> findInProgressWithChallengeByUserId(@Param("userId") Long userId);
+    List<ChallengeParticipant> findWithChallengeByUserId(@Param("userId") Long userId);
 
     // 유저 id와 챌린지 상태로 챌린지 참여 DB와 챌린지 자체 DB를 함께 검색한다.
     @Query("""
@@ -134,7 +109,7 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
     @Query("""
         select cp
         from ChallengeParticipant cp
-        join cp.challenge c
+        join fetch cp.challenge c
         where cp.status = 'IN_PROGRESS'
           and c.endDate < :today
           and cp.id > :lastId
@@ -192,6 +167,7 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
             @Param("score") double score
     );
 
+    // 랭킹 점수를 집계하기 위해 사용하는 쿼리문으로, 배치를 통해 진행중인 챌린지의 유저 참가 정보를 조회한다.
     @Query("""
         select cp
         from ChallengeParticipant cp

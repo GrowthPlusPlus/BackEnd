@@ -3,7 +3,9 @@
 package me.jsu.springbootdeveloper.post.service;
 
 import me.jsu.springbootdeveloper.challenge.domain.Challenge;
+import me.jsu.springbootdeveloper.challenge.service.ChallengePreviewService;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeService;
+import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeQueryService;
 import me.jsu.springbootdeveloper.post.dto.ImageVerificationResponse;
 import me.jsu.springbootdeveloper.post.dto.ImageVerificationResult;
 import me.jsu.springbootdeveloper.post.exception.ClipServerException;
@@ -34,17 +36,17 @@ public class ImageVerificationService {
     private static final Logger log = LoggerFactory.getLogger(ImageVerificationService.class);
 
     private final WebClient webClient;
-    private final ChallengeService challengeService;
+    private final ChallengeQueryService challengeQueryService;
 
     // 의존성을 주입한다. config를 사용하면 default값이 주입되므로 직접 주입한다.
     public ImageVerificationService(
             @Value("${clip.base-url}") String clipBaseUrl,
-            ChallengeService challengeService
+            ChallengeQueryService challengeQueryService
     ) {
         this.webClient = WebClient.builder()
                 .baseUrl(clipBaseUrl)
                 .build();
-        this.challengeService = challengeService;
+        this.challengeQueryService = challengeQueryService;
     }
 
     private static final long MAX_FILE_SIZE = 5 * 1024 * 1024;  // 최대 이미지 크기이다.
@@ -108,7 +110,7 @@ public class ImageVerificationService {
         clip 서버에 챌린지 제목과 이미지를 보내 검증 결과를 얻는 함수이다.
      */
     public ImageVerificationResponse verifyWithCLIP(Long challengeId, MultipartFile image) {
-        Challenge challenge = challengeService.findById(challengeId);
+        Challenge challenge = challengeQueryService.findById(challengeId);
 
         // 보낼 값을 map으로 만든다.
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();

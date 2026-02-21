@@ -4,6 +4,7 @@ package me.jsu.springbootdeveloper.view.service;
 
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.domain.Challenge;
+import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeQueryService;
 import me.jsu.springbootdeveloper.post.domain.Article;
 import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.post.dto.ArticleDetailResponse;
@@ -24,7 +25,7 @@ import java.util.*;
 public class PostFeedMapper {
     private final PostService postService;
     private final PostLikeService postLikeService;
-    private final ChallengeService challengeService;
+    private final ChallengeQueryService challengeQueryService;
 
     public Page<ArticleDetailResponse> toDto(Page<Article> articles, Long userId) {
         // 인증글의 부가 정보를 얻기 위해 인증글 id, 챌린지 id를 수집한다.
@@ -74,7 +75,7 @@ public class PostFeedMapper {
         Map<Long, Map<Long, Integer>> successDaysMap = new HashMap<>();  // 조회의 편의를 위해 map을 사용한다.
 
         if (!authorIds.isEmpty() && !challengeIds.isEmpty()) {
-            for (Object[] row : challengeService.findSuccessDays(authorIds, challengeIds)) {
+            for (Object[] row : challengeQueryService.findSuccessDays(authorIds, challengeIds)) {
                 Long authorId = (Long) row[0];
                 Long challengeId = (Long) row[1];
                 Integer days = (Integer) row[2];
