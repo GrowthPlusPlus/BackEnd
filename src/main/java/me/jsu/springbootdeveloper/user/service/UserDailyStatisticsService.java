@@ -4,6 +4,7 @@ package me.jsu.springbootdeveloper.user.service;
 
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeService;
+import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeQueryService;
 import me.jsu.springbootdeveloper.user.domain.UserStatistics;
 import me.jsu.springbootdeveloper.user.repository.UserStatisticsRepository;
 import org.springframework.data.domain.PageRequest;
@@ -20,7 +21,7 @@ import java.util.List;
 @Service
 public class UserDailyStatisticsService {
     private final UserStatisticsRepository userStatisticsRepository;
-    private final ChallengeService challengeService;
+    private final ChallengeQueryService challengeQueryService;
 
     private static final int BATCH_SIZE = 500;  // 배치 크기
 
@@ -37,7 +38,7 @@ public class UserDailyStatisticsService {
                 Long userId = userStats.getUser().getId();
 
                 // 어제 하루 동안 인증 성공이 있었는지 검사한다.
-                boolean wasActive = challengeService.existsByUser_IdAndPostDateForLog(userId, targetDate);
+                boolean wasActive = challengeQueryService.existsByUser_IdAndPostDateForLog(userId, targetDate);
                 if (!wasActive && userStats.getCurrentStreakEndDate() != null) {  // 로그가 없다면 연속 일수를 초기화 한다.
                     userStats.recordDailyFail();
                 }

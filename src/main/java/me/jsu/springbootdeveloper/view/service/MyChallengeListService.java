@@ -5,6 +5,7 @@ package me.jsu.springbootdeveloper.view.service;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
 import me.jsu.springbootdeveloper.challenge.enumType.Status;
+import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeQueryService;
 import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.view.dto.MyChallengeInProgressResponse;
 import me.jsu.springbootdeveloper.view.dto.MyChallengeSuccessOrFailResponse;
@@ -25,7 +26,7 @@ import java.util.Objects;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)  // 해당 서비스는 조회 전용이다.
 public class MyChallengeListService {
-    private final ChallengeService challengeService;
+    private final ChallengeQueryService challengeQueryService;
     private final UserService userService;
 
     /*
@@ -35,7 +36,7 @@ public class MyChallengeListService {
         User user = userService.findByEmail(email);
 
         // 참여한 챌린지들을 검색한다.
-        List<ChallengeParticipant> challengeParticipants = challengeService.findStatusWithChallengeByUserIdAndStatus(user.getId(), status);
+        List<ChallengeParticipant> challengeParticipants = challengeQueryService.findStatusWithChallengeByUserIdAndStatus(user.getId(), status);
 
         // 클라이언트가 챌린지 목록을 2개만 요청한 경우, 챌린지 개수를 2개로 줄인다.
         if (onlyTwo) {
@@ -84,7 +85,7 @@ public class MyChallengeListService {
         User user = userService.findByEmail(email);
 
         // 참여한 챌린지들을 검색한다.
-        List<ChallengeParticipant> challengeParticipants = challengeService.findStatusWithChallengeByUserIdAndStatus(user.getId(), status);
+        List<ChallengeParticipant> challengeParticipants = challengeQueryService.findStatusWithChallengeByUserIdAndStatus(user.getId(), status);
 
         // 클라이언트가 챌린지 목록을 2개만 요청한 경우, 챌린지 개수를 2개로 줄인다.
         if (onlyTwo) {

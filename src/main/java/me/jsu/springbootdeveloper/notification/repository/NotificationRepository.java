@@ -16,5 +16,6 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
             Long userId,
             Pageable pageable
     );
+
     long countByUser_IdAndIsReadFalse(Long userId);  // 읽지 않은 알림을 유저 id로 조회한다.
 }

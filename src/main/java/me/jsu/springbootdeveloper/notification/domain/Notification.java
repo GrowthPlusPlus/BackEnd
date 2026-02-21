@@ -40,10 +40,7 @@ public class Notification {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private NotificationType type;  // 알림 타입을 지정한다.
-    /*
-    @Column(nullable = false)
-    private String title;  // 알림 제목이다.
-    */
+
     @Column(nullable = false, length = 1000)
     private String message;  // 알림 내용이다.
 
@@ -58,7 +55,6 @@ public class Notification {
     public Notification(User user, NotificationType type, String message) {
         this.user = user;
         this.type = type;
-        //this.title = title;
         this.message = message;
         this.isRead = false;  // 초기 상태는 읽지 않음이다.
     }

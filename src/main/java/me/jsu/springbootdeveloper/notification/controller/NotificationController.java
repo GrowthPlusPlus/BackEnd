@@ -7,10 +7,11 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
-import me.jsu.springbootdeveloper.view.dto.MyNotificationResponse;
+import me.jsu.springbootdeveloper.notification.dto.MyNotificationResponse;
 import me.jsu.springbootdeveloper.notification.service.NotificationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.data.domain.Page;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -41,17 +42,13 @@ public class NotificationController {
             @ApiResponse(responseCode = "404", description = "유저 또는 알림 데이터를 찾을 수 없음")
     })
     @GetMapping("/api/notification")
-    public ResponseEntity<MyNotificationResponse> getMainHome(
+    public ResponseEntity<Page<MyNotificationResponse>> getNotification(
             @AuthenticationPrincipal UserDetails userDetails,
-            @Parameter(
-                    description = "페이지 번호 (0부터 시작)",
-                    required = true,
-                    example = "0"
-            )
-            @RequestParam int page) {
-
+            @Parameter(description = "페이지 번호 (0부터 시작)", required = true, example = "0")
+            @RequestParam int page)
+    {
         // 서비스에서 정제한 정보를 response 객체에 담는다.
-        MyNotificationResponse response = notificationService.getNotification(userDetails.getUsername(), page);
+        Page<MyNotificationResponse> response = notificationService.getNotification(userDetails.getUsername(), page);
 
         // 검색한 값을 클라이언트에게 반환한다.
         return ResponseEntity.ok(response);

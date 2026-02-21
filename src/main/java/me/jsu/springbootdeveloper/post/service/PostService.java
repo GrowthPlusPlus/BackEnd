@@ -4,6 +4,8 @@ package me.jsu.springbootdeveloper.post.service;
 
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeDailyLog;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeWeeklyStatus;
+import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeDeleteService;
+import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeQueryService;
 import me.jsu.springbootdeveloper.post.dto.ArticleImageResponse;
 import me.jsu.springbootdeveloper.post.exception.ArticleAccessDeniedException;
 import me.jsu.springbootdeveloper.post.exception.ArticleNotFoundException;
@@ -49,6 +51,8 @@ public class PostService {
     private final PostPictureRepository postPictureRepository;
     private final CloudinaryService cloudinaryService;
     private final UserStatisticsService userStatisticsService;
+    private final ChallengeQueryService challengeQueryService;
+    private final ChallengeDeleteService challengeDeleteService;
     private static final int MAX_IMAGE_COUNT = 3;
 
     /*
@@ -61,10 +65,10 @@ public class PostService {
         User user = userService.findByEmail(email);
 
         // request로 온 챌린지 id로 post가 어떤 챌린지에 속하는지 검색한다.
-        Challenge challenge = challengeService.findById(challengeId);
+        Challenge challenge = challengeQueryService.findById(challengeId);
 
         // 현재 진행중인 챌린지가 아니라면 예외를 던진다.
-        challengeService.challengeStatusInProgress(user.getId(), challengeId);
+        challengeQueryService.challengeStatusInProgress(user.getId(), challengeId);
 
         // 챌린지 인증 시각을 정확하게 보기 위해 생성 시각과는 다른 인증 날짜 도메인을 생성한다.
         LocalDateTime postDateTime = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
@@ -237,7 +241,7 @@ public class PostService {
 
             // participant 조회는 challenge가 존재할 때만 한다.
             if (challenge != null) {
-                ChallengeParticipant challengeParticipant = challengeService.findByUser_IdAndChallenge_IdForParticipant(author.getId(), challenge.getId());
+                ChallengeParticipant challengeParticipant = challengeQueryService.findByUser_IdAndChallenge_IdForParticipant(author.getId(), challenge.getId());
 
                 if (challengeParticipant != null) {
                     totalSuccessDays = challengeParticipant.getTotalSuccessDays();  // 해당 챌린지의 총 인증 횟수를 구한다.
@@ -317,17 +321,17 @@ public class PostService {
         authorizeArticleAuthor(article, user);  // 글 작성자인지 확인한다.
 
         // 챌린지 데일리 로그 정보는 게시글이 삭제되면 삭제한다.
-        ChallengeDailyLog challengeDailyLog = challengeService.findLogByUser_IdAndArticle_IdAndPostDate(user.getId(), postId, article.getPostDate());
-        challengeService.deleteLog(challengeDailyLog);
+        ChallengeDailyLog challengeDailyLog = challengeQueryService.findLogByUser_IdAndArticle_IdAndPostDate(user.getId(), postId, article.getPostDate());
+        challengeDeleteService.deleteLog(challengeDailyLog);
 
         deleteImages(postPictures);  // 인증글에 저장된 사진들을 클라우디너리에서 삭제한다.
 
         // 챌린지의 오늘 성공 횟수를 감소시킨다.
-        Challenge challenge = challengeService.findById(article.getChallenge().getId());
+        Challenge challenge = challengeQueryService.findById(article.getChallenge().getId());
         challenge.decreaseTodaySuccess();
 
         // 해당 유저의 총 챌린지 성공 일수를 감소시킨다.
-        ChallengeParticipant challengeParticipant = challengeService.findByUser_IdAndChallenge_IdForParticipant(user.getId(), challenge.getId());
+        ChallengeParticipant challengeParticipant = challengeQueryService.findByUser_IdAndChallenge_IdForParticipant(user.getId(), challenge.getId());
         challengeParticipant.removeDailySuccess(article.getPostDate());
 
         // 이번주 챌린지 총 성공 횟수를 감소시킨다.

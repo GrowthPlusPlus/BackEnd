@@ -2,6 +2,7 @@
 
 package me.jsu.springbootdeveloper.user.service;
 
+import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeDeleteService;
 import me.jsu.springbootdeveloper.post.service.ReportService;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Service;
 public class UserWithdrawalService {
     private final UserService userService;
     private final ChallengeService challengeService;
+    private final ChallengeDeleteService challengeDeleteService;
     private final PostService postService;
     private final CommentService commentService;
     private final PostLikeService postLikeService;
@@ -34,10 +36,10 @@ public class UserWithdrawalService {
         User user = userService.findByEmail(email);
 
         // 유저가 챌린지 오너인 경우, 다른 사용자에게 위임한다.
-        challengeService.handleOwnerWithdrawal(user.getId());
+        challengeDeleteService.handleOwnerWithdrawal(user.getId());
 
         // 게시글, 로그, 댓글, 좋아요, 유저 통계 등의 정보는 FK를 해제하여 회원이 사라져도 남겨두도록 한다.
-        challengeService.detachLogToUser(user);  // 로그 해제
+        challengeDeleteService.detachLogToUser(user);  // 로그 해제
         postService.detachPostToUser(user);  // 게시글 해제
         commentService.detachCommentToUser(user);  // 댓글 해제
         postLikeService.detachLikeToUser(user);  // 좋아요 해제
@@ -46,7 +48,7 @@ public class UserWithdrawalService {
         reportService.detachReportCommentToUser(user.getId());  // 유저의 댓글 신고 해제
 
         // 참여한 챌린지에서 나온다. CASCADE에 의존하지 않고 직접 구현한 챌린지 서비스의 삭제를 사용한다.
-        challengeService.deleteParticipant(user.getId());
+        challengeDeleteService.deleteParticipant(user.getId());
 
         /*
             클라우디너리의 사진인 외부 리소스를 삭제한다.

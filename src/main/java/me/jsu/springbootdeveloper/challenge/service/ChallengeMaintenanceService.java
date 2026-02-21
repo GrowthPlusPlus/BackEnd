@@ -9,6 +9,7 @@ import me.jsu.springbootdeveloper.challenge.domain.ChallengeWeeklyStatus;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeParticipantRepository;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeRepository;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeWeeklyStatusRepository;
+import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeUtils;
 import me.jsu.springbootdeveloper.user.domain.UserStatistics;
 import me.jsu.springbootdeveloper.user.service.UserStatisticsService;
 import org.springframework.data.domain.PageRequest;
@@ -122,7 +123,7 @@ public class ChallengeMaintenanceService {
         }
 
         // 부분 주 보정이 적용된 최소 주간 성공 횟수로, 첫 주차나 마지막 주차를 위해 사용한다.
-        int adjustedRequired = calculateAdjustedRequired(challenge, weekStart, weekEnd);
+        int adjustedRequired = ChallengeUtils.calculateAdjustedRequired(challenge, weekStart, weekEnd);
 
         /*
             effectiveStart와 effectiveEnd는 남은 가능 일수를 계산하기 위해 필요한 값이다.
@@ -180,36 +181,5 @@ public class ChallengeMaintenanceService {
                 lastId = cp.getId();  // 커서를 이동한다
             }
         } while (!batch.isEmpty());
-    }
-
-    /*
-       부분 주 보정 로직이다.
-       주는 항상 월요일을 기준으로 시작하므로, 해당 유저가 주에 늦게 시작하여 불이익을 보거나 챌린지 마지막 주에 불이익을 보지 않도록 한다.
-       주간 최소 인증 횟수를 비례 조정한다.
-     */
-    public int calculateAdjustedRequired(Challenge challenge, LocalDate weekStart, LocalDate weekEnd) {
-        // 챌린지 시작일과 주 시작일 중 더 늦은 날짜를 사용한다. 따라서 챌린지가 없던 날은 계산에서 제외한다.
-        LocalDate effectiveStart;
-        if (challenge.getStartDate().isAfter(weekStart)) {  // 챌린지 시작일이 주 시작일보다 더 늦은 경우이다.
-            effectiveStart = challenge.getStartDate();  // 주의 시작인 월요일부터가 아닌, 챌린지 시작일부터 계산한다.
-        }
-        else {  // 일반적인 케이스이다.
-            effectiveStart = weekStart;
-        }
-
-        // 챌린지 종료일과 주의 종료일 중 더 이른 날짜를 사용한다. 주는 일요일까지지만 챌린지가 금요일에 끝나는 경우 등을 고려한다.
-        LocalDate effectiveEnd;
-        if (challenge.getEndDate().isBefore(weekEnd)) {  // 챌린지 종료일이 주 종료일보다 빠른 경우이다.
-            effectiveEnd = challenge.getEndDate();  // 주의 마지막인 일요일이 아닌, 챌린지 종료일로 계산한다.
-        }
-        else {  // 일반적인 경우이다.
-            effectiveEnd = weekEnd;
-        }
-
-        // 이번 주에 챌린지가 실제로 존재한 날짜 수를 계산한다. 날짜의 양 끝을 포함하기 위해 +1을 한다.
-        long daysInWeek = ChronoUnit.DAYS.between(effectiveStart, effectiveEnd) + 1;
-
-        // 원래 주간 목표 * (실제 수행가능한 일수 / 7일) 값을 반올림 하여 최소 인증 횟수를 조정한다.
-        return (int) Math.ceil(challenge.getRequiredWeeklyCount() * (daysInWeek / 7.0));
     }
 }

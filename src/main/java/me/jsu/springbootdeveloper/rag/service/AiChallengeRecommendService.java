@@ -7,6 +7,7 @@ import me.jsu.springbootdeveloper.challenge.domain.Challenge;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeParticipantRepository;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeRepository;
+import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeQueryService;
 import me.jsu.springbootdeveloper.rag.dto.DocumentSearchResultDto;
 import me.jsu.springbootdeveloper.rag.dto.QueryResponseDto;
 import me.jsu.springbootdeveloper.tag.domain.TagToUser;
@@ -31,8 +32,8 @@ public class AiChallengeRecommendService {
     private final RagService ragService;
     private final UserService userService;
     private final TagToUserRepository tagToUserRepository;
-    private final ChallengeParticipantRepository challengeParticipantRepository;
     private final ChallengeRepository challengeRepository;
+    private final ChallengeQueryService challengeQueryService;
 
     /*
         사용자 정보를 기반으로 AI가 챌린지를 추천해주는 메서드이다.
@@ -66,7 +67,7 @@ public class AiChallengeRecommendService {
         List<TagToUser> tagToUsers = tagToUserRepository.findWithTagByUserId(userId);
 
         // 사용자가 참여한 챌린지 목록을 가져온다.
-        List<ChallengeParticipant> challengeParticipants = challengeParticipantRepository.findWithChallengeByUserId(userId);
+        List<ChallengeParticipant> challengeParticipants = challengeQueryService.findWithChallengeByUserId(userId);
 
         // 문서의 내용을 생성한다.
         String content = buildContent(tagToUsers, challengeParticipants);
