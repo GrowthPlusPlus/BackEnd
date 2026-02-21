@@ -32,6 +32,8 @@ public class FriendService {
     private final ChallengeInviteRepository challengeInviteRepository;
     private final ChallengeParticipantRepository challengeParticipantRepository;
     private final FcmService fcmService;  // FCM 푸시 알림 발송을 위한 서비스
+    private final UserService userService;
+
     /**
      * 1. 친구 신청 보내기
      */
@@ -88,31 +90,33 @@ public class FriendService {
 
         return requests.stream()
                 .map(request -> {
-                    // 신청한 유저(fromUser)의 프로필 사진을 조회
-                    String profileUrl = userProfilePictureRepository.findByUser_Id(request.getFromUser().getId())
-                            .map(UserProfilePicture::getImageUrl)
-                            .orElse(null); // 사진이 없을 경우 기본값 처리
+                    // 신청한 유저(fromUser)의 프로필 사진을 조회한다. fetch로 이미 사진 객체를 가져왔다.
+                    User fromUser = request.getFromUser();
+
+                    UserProfilePicture picture = fromUser.getUserProfilePicture();
+                    String profileUrl = (picture != null) ? picture.getImageUrl() : null;  // 사진이 없다면 링크를 null 처리한다.
 
                     return new FriendRequestResponse_Received(request, profileUrl);
                 })
                 .collect(Collectors.toList());
     }
 
-    //내가 보낸 친구 요청 조회
+    // 내가 보낸 친구 요청 조회
     @Transactional(readOnly = true)
     public List<FriendRequestResponse_Sent> getSentRequests(String email) {
         User currentUser = userRepository.findByEmail(email).orElseThrow();
 
-        //Repository 메서드 활용
+        // Repository 메서드 활용
         List<FriendRequest> requests = friendRequestRepository
                 .findAllByFromUser_IdAndStatus(currentUser.getId(), FriendRequestStatus.REQUESTED);
 
         return requests.stream()
                 .map(request -> {
-                    // 신청한 유저(fromUser)의 프로필 사진을 조회
-                    String profileUrl = userProfilePictureRepository.findByUser_Id(request.getToUser().getId())
-                            .map(UserProfilePicture::getImageUrl)
-                            .orElse(null); // 사진이 없을 경우 기본값 처리
+                    // 신청한 유저(toUser)의 프로필 사진을 조회
+                    User fromUser = request.getFromUser();
+
+                    UserProfilePicture picture = fromUser.getUserProfilePicture();
+                    String profileUrl = (picture != null) ? picture.getImageUrl() : null;  // 사진이 없다면 링크를 null 처리한다.
 
                     return new FriendRequestResponse_Sent(request, profileUrl);
                 })
@@ -196,21 +200,18 @@ public class FriendService {
      */
     @Transactional(readOnly = true)
     public List<FriendListResponse> getFriendList(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+        User user = userService.findByEmail(email);
 
         List<User> friends = friendshipRepository.findAllFriendsByUserId(user.getId());
 
         return friends.stream()
                 .map(friend -> {
-                    // 신청한 유저(fromUser)의 프로필 사진을 조회
-                    String profileUrl = userProfilePictureRepository.findByUser_Id(friend.getId())
-                            .map(UserProfilePicture::getImageUrl)
-                            .orElse(null); // 사진이 없을 경우 기본값 처리
+                    // 친구의 사진을 조회한다.
+                    UserProfilePicture picture = friend.getUserProfilePicture();
+                    String profileUrl = (picture != null) ? picture.getImageUrl() : null;
 
                     return new FriendListResponse(friend, profileUrl);
                 })
                 .collect(Collectors.toList());
     }
-
 }

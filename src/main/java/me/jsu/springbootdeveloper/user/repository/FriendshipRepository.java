@@ -37,14 +37,18 @@ public interface FriendshipRepository extends JpaRepository<Friendship, Long> {
 
     // 나와 친구인 상대방 유저들 가져오기 (Hibernate 6 호환 버전)
     @Query("""
-        SELECT u FROM User u 
+        SELECT distinct u
+        FROM User u
+        LEFT JOIN FETCH u.userProfilePicture upp
         WHERE u.id IN (
-            SELECT CASE WHEN f.user1.id = :userId THEN f.user2.id ELSE f.user1.id END 
-            FROM Friendship f 
+            SELECT CASE
+                WHEN f.user1.id = :userId THEN f.user2.id
+                ELSE f.user1.id
+            END
+            FROM Friendship f
             WHERE f.user1.id = :userId OR f.user2.id = :userId
         )
     """)
-
     List<User> findAllFriendsByUserId(@Param("userId") Long userId);
 
 }

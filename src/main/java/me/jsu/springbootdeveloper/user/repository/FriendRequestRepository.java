@@ -15,11 +15,33 @@ import java.util.List;
     친구 요청을 저장하는 DB이다.
  */
 public interface FriendRequestRepository extends JpaRepository<FriendRequest, Long> {
-    // 유저 id로 받은 친구요청 중 현재 유효한 요청들의 리스트를 검색한다.
-    List<FriendRequest> findAllByToUser_IdAndStatus(Long toUserId, FriendRequestStatus status);
+    // 유저 id로 받은 친구요청 중 현재 유효한 요청들의 리스트를 검색한다. n+1 조회문제를 위해 fetch join을 사용한다.
+    @Query("""
+        select fr
+        from FriendRequest fr
+        join fetch fr.fromUser fu
+        left join fetch fu.userProfilePicture upp
+        where fr.toUser.id = :toUserId
+          and fr.status = :status
+    """)
+    List<FriendRequest> findAllByToUser_IdAndStatus(
+            @Param("toUserId") Long toUserId,
+            @Param("status") FriendRequestStatus status
+    );
 
-    // 유저 id로 보낸 친구요청 중 현재 유효한 요청들의 리스트를 검색한다.
-    List<FriendRequest> findAllByFromUser_IdAndStatus(Long fromUserId, FriendRequestStatus status);
+    // 유저 id로 보낸 친구요청 중 현재 유효한 요청들의 리스트를 검색한다. n+1 조회문제를 위해 fetch join을 사용한다.
+    @Query("""
+        select fr
+        from FriendRequest fr
+        join fetch fr.toUser tu
+        left join fetch tu.userProfilePicture upp
+        where fr.fromUser.id = :fromUserId
+          and fr.status = :status
+    """)
+    List<FriendRequest> findAllByFromUser_IdAndStatus(
+            @Param("fromUserId") Long fromUserId,
+            @Param("status") FriendRequestStatus status
+    );
 
     //fromuser 와 touser 객체를 넣어 검색한다
     FriendRequest findByFromUserAndToUser(User fromUser, User toUser);

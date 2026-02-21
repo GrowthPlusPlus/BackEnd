@@ -22,6 +22,15 @@ public interface TagToChallengeRepository extends JpaRepository<TagToChallenge, 
     """)
     List<TagToChallenge> findWithTagByChallengeId(@Param("challengeId") Long challengeId);  // 챌린지 id로 태그를 검색한다.
 
+    // 여러 챌린지들의 태그를 한 번에 조회한다.
+    @Query("""
+        select ttc
+        from TagToChallenge ttc
+        join fetch ttc.tag
+        where ttc.challenge.id in :challengeIds
+    """)
+    List<TagToChallenge> findWithTagByChallengeIdsByOnce(@Param("challengeIds") List<Long> challengeIds);
+
     void deleteByChallenge_Id(Long challengeId);  // 챌린지 id로 해당 챌린지의 모든 태그를 삭제한다.
 
     boolean existsByChallenge_IdAndTag_Id(Long challengeId, Long tagId);  // 이미 챌린지에 중복된 태그가 존재하는지 검사한다.

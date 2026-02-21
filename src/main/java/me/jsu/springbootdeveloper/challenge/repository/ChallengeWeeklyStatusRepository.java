@@ -16,16 +16,38 @@ import java.util.Optional;
     챌린지의 주간 인증 횟수를 저장하는 DB로, 테이블에 매핑되는 엔티티 타입은 ChallengeWeeklyStatus, 엔티티의 pk 타입은 Long이다.
  */
 public interface ChallengeWeeklyStatusRepository extends JpaRepository<ChallengeWeeklyStatus, Long> {
-    Optional<ChallengeWeeklyStatus> findByUser_IdAndChallenge_IdAndWeekStartDate(   // 이번 주의 챌린지 상태 엔트리를 조회한다.
+    // 이번 주의 챌린지 상태 엔트리를 하나 조회한다.
+    Optional<ChallengeWeeklyStatus> findByUser_IdAndChallenge_IdAndWeekStartDate(
             Long userId,
             Long challengeId,
             LocalDate weekStartDate
     );
 
+    // 이번주의 챌린지 상태 엔트리를 한 번에 조회한다.
+    @Query("""
+        select cws
+        from ChallengeWeeklyStatus cws
+        where cws.weekStartDate = :weekStart
+          and cws.user.id in :userIds
+          and cws.challenge.id in :challengeIds
+    """)
+    List<ChallengeWeeklyStatus> findAllByUsersAndChallenges(
+            @Param("userIds") List<Long> userIds,
+            @Param("challengeIds") List<Long> challengeIds,
+            @Param("weekStart") LocalDate weekStart
+    );
+
     // 이번 주의 챌린지 상태 엔트리들을 유저 id로 조회한다.
+    @Query("""
+    select cws
+    from ChallengeWeeklyStatus cws
+    join fetch cws.challenge ch
+    where cws.user.id = :userId
+      and cws.weekStartDate = :weekStartDate
+""")
     List<ChallengeWeeklyStatus> findByUser_IdAndWeekStartDate(
-            Long userId,
-            LocalDate weekStartDate
+            @Param("userId") Long userId,
+            @Param("weekStartDate") LocalDate weekStartDate
     );
 
     // 챌린지 주간 상태의 값 중, 그 주의 총 인증 횟수를 유저 id와 챌린지 id로 검색하여 페이지 크기만큼 내림차순으로 반환한다.
