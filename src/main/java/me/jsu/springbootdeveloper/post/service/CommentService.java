@@ -115,7 +115,7 @@ public class CommentService {
                 daysPassed,
                 comment.getContents());
         //인앱 알림 발송
-        notificationService.sendNotification(user, NotificationType.COMMENT, message);
+        notificationService.sendNotification(writer, NotificationType.COMMENT, message);
         // 푸시 알림을 발송
         // 챌린지 푸시 알림이 활성화되어 있고, FCM 토큰이 있는 경우에만 발송한다.
         if (writer.isAllPushNotificationEnabled()

@@ -95,8 +95,8 @@ public class PostLikeService {
                 daysPassed
         );
 
-        // 푸시 알림&인앱 알림 발송
-        notificationService.sendNotification(user, NotificationType.LIKE, message);
+        // 푸시 알림&인앱 알림 발송 - 작성자에게 발송
+        notificationService.sendNotification(writer, NotificationType.LIKE, message);
         if (writer.isFriendPushNotificationEnabled()
                 && writer.getFcmToken() != null
                 && !writer.getFcmToken().isBlank()) {
