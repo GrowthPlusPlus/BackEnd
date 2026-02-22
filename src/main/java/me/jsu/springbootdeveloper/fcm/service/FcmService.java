@@ -9,6 +9,7 @@ import com.google.firebase.messaging.Notification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.jsu.springbootdeveloper.fcm.dto.FcmMessageDto;
+import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -279,6 +280,22 @@ public class FcmService {
                         user -> {
                             user.setFriendPushNotificationEnabled(enabled);
                             log.info("친구 관련 푸시 알림 설정을 변경했습니다. 사용자: {}, 활성화: {}", email, enabled);
+                        },
+                        () -> {
+                            log.warn("푸시 알림 설정 변경 실패: 사용자를 찾을 수 없습니다. 이메일: {}", email);
+                            throw new IllegalArgumentException("사용자를 찾을 수 없습니다: " + email);
+                        }
+                );
+    }
+
+    //전체 푸시 알림 on/off
+    @Transactional
+    public void setAllPushNotificationEnabled(String email, boolean enabled) {
+        userRepository.findByEmail(email)
+                .ifPresentOrElse(
+                        user -> {
+                            user.setAllPushNotificationEnabled(enabled);
+                            log.info("전체 푸시 알림 설정을 변경했습니다. 사용자: {}, 활성화: {}", email, enabled);
                         },
                         () -> {
                             log.warn("푸시 알림 설정 변경 실패: 사용자를 찾을 수 없습니다. 이메일: {}", email);

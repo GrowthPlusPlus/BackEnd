@@ -7,6 +7,7 @@ package me.jsu.springbootdeveloper.notification.enumType;
  */
 public enum NotificationType {
     FRIEND_REQUEST,  // 친구 요청
+    FRIEND_ACCEPT,
     COMMENT,  // 댓글
     LIKE,  // 좋아요
     CHALLENGE,  // 챌린지 관련

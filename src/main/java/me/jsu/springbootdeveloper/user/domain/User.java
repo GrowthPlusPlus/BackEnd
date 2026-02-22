@@ -79,6 +79,10 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
     @Column(name = "friend_push_notification_enabled", nullable = false)
     private boolean friendPushNotificationEnabled = true;  // 친구 관련 푸시 알림 활성화 여부이다. 기본값은 true이다.
 
+    //전체 푸시 알림 활성화 여부
+    @Column(name = "all_push_notification_enabled", nullable = false)
+    private boolean allPushNotificationEnabled = true;
+
     @CreatedDate  // 유저가 생성된 시간이다.
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -188,6 +192,11 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
      */
     public void setFriendPushNotificationEnabled(boolean enabled) {
         this.friendPushNotificationEnabled = enabled;
+    }
+
+    //전체 푸시 알림 활성화 여부 설정 함수
+    public void setAllPushNotificationEnabled(boolean enabled) {
+        this.allPushNotificationEnabled = enabled;
     }
 
     /*

@@ -3,6 +3,9 @@ package me.jsu.springbootdeveloper.user.service;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeInviteRepository;
 import me.jsu.springbootdeveloper.fcm.service.FcmService;
+import me.jsu.springbootdeveloper.notification.enumType.NotificationType;
+import me.jsu.springbootdeveloper.notification.repository.NotificationRepository;
+import me.jsu.springbootdeveloper.notification.service.NotificationService;
 import me.jsu.springbootdeveloper.user.dto.FriendListResponse;
 import me.jsu.springbootdeveloper.user.dto.FriendRequestResponse_Received;
 import me.jsu.springbootdeveloper.user.dto.FriendRequestResponse_Sent;
@@ -33,6 +36,7 @@ public class FriendService {
     private final ChallengeParticipantRepository challengeParticipantRepository;
     private final FcmService fcmService;  // FCM 푸시 알림 발송을 위한 서비스
     private final UserService userService;
+    private final NotificationService notificationService;
 
     /**
      * 1. 친구 신청 보내기
@@ -70,11 +74,14 @@ public class FriendService {
                 .build();
 
         friendRequestRepository.save(friendRequest);
+        //인앱 알림을 보낸다
+        //홍길동님이 친구 요청을 보냈어요.
+        String message = fromUser.getNickname() + "님이 친구 요청을 보냈어요.";
 
         // 친구 요청을 받은 사용자(toUser)에게 푸시 알림을 발송한다.
-        if (toUser.getFcmToken() != null && !toUser.getFcmToken().isBlank()) {
-            String title = "친구 신청";
-            String message = fromUser.getNickname() + "로부터 친구 신청이 왔습니다.";
+        if (toUser.isAllPushNotificationEnabled() && toUser.getFcmToken() != null && !toUser.getFcmToken().isBlank()) {
+            String title = "친구 요청";
+            notificationService.sendNotification(toUser, NotificationType.FRIEND_REQUEST, message);
             fcmService.sendMessageTo(toUser.getFcmToken(), title, message);
         }
     }
@@ -153,15 +160,20 @@ public class FriendService {
             FriendRequest friendRequest = friendRequestRepository.findByFromUserAndToUser(request.getToUser(), request.getFromUser());
             friendRequestRepository.delete(friendRequest);
         }
+        //보내는 사람에게 친구 수락 인앱 알림 발송(친구신청 받는 사람 : ToUser, 보내는 사람: FromUser)
+        //홍길동님과 친구가 되었어요.
+        String title = "친구 신청 수락";
+        String message = request.getToUser().getNickname() + "님과 친구가 되었어요.";
+        User fromUser = request.getFromUser();
+        notificationService.sendNotification(fromUser,
+                NotificationType.FRIEND_ACCEPT, message);
 
         // 친구 신청을 보낸 사용자(fromUser)에게 푸시 알림을 발송한다.
         // 푸시 알림이 활성화되어 있고, FCM 토큰이 있는 경우에만 발송한다.
-        User fromUser = request.getFromUser();
-        if (fromUser.isFriendPushNotificationEnabled() 
+        if (fromUser.isAllPushNotificationEnabled()
                 && fromUser.getFcmToken() != null 
                 && !fromUser.getFcmToken().isBlank()) {
-            String title = "친구 신청 수락";
-            String message = request.getToUser().getNickname() + "님이 친구 신청을 수락하였습니다.";
+
             fcmService.sendMessageTo(fromUser.getFcmToken(), title, message);
         }
     }

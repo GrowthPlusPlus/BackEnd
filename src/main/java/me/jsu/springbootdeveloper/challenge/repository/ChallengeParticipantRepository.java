@@ -56,6 +56,21 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
             @Param("ownerId") Long ownerId
     );
 
+    // 나를 제외한 챌린지에 참여 중인 사람들이 목록을 반환한다. (상태: 진행 중)
+    @Query("""
+        select cp
+        from ChallengeParticipant cp
+        join fetch cp.user
+        where cp.challenge.id = :challengeId
+          and cp.user.id <> :ownerId
+          and cp.status = :status
+        order by cp.createdAt asc
+    """)
+    List<ChallengeParticipant> findParticipantsInProgress(
+            @Param("challengeId") Long challengeId,
+            @Param("ownerId") Long ownerId,
+            @Param("status") Status status
+    );
     // 챌린지 id와 유저 id로 챌린지 참여 DB를 검색한다. 챌린지 참여 DB 정보만 필요하므로 쿼리문은 사용하지 않는다.
     Optional<ChallengeParticipant> findByUser_IdAndChallenge_Id(Long userId, Long challengeId);
 
@@ -193,4 +208,5 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
             @Param("challengeId") Long challengeId,
             @Param("userIds") List<Long> userIds
     );
+
 }

@@ -92,9 +92,9 @@ public class FcmController {
         return ResponseEntity.noContent().build();
     }
 
-    /*
+    /*  MVP 이후 추가 예정
         친구 관련 푸시 알림 활성화/비활성화를 설정하는 API이다.
-     */
+
     @Operation(
             summary = "친구 관련 푸시 알림 설정",
             description = """
@@ -116,6 +116,33 @@ public class FcmController {
     ) {
         // 로그인한 사용자의 친구 관련 푸시 알림 활성화 여부를 설정한다.
         fcmService.setFriendPushNotificationEnabled(userDetails.getUsername(), request.isEnabled());
+        return ResponseEntity.ok().build();
+    }
+    */
+    /*
+       전체 푸시 알림 활성화/비활성화를 설정하는 API이다.
+     */
+    @Operation(
+            summary = "전체 푸시 알림 설정",
+            description = """
+        로그인한 사용자의 전체 푸시 알림을 활성화하거나 비활성화한다.
+        활성화 시: 모든 푸시 알림을 활성화 상태로 전환한다
+        비활성화 시: 모든 푸시 알림을 비활성화 상태로 전환한다
+        ex) PUT /api/fcm/notification/all
+        요청 본문: { "enabled": true } 또는 { "enabled": false }
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "푸시 알림 설정 변경 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패")
+    })
+    @PutMapping("/notification/all")
+    public ResponseEntity<Void> setAllFriendPushNotificationEnabled(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody FcmNotificationSettingDto request
+    ) {
+        // 로그인한 사용자의 전체 푸시 알림 활성화 여부를 설정한다.
+        fcmService.setAllPushNotificationEnabled(userDetails.getUsername(), request.isEnabled());
         return ResponseEntity.ok().build();
     }
 }

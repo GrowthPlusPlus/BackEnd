@@ -16,6 +16,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /*
@@ -206,5 +207,32 @@ public class Challenge {
             this.todayDate = today;
             this.todaySuccessCount = 0;
         }
+    }
+
+    /**
+     * 챌린지 시작일로부터 오늘까지 몇 일이 지났는지 계산하여 반환하는 함수이다.
+     * 예: 시작일이 1일이고 오늘이 3일이면 '2'를 반환한다.
+     */
+    public long calculateDaysSinceStart() {
+        // 1. 현재 날짜를 가져온다. (시스템의 기본 시간대 기준)
+        LocalDate today = LocalDate.now();
+
+        // 2. 만약 오늘이 시작일보다 이전이라면 (아직 시작 안 함) 0을 반환한다.
+        if (today.isBefore(this.startDate)) {
+            return 0;
+        }
+
+        // 3. 시작일(startDate)과 오늘(today) 사이의 전체 일수 차이를 계산하여 반환한다.
+        // 공식: $Days = Today - StartDate$
+        return ChronoUnit.DAYS.between(this.startDate, today);
+    }
+
+    /**
+     * 현재가 챌린지 몇 일차인지 계산하여 반환하는 함수이다. (시작일을 1일차로 계산)
+     * 예: 시작일이 1일이고 오늘이 1일이면 '1'을 반환한다.
+     */
+    public long getChallengeDayCount() {
+        // 지난 날짜에 +1을 하면 현재 몇 일차인지 알 수 있다.
+        return calculateDaysSinceStart() + 1;
     }
 }
