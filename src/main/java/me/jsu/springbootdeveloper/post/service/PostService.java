@@ -4,8 +4,13 @@ package me.jsu.springbootdeveloper.post.service;
 
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeDailyLog;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeWeeklyStatus;
+import me.jsu.springbootdeveloper.challenge.enumType.Status;
+import me.jsu.springbootdeveloper.challenge.repository.ChallengeParticipantRepository;
 import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeDeleteService;
 import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeQueryService;
+import me.jsu.springbootdeveloper.fcm.service.FcmService;
+import me.jsu.springbootdeveloper.notification.enumType.NotificationType;
+import me.jsu.springbootdeveloper.notification.service.NotificationService;
 import me.jsu.springbootdeveloper.post.dto.ArticleImageResponse;
 import me.jsu.springbootdeveloper.post.exception.ArticleAccessDeniedException;
 import me.jsu.springbootdeveloper.post.exception.ArticleNotFoundException;
@@ -53,6 +58,9 @@ public class PostService {
     private final UserStatisticsService userStatisticsService;
     private final ChallengeQueryService challengeQueryService;
     private final ChallengeDeleteService challengeDeleteService;
+    private final ChallengeParticipantRepository challengeParticipantRepository;
+    private final NotificationService notificationService;
+    private final FcmService fcmService;
     private static final int MAX_IMAGE_COUNT = 3;
 
     /*
@@ -125,7 +133,18 @@ public class PostService {
 
         // 유저 통계를 업데이트 한다.
         userStatisticsService.onPostConfirmed(user, challenge.getId(), postDate);
-
+        //챌린지 멤버 인증 알림 전송
+        // challegeparticipant중 상태가 in progress 인 사람에게 전송
+        // "홍길동 님이 [챌린지명]챌린지에 인증했어요!"
+        List<ChallengeParticipant> challengeParticipants = challengeParticipantRepository.findParticipantsInProgress(challenge.getId(), user.getId(), Status.IN_PROGRESS);
+        for (ChallengeParticipant Participant : challengeParticipants) {
+            User participatingUser = Participant.getUser();
+            //전체 알림 활성화 검사
+            if (participatingUser.isAllPushNotificationEnabled()) {
+                notificationService.sendNotification(participatingUser, NotificationType.CHALLENGE, participatingUser.getNickname() + "님이 " + challenge.getTitle() + "챌린지에 인증했어요!");
+                fcmService.sendMessageTo(participatingUser.getFcmToken(), "챌린지 인증", participatingUser.getNickname() + "님이 " + challenge.getTitle() + "챌린지에 인증했어요!");
+            }
+        }
         // 저장한 인증글 id로 검색하여 인증글 상세 정보를 반환한다.
         return getPost(email, article.getId());
     }

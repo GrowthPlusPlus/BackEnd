@@ -230,4 +230,12 @@ public interface PostRepository extends JpaRepository<Article, Long> {
         order by a.totalReport desc
     """)
     List<ReportedArticleResponse> findReportedArticles();
+
+    @Query("""
+            select u
+            from User u
+            
+            """
+    )
+    User findUserByUArticleId(Long userId);
 }
