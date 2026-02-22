@@ -231,11 +231,22 @@ public interface PostRepository extends JpaRepository<Article, Long> {
     """)
     List<ReportedArticleResponse> findReportedArticles();
 
+    // Article ID로 작성자(User)를 조회한다.
+    // 명시적인 'join'을 사용하여 Hibernate 6의 경로 해석 오류를 방지한다.
     @Query("""
-            select u
-            from User u
-            
-            """
-    )
-    User findUserByUArticleId(Long userId);
+        select u
+        from Article a
+        join a.user u
+        where a.id = :articleId
+    """)
+    Optional<User> findUserByArticleId(@Param("articleId") Long articleId);
+
+    //게시글 id로 게시글이 쓰여진 챌린지를 조회한다
+    @Query("""
+        select c
+        from Article a
+        join a.challenge c
+        where a.id = :articleId
+    """)
+    Optional<Challenge> findChallengeByArticleId(@Param("articleId") Long articleId);
 }

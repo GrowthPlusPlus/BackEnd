@@ -2,11 +2,13 @@
 
 package me.jsu.springbootdeveloper.post.service;
 
+import me.jsu.springbootdeveloper.challenge.domain.Challenge;
 import me.jsu.springbootdeveloper.post.domain.Article;
 import me.jsu.springbootdeveloper.post.domain.PostLike;
 import me.jsu.springbootdeveloper.post.exception.ArticleNotFoundException;
 import me.jsu.springbootdeveloper.post.exception.DuplicatePostLikeException;
 import me.jsu.springbootdeveloper.post.exception.PostLikeNotFoundException;
+import me.jsu.springbootdeveloper.post.exception.NotFoundException;
 import me.jsu.springbootdeveloper.post.repository.PostRepository;
 import me.jsu.springbootdeveloper.user.service.UserService;
 import org.springframework.transaction.annotation.Transactional;
