@@ -284,4 +284,28 @@ public class UserApiController {
 
         return ResponseEntity.ok(response);
     }
+
+    //유저 닉네임 중복 확인 컨트롤러
+    @Operation(
+            summary = "유저 닉네임 중복 확인",
+            description = """
+                    응답
+                    1. 동일한 닉네임이 존재할 경우
+                        :동일한 닉네임이 존재합니다.
+                    2. 동일한 닉네임이 존재하지 않을 경우
+                        :닉네임이 존재하지 않습니다.
+                    """
+    )
+    @GetMapping("/api/users/nickname-availability/{nickname}")
+    public String nicknameAvailability(
+            @Parameter(description = "중복 확인할 유저의 닉네임", required = true, example = "안녕난유저")
+            @PathVariable String nickname) {
+        if (userRepository.existsByNickname(nickname)){
+            return "동일한 닉네임이 존재합니다.";
+        }
+        else
+        {
+            return "닉네임이 존재하지 않습니다.";
+        }
+    }
 }
