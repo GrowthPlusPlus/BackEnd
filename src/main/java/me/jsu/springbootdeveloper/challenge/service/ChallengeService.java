@@ -15,6 +15,7 @@ import me.jsu.springbootdeveloper.challenge.repository.*;
 import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeMemberService;
 import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeQueryService;
 import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeUtils;
+import me.jsu.springbootdeveloper.fcm.service.FcmService;
 import me.jsu.springbootdeveloper.notification.enumType.NotificationType;
 import me.jsu.springbootdeveloper.tag.domain.TagToChallenge;
 import me.jsu.springbootdeveloper.user.domain.UserStatistics;
@@ -77,6 +78,7 @@ public class ChallengeService {
     private final ChallengeQueryService challengeQueryService;
     private final ChallengeMemberService challengeMemberService;
     private final ChallengeLinkService challengeLinkService;
+    private final FcmService fcmService;
     /*
         챌린지의 상세 정보를 반환하는 함수이다.
      */
@@ -158,36 +160,7 @@ public class ChallengeService {
         return new CreateChallengeResponse(savedChallenge,inviteLink, friends);
 
     }
-    /*
-        친구를 챌린지에 초대하는 함수이다.
-        (1) 알림 전송 (2) 초대 테이블에 'INVITED' 상태로 저장
-     */
-    @Transactional
-    public void inviteUser(String inviterEmail, Long challengeId, String targetNickname) {
-        User inviter = userService.findByEmail(inviterEmail);
-        Challenge challenge = challengeQueryService.findById(challengeId);
-        User invitee = userService.findByNickname(targetNickname);
-        //챌린지 참여 인원수 확인 후 참여
-        if (!joinChallenge(challenge, invitee))
-        {
-            //참여 못했다면 exception 발동
-            throw new IllegalStateException("챌린지 참여 정원이 꽉 찼습니다");
 
-        }
-        //초대 알림 전송 (NotificationService 구현에 따라 호출)
-        String message = inviter.getNickname() + "님이 " + challenge.getTitle()+ " 방에 나를 초대했어요.";
-        notificationService.sendNotification(invitee, NotificationType.CHALLENGE, message); // 예시 메서드
-
-        //초대 정보 저장
-        ChallengeInvite invite = ChallengeInvite.builder()
-                .challenge(challenge)
-                .inviter(inviter)
-                .invitee(invitee)
-                .build();
-
-        challengeInviteRepository.save(invite);
-
-    }
 
     /*
         챌린지에 참여하는 컨트롤러와 연결된 함수이다.
@@ -203,10 +176,13 @@ public class ChallengeService {
     // 챌린지 참여하기
     // 반환 값: 참여 성공하면 true, 실패하면 false
     public boolean joinChallenge(Challenge challenge, User user) {
-        // 해당 챌린지 인원수 체크
-        // 내가 참여했을 때 challenge 의 maxParticipant를 초과하면 들어가지 못함
-        if (!challenge.checkIfOverMaxParticipantNumber()){
-            LocalDate today = LocalDate.now();
+        /*참여하기 전에 유효한 챌린지인지 확인한다
+                - 이미 종료된 챌린지에는 참여 불가
+                - 참여 인원이 초과된 챌린지에는 참여 불가
+         */
+        LocalDate today = LocalDate.now();
+        if (!challenge.getEndDate().isBefore(today) && !challenge.checkIfOverMaxParticipantNumber()){
+
             /* joinDate 설정
              case 1. 참여하는 사람이 챌린지 시작일 전에 들어오면 -> joinDate는 챌린지 시작일
              case 2. 참여하는 사람이 챌린지 시작일 후에 들어오면 -> joinDate는 들어온 날짜

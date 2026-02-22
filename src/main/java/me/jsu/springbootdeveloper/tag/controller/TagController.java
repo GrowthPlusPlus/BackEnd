@@ -67,6 +67,7 @@ public class TagController {
     @Operation(
             summary = "유저 태그 삭제",
             description = """
+        유저의 평소 관심사 태그 삭제
         로그인한 사용자가 선택한 태그들을 챌린지와 해제한다.
         ex) DELETE /api/users/me/tags
         """
@@ -93,6 +94,7 @@ public class TagController {
             summary = "챌린지 태그 선택",
             description = """
         로그인한 사용자가 선택한 태그들을 챌린지와 연결한다.
+        챌린지 id랑 해당 챌린지에 연결할 태그 id를 보내면 태그가 챌린지에 등록된다.
         ex) POST /api/challenge/tags
         """
     )
@@ -117,6 +119,7 @@ public class TagController {
     @Operation(
             summary = "챌린지 태그 삭제",
             description = """
+        챌린지에 등록된 태그를 삭제한다
         로그인한 사용자가 선택한 태그들을 챌린지와 연결해제 한다.
         ex) DELETE /api/challenge/tags
         """

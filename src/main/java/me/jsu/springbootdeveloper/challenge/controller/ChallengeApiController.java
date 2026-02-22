@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.dto.*;
 import me.jsu.springbootdeveloper.challenge.dto.CreateChallengeResponse;
 import me.jsu.springbootdeveloper.challenge.dto.CreateChallengeRequest;
+import me.jsu.springbootdeveloper.challenge.service.ChallengeInviteService;
 import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeDeleteService;
 import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeMemberService;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeService;
@@ -27,6 +28,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 /*
     챌린지에 관련된 일을 수행하는 api 컨트롤러이다.
  */
@@ -36,6 +39,7 @@ public class ChallengeApiController {
     private final ChallengeService challengeService;
     private final ChallengeDeleteService challengeDeleteService;
     private final ChallengeMemberService challengeMemberService;
+    private final ChallengeInviteService challengeInviteService;
 
     /*
         챌린지를 생성하는 POST 요청 API이다.
@@ -92,6 +96,31 @@ public class ChallengeApiController {
         return ResponseEntity.ok(response);
     }
 
+    /*
+        내가 받은 챌린지 초대 목록을 조회하는 컨트롤러이다.
+        알림 페이지의 '챌린지 초대' 탭에서 사용하며, 만료되지 않은 초대만 반환한다.
+
+        @param userDetails 인증된 유저 정보(이메일)
+        @return 초대자 닉네임, 챌린지 이름, 현재 참여 인원 수, 완료까지 남은 날짜, 태그 목록
+     */
+    @Operation(
+            summary = "알림페이지 - 챌린지 초대 탭 - 내가 받은 챌린지 초대 목록 조회",
+            description = """
+        로그인한 유저가 받은 챌린지 초대 목록을 조회한다.
+        만료되지 않은 초대만 반환하며, 초대 카드에 필요한 정보(초대자 닉네임, 챌린지 이름, 참여 인원 수, 남은 날짜, 태그 목록)를 제공한다.
+        ex) GET /api/challenges/invites
+        """
+    )
+    @GetMapping("/api/challenges/invites")
+    public ResponseEntity<List<ChallengeInviteListResponse>> getMyChallengeInvites (@AuthenticationPrincipal UserDetails userDetails)
+
+    {
+        // 서비스 레이어에서 이메일 기준으로 초대 목록을 조회한다.
+        List<ChallengeInviteListResponse> response = challengeInviteService.getChallengeInviteList(userDetails.getUsername());
+
+        return ResponseEntity.ok(response);
+    }
+
     //챌린지 초대 - 친구 초대하기
     @Operation(
             summary = "챌린지에 친구 초대하기",
@@ -105,8 +134,66 @@ public class ChallengeApiController {
                                                  @PathVariable String friendNickname)
 
     {
-        challengeService.inviteUser(userDetails.getUsername(), challengeId, friendNickname);
+        challengeInviteService.inviteUser(userDetails.getUsername(), challengeId, friendNickname);
+        return ResponseEntity.noContent().build();
+    }
 
+    /*
+        챌린지 초대를 수락하는 컨트롤러이다.
+        초대 상태를 ACCEPTED로 변경하고, 아직 참여하지 않은 경우 챌린지에 참여시킨다.
+     */
+    @Operation(
+            summary = "챌린지 초대 수락",
+            description = """
+        알림 페이지에서 받은 챌린지 초대를 수락한다.
+        초대 상태를 ACCEPTED로 변경하고, 챌린지에 참여시킨다.
+        ex) POST /api/challenges/1/invites/accept
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "초대 수락 성공"),
+            @ApiResponse(responseCode = "401", description = "토큰 인증 실패"),
+            @ApiResponse(responseCode = "404", description = "초대를 찾을 수 없음"),
+            @ApiResponse(responseCode = "403", description = "이미 처리된 초대"),
+            @ApiResponse(responseCode = "409", description = "챌린지 참여 정원 초과")
+    })
+    @Transactional
+    @PostMapping("/api/challenges/{challengeId}/invites/accept")
+    public ResponseEntity<Void> acceptChallengeInvite(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Parameter(description = "챌린지 ID", required = true, example = "1")
+            @PathVariable Long challengeId
+    ) {
+        challengeInviteService.acceptInvite(userDetails.getUsername(), challengeId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /*
+        챌린지 초대를 거절하는 컨트롤러이다.
+        초대 상태를 REJECTED로 변경한다.
+     */
+    @Operation(
+            summary = "챌린지 초대 거절",
+            description = """
+        알림 페이지에서 받은 챌린지 초대를 거절한다.
+        초대 상태를 REJECTED로 변경한다.
+        ex) POST /api/challenges/1/invites/reject
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "초대 거절 성공"),
+            @ApiResponse(responseCode = "401", description = "토큰 인증 실패"),
+            @ApiResponse(responseCode = "404", description = "초대를 찾을 수 없음"),
+            @ApiResponse(responseCode = "403", description = "이미 처리된 초대")
+    })
+    @Transactional
+    @PostMapping("/api/challenges/{challengeId}/invites/reject")
+    public ResponseEntity<Void> rejectChallengeInvite(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Parameter(description = "챌린지 ID", required = true, example = "1")
+            @PathVariable Long challengeId
+    ) {
+        challengeInviteService.rejectInvite(userDetails.getUsername(), challengeId);
         return ResponseEntity.noContent().build();
     }
 
@@ -378,4 +465,6 @@ public class ChallengeApiController {
 
         return ResponseEntity.noContent().build();
     }
+
+    
 }
