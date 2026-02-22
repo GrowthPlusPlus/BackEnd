@@ -72,7 +72,7 @@ public class FriendService {
         friendRequestRepository.save(friendRequest);
 
         // 친구 요청을 받은 사용자(toUser)에게 푸시 알림을 발송한다.
-        if (toUser.getFcmToken() != null && !toUser.getFcmToken().isBlank()) {
+        if (toUser.isAllPushNotificationEnabled() && toUser.getFcmToken() != null && !toUser.getFcmToken().isBlank()) {
             String title = "친구 신청";
             String message = fromUser.getNickname() + "로부터 친구 신청이 왔습니다.";
             fcmService.sendMessageTo(toUser.getFcmToken(), title, message);
@@ -157,7 +157,7 @@ public class FriendService {
         // 친구 신청을 보낸 사용자(fromUser)에게 푸시 알림을 발송한다.
         // 푸시 알림이 활성화되어 있고, FCM 토큰이 있는 경우에만 발송한다.
         User fromUser = request.getFromUser();
-        if (fromUser.isFriendPushNotificationEnabled() 
+        if (fromUser.isAllPushNotificationEnabled()
                 && fromUser.getFcmToken() != null 
                 && !fromUser.getFcmToken().isBlank()) {
             String title = "친구 신청 수락";

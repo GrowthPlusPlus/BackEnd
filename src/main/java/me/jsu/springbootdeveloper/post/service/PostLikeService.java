@@ -72,6 +72,9 @@ public class PostLikeService {
         postLikeRepository.save(postLike);
 
         article.plusLikeNumber();
+
+        //좋아요 눌렀을때 푸시 알림 전송
+
     }
 
     /*
