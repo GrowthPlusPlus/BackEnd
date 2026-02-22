@@ -3,6 +3,9 @@
 package me.jsu.springbootdeveloper.post.service;
 
 import me.jsu.springbootdeveloper.challenge.domain.Challenge;
+import me.jsu.springbootdeveloper.fcm.service.FcmService;
+import me.jsu.springbootdeveloper.notification.enumType.NotificationType;
+import me.jsu.springbootdeveloper.notification.service.NotificationService;
 import me.jsu.springbootdeveloper.post.domain.Article;
 import me.jsu.springbootdeveloper.post.domain.PostLike;
 import me.jsu.springbootdeveloper.post.exception.ArticleNotFoundException;
@@ -28,6 +31,8 @@ public class PostLikeService {
     private final PostLikeRepository postLikeRepository;
     private final UserService userService;
     private final PostRepository postRepository;
+    private final NotificationService notificationService;
+    private final FcmService fcmService;
 
     /*
         게시글 좋아요의 유저 fk값을 null로 바꿔주는 함수이다.
@@ -75,8 +80,8 @@ public class PostLikeService {
 
         article.plusLikeNumber();
 
-        //좋아요 눌렀을때 푸시 알림 전송
-        //게시글 작성자에게 인앱 알림 보내기
+        //좋아요 눌렀을때 푸시 알림 전송, 전체 알림 활성화 되어있으면 발송
+        //게시글 작성자(writer)에게 알림 보내기
         //홍길동님이 내 '챌린지명''0일차' 인증글을 좋아해요.
         User writer = postRepository.findUserByArticleId(postId)
                 .orElseThrow(() -> new NotFoundException("해당 게시글의 작성자를 찾을 수 없습니다.")); // Optional을 안전하게 벗겨낸다.
@@ -89,18 +94,12 @@ public class PostLikeService {
                 challenge.getTitle(),
                 daysPassed
         );
-        notificationService.sendNotification(user, NotificationType.LIKE, message);
 
-        // 푸시 알림을 발송
-        /* 1. 해당 챌린지의 "내 글 좋아요" 푸시알림이 활성화 되어있는지 확인 (해당 챌린지의 푸시알림은 비활성화 되어있어도 괜찮다.)
-            -> ChallengeParticipant 혹은 Post도메인에 likeMyPost 함수 작성
-            게시글 작성자: writer
-           writer, articleId를 포함하는 ChallengeParticipant객체의 여러 푸시알림 설정 중 likeMyPost활성화 여부 검사
-
-         */
+        // 푸시 알림&인앱 알림 발송
         if (writer.isFriendPushNotificationEnabled()
                 && writer.getFcmToken() != null
                 && !writer.getFcmToken().isBlank()) {
+            notificationService.sendNotification(user, NotificationType.LIKE, message);
             fcmService.sendMessageTo(writer.getFcmToken(), title, message);
         }
     }

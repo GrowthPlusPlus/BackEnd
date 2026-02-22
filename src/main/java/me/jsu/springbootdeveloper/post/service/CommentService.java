@@ -2,10 +2,16 @@
 
 package me.jsu.springbootdeveloper.post.service;
 
+import me.jsu.springbootdeveloper.challenge.domain.Challenge;
+import me.jsu.springbootdeveloper.fcm.service.FcmService;
+import me.jsu.springbootdeveloper.notification.enumType.NotificationType;
+import me.jsu.springbootdeveloper.notification.service.NotificationService;
 import me.jsu.springbootdeveloper.post.domain.Article;
 import me.jsu.springbootdeveloper.post.domain.Comment;
 import me.jsu.springbootdeveloper.post.exception.CommentAccessDeniedException;
 import me.jsu.springbootdeveloper.post.exception.CommentNotFoundException;
+import me.jsu.springbootdeveloper.post.exception.NotFoundException;
+import me.jsu.springbootdeveloper.post.repository.PostRepository;
 import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.user.service.UserService;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +36,9 @@ public class CommentService {
     private final UserService userService;
     private final CommentRepository commentRepository;
     private final PostService postService;
+    private final FcmService fcmService;
+    private final PostRepository postRepository;
+    private final NotificationService notificationService;
 
     /*
         댓글을 id로 조회하는 함수이다.
@@ -91,6 +100,29 @@ public class CommentService {
 
         commentRepository.save(comment);  // 작성한 댓글을 저장한다.
         postService.plusCommentNumber(article);  // 댓글 수를 증가시킨다.
+
+        //게시글 작성자에게 인앱&푸시 알림 발송
+        //홍길동님이 내 '챌린지명''0일차' 에 댓글을 달았어요: "댓글 내용"
+        User writer = postRepository.findUserByArticleId(postId)
+                .orElseThrow(() -> new NotFoundException("작성자를 찾을 수 없습니다."));
+        Challenge challenge = postRepository.findChallengeByArticleId(postId)
+                .orElseThrow(() -> new NotFoundException("연관된 챌린지를 찾을 수 없습니다."));
+        long daysPassed = challenge.getChallengeDayCount(); // "n일차"를 계산한다.
+        String title = "새 댓글";
+        String message = String.format("%s님이 내 '%s' %d일차에 댓글을 달았어요: \"%s\"",
+                user.getNickname(),
+                challenge.getTitle(),
+                daysPassed,
+                comment.getContents());
+
+        // 푸시 알림을 발송
+        // 챌린지 푸시 알림이 활성화되어 있고, FCM 토큰이 있는 경우에만 발송한다.
+        if (writer.isAllPushNotificationEnabled()
+                && writer.getFcmToken() != null
+                && !writer.getFcmToken().isBlank()) {
+            fcmService.sendMessageTo(writer.getFcmToken(), title, message);
+            notificationService.sendNotification(user, NotificationType.COMMENT, message);
+        }
     }
 
     /*
