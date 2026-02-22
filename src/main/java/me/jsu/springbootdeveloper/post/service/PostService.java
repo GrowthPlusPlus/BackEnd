@@ -139,9 +139,10 @@ public class PostService {
         List<ChallengeParticipant> challengeParticipants = challengeParticipantRepository.findParticipantsInProgress(challenge.getId(), user.getId(), Status.IN_PROGRESS);
         for (ChallengeParticipant Participant : challengeParticipants) {
             User participatingUser = Participant.getUser();
-            //전체 알림 활성화 검사
+            //인앱알림 보내기
+            notificationService.sendNotification(participatingUser, NotificationType.CHALLENGE, participatingUser.getNickname() + "님이 " + challenge.getTitle() + "챌린지에 인증했어요!");
+            //전체 알림 활성화 검사하고 푸시 알림 보내기
             if (participatingUser.isAllPushNotificationEnabled()) {
-                notificationService.sendNotification(participatingUser, NotificationType.CHALLENGE, participatingUser.getNickname() + "님이 " + challenge.getTitle() + "챌린지에 인증했어요!");
                 fcmService.sendMessageTo(participatingUser.getFcmToken(), "챌린지 인증", participatingUser.getNickname() + "님이 " + challenge.getTitle() + "챌린지에 인증했어요!");
             }
         }

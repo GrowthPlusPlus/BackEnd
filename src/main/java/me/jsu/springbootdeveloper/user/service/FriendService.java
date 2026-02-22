@@ -77,11 +77,11 @@ public class FriendService {
         //인앱 알림을 보낸다
         //홍길동님이 친구 요청을 보냈어요.
         String message = fromUser.getNickname() + "님이 친구 요청을 보냈어요.";
-        notificationService.sendNotification(toUser, NotificationType.FRIEND_REQUEST, message);
 
         // 친구 요청을 받은 사용자(toUser)에게 푸시 알림을 발송한다.
         if (toUser.isAllPushNotificationEnabled() && toUser.getFcmToken() != null && !toUser.getFcmToken().isBlank()) {
             String title = "친구 요청";
+            notificationService.sendNotification(toUser, NotificationType.FRIEND_REQUEST, message);
             fcmService.sendMessageTo(toUser.getFcmToken(), title, message);
         }
     }

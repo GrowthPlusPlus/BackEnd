@@ -96,10 +96,10 @@ public class PostLikeService {
         );
 
         // 푸시 알림&인앱 알림 발송
+        notificationService.sendNotification(user, NotificationType.LIKE, message);
         if (writer.isFriendPushNotificationEnabled()
                 && writer.getFcmToken() != null
                 && !writer.getFcmToken().isBlank()) {
-            notificationService.sendNotification(user, NotificationType.LIKE, message);
             fcmService.sendMessageTo(writer.getFcmToken(), title, message);
         }
     }
