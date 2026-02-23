@@ -6,12 +6,11 @@ import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.domain.Challenge;
 import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeQueryService;
 import me.jsu.springbootdeveloper.post.domain.Article;
+import me.jsu.springbootdeveloper.post.service.PostQueryService;
 import me.jsu.springbootdeveloper.user.domain.User;
-import me.jsu.springbootdeveloper.post.dto.ArticleDetailResponse;
-import me.jsu.springbootdeveloper.post.dto.ArticleImageResponse;
-import me.jsu.springbootdeveloper.challenge.service.ChallengeService;
+import me.jsu.springbootdeveloper.post.dto.article.ArticleDetailResponse;
+import me.jsu.springbootdeveloper.post.dto.article.ArticleImageResponse;
 import me.jsu.springbootdeveloper.post.service.PostLikeService;
-import me.jsu.springbootdeveloper.post.service.PostService;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 
@@ -23,9 +22,9 @@ import java.util.*;
 @Component
 @RequiredArgsConstructor
 public class PostFeedMapper {
-    private final PostService postService;
     private final PostLikeService postLikeService;
     private final ChallengeQueryService challengeQueryService;
+    private final PostQueryService postQueryService;
 
     public Page<ArticleDetailResponse> toDto(Page<Article> articles, Long userId) {
         // 인증글의 부가 정보를 얻기 위해 인증글 id, 챌린지 id를 수집한다.
@@ -46,7 +45,7 @@ public class PostFeedMapper {
         Map<Long, List<ArticleImageResponse>> imageMap = new HashMap<>();  // postId를 기준으로 이미지 링크를 묶는다.
 
         if (!postIds.isEmpty()) {
-            for (Object[] row : postService.findImagesByPostIds(postIds)) {
+            for (Object[] row : postQueryService.findImagesByPostIds(postIds)) {
                 Long postId = (Long) row[0];  // 게시글 id
                 Long imageId = (Long) row[1];  // 사진 id
                 String url = (String) row[2];  // 사진 주소

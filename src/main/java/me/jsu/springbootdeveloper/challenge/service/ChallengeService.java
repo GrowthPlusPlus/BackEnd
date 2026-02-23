@@ -2,21 +2,21 @@
 
 package me.jsu.springbootdeveloper.challenge.service;
 
-import me.jsu.springbootdeveloper.challenge.dto.*;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeInviteLink;
+import me.jsu.springbootdeveloper.challenge.dto.basic.ChallengeDetailResponse;
+import me.jsu.springbootdeveloper.challenge.dto.basic.CreateChallengeRequest;
+import me.jsu.springbootdeveloper.challenge.dto.basic.CreateChallengeResponse;
+import me.jsu.springbootdeveloper.challenge.dto.basic.SearchChallengeResponse;
+import me.jsu.springbootdeveloper.challenge.dto.setting.ChallengeSettingsResponse;
 import me.jsu.springbootdeveloper.challenge.enumType.ChallengeVisibility;
-import me.jsu.springbootdeveloper.challenge.enumType.InviteLinkType;
 import me.jsu.springbootdeveloper.challenge.enumType.Status;
-import me.jsu.springbootdeveloper.challenge.dto.ChallengeFriendInviteListResponse;
-import me.jsu.springbootdeveloper.challenge.dto.ChallengeInviteResponse;
-import me.jsu.springbootdeveloper.challenge.domain.ChallengeInvite;
-import me.jsu.springbootdeveloper.challenge.exception.*;
+import me.jsu.springbootdeveloper.challenge.dto.invite.ChallengeFriendInviteListResponse;
+import me.jsu.springbootdeveloper.challenge.dto.invite.ChallengeInviteResponse;
 import me.jsu.springbootdeveloper.challenge.repository.*;
 import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeMemberService;
 import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeQueryService;
 import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeUtils;
 import me.jsu.springbootdeveloper.fcm.service.FcmService;
-import me.jsu.springbootdeveloper.notification.enumType.NotificationType;
 import me.jsu.springbootdeveloper.tag.domain.TagToChallenge;
 import me.jsu.springbootdeveloper.user.domain.UserStatistics;
 import me.jsu.springbootdeveloper.user.repository.FriendshipRepository;
@@ -64,15 +64,12 @@ public class ChallengeService {
     private final ChallengeInviteLinkRepository challengeInviteLinkRepository;
     private final TagService tagService;
     private final UserService userService;
-    private final UserRepository userRepository;
     //base url(application.yml의 base url값 불러옴)
     @Value("${app.base-url}")
     private String baseUrl;
     //챌린지 생성 시 친구 목록 가져와서 전달해야 함
     private final FriendService friendService;
     private final ChallengeInviteRepository challengeInviteRepository;
-    private final NotificationService notificationService;
-    private final UserProfilePictureRepository userProfilePictureRepository;
     private final FriendshipRepository friendshipRepository;
     private final UserStatisticsRepository userStatisticsRepository;  // 순환 참조를 방지하기 위해 직접 사용한다.
     private final ChallengeQueryService challengeQueryService;
@@ -143,8 +140,11 @@ public class ChallengeService {
                 .photoRequired(dto.isPhotoRequired())
                 .build();
 
-        //챌린지 객체 db에 저장
+        // 챌린지 객체 db에 저장
         Challenge savedChallenge = challengeRepository.save(challenge);
+
+        // 챌린지 태그를 db에 저장한다.
+        tagService.updateChallengeTags(dto.getTags(), challenge);
 
         // 생성자는 해당 챌린지에 참여
         joinChallenge(savedChallenge, user);

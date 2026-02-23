@@ -91,8 +91,10 @@ public interface ChallengeDailyLogRepository extends JpaRepository<ChallengeDail
         오늘 해당 챌린지를 수행한 유저의 로그를 검색하여 유저 정보를 얻는다.
      */
     @Query("""
-        select log.user
+        select distinct u
         from ChallengeDailyLog log
+        join log.user u
+        left join fetch u.userProfilePicture upp
         where log.challenge.id = :challengeId
           and log.postDate = :today
     """)

@@ -3,7 +3,7 @@
 package me.jsu.springbootdeveloper.post.repository;
 
 import me.jsu.springbootdeveloper.post.domain.ReportArticle;
-import me.jsu.springbootdeveloper.post.dto.ReportArticleDetailResponse;
+import me.jsu.springbootdeveloper.post.dto.report.ReportArticleDetailResponse;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -19,7 +19,7 @@ public interface ReportArticleRepository extends JpaRepository<ReportArticle, Lo
 
     // 인증글 신고 상세 정보를 가져오는 쿼리문이다.
     @Query("""
-    select new me.jsu.springbootdeveloper.post.dto.ReportArticleDetailResponse(
+    select new me.jsu.springbootdeveloper.post.dto.report.ReportArticleDetailResponse(
         r.id,
         u.id,
         u.nickname,

@@ -7,7 +7,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
-import me.jsu.springbootdeveloper.post.dto.*;
+import me.jsu.springbootdeveloper.post.dto.report.*;
 import me.jsu.springbootdeveloper.post.service.ReportService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;

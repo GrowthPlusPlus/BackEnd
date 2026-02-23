@@ -7,7 +7,10 @@ import me.jsu.springbootdeveloper.post.domain.Article;
 import me.jsu.springbootdeveloper.post.domain.Comment;
 import me.jsu.springbootdeveloper.post.domain.ReportArticle;
 import me.jsu.springbootdeveloper.post.domain.ReportComment;
-import me.jsu.springbootdeveloper.post.dto.*;
+import me.jsu.springbootdeveloper.post.dto.report.ReportArticleDetailResponse;
+import me.jsu.springbootdeveloper.post.dto.report.ReportCommentDetailResponse;
+import me.jsu.springbootdeveloper.post.dto.report.ReportedArticleResponse;
+import me.jsu.springbootdeveloper.post.dto.report.ReportedCommentResponse;
 import me.jsu.springbootdeveloper.post.enumType.ReportReason;
 import me.jsu.springbootdeveloper.post.exception.DuplicateReportException;
 import me.jsu.springbootdeveloper.post.exception.InvalidReportTargetException;
@@ -34,6 +37,7 @@ public class ReportService {
     private final ReportCommentRepository reportCommentRepository;
     private final PostService postService;
     private final PostRepository postRepository;
+    private final PostQueryService postQueryService;
     private final CommentService commentService;
     private final CommentRepository commentRepository;
     private final UserService userService;
@@ -43,7 +47,7 @@ public class ReportService {
      */
     public void reportArticle(String email, Long articleId, ReportReason reportReason, String detailReason) {
         User user = userService.findByEmail(email);
-        Article article = postService.findById(articleId);
+        Article article = postQueryService.findById(articleId);
 
         // 유저는 한 인증글 당 한 번만 신고가 가능하다.
         if (reportArticleRepository.existsByUser_IdAndArticle_Id(user.getId(), articleId)) {
@@ -133,7 +137,7 @@ public class ReportService {
         reportArticleRepository.delete(reportArticle);  // db에서 삭제한다.
 
         // 인증글을 검색하여 신고 수를 감소시킨다.
-        Article article = postService.findById(articleId);
+        Article article = postQueryService.findById(articleId);
         article.minusTotalReport();
     }
 

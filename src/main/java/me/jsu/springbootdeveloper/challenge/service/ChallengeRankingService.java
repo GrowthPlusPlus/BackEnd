@@ -4,8 +4,8 @@ package me.jsu.springbootdeveloper.challenge.service;
 
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
-import me.jsu.springbootdeveloper.challenge.dto.RankingResponse;
-import me.jsu.springbootdeveloper.challenge.dto.RankingResultResponse;
+import me.jsu.springbootdeveloper.challenge.dto.ranking.RankingResponse;
+import me.jsu.springbootdeveloper.challenge.dto.ranking.RankingResultResponse;
 import me.jsu.springbootdeveloper.challenge.exception.ChallengeNotFoundException;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeParticipantRepository;
 import me.jsu.springbootdeveloper.user.domain.User;
@@ -13,7 +13,6 @@ import me.jsu.springbootdeveloper.user.domain.UserProfilePicture;
 import me.jsu.springbootdeveloper.user.domain.UserStatistics;
 import me.jsu.springbootdeveloper.user.repository.UserStatisticsRepository;
 import me.jsu.springbootdeveloper.user.service.UserService;
-import me.jsu.springbootdeveloper.user.service.UserStatisticsService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -61,17 +60,11 @@ public class ChallengeRankingService {
         // 나보다 점수가 높은 사람의 수를 카운트하므로 +1을 해야 등수가 나온다.
         long myRanking = challengeParticipantRepository.countHigherScore(challengeId, challengeParticipant.getRankingScore()) + 1;
 
-        // 유저 프로필 사진이 null인지 확인한다.
-        String profile;
-        UserProfilePicture userProfilePicture = challengeParticipant.getUser().getUserProfilePicture();
-        if (userProfilePicture == null) {
-            profile = null;
-        }
-        else {
-            profile = userProfilePicture.getImageUrl();
-        }
+        // 유저 프로필 사진을 가져온다. null 여부는 user 도메인 내부에서 체크한다.
+        String profile = challengeParticipant.getUser().getProfileImageUrl();
 
-        RankingResponse myRank = new RankingResponse(user.getId(), user.getNickname(), profile, challengeParticipant.getRankingScore(), (int) myRanking);
+        RankingResponse myRank = new RankingResponse(user.getId(), user.getNickname(), profile,
+                challengeParticipant.getTotalSuccessDays(), challengeParticipant.getCurrentStreakDays(), (int) myRanking);
 
         // 전체 랭킹과 내 랭킹을 response로 반환한다.
         return new RankingResultResponse(topParticipants, myRank);
