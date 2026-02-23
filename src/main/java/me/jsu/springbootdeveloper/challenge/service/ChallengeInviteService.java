@@ -17,6 +17,7 @@ import me.jsu.springbootdeveloper.notification.service.NotificationService;
 import me.jsu.springbootdeveloper.tag.domain.TagToChallenge;
 import me.jsu.springbootdeveloper.tag.repository.TagToChallengeRepository;
 import me.jsu.springbootdeveloper.user.domain.User;
+import me.jsu.springbootdeveloper.user.repository.UserProfilePictureRepository;
 import me.jsu.springbootdeveloper.user.service.UserService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor  // final 또는 notNull이 있는 맴버변수만 생성자에서 초기화 한다.
@@ -38,6 +40,7 @@ public class ChallengeInviteService {
     private final ChallengeService challengeService;
     private final TagToChallengeRepository tagToChallengeRepository;
     private final ChallengeParticipantRepository challengeParticipantRepository;
+    private final UserProfilePictureRepository userProfilePictureRepository;
     /*
        작성된 함수 목록
        - 친구를 챌린지에 초대하는 함수/public void inviteUser(String inviterEmail, Long challengeId, String targetNickname)
@@ -78,9 +81,9 @@ public class ChallengeInviteService {
     /*
         알림 페이지에서 챌린지 초대 목록을 반환하는 함수이다.
         특정 유저가 받은 초대 목록 중 만료되지 않은 챌린지만 반환한다.
-        반환값: 초대자 닉네임, 챌린지 이름, 참여자 수, 완료까지 남은 날짜, 태그 목록
+        반환값: 초대자 닉네임,유저 프로필 url, 챌린지 이름, 참여자 수, 완료까지 남은 날짜, 태그 목록
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public List<ChallengeInviteListResponse> getChallengeInviteList(String email) {
         // 이메일로 유저 정보 조회
         User user = userService.findByEmail(email);
@@ -99,6 +102,11 @@ public class ChallengeInviteService {
                     
                     // 초대자 닉네임
                     String inviterNickname = invite.getInviter().getNickname();
+
+                    //초대자 프로필 url
+                    Long inviterId = invite.getInviter().getId();
+                    // findImageUrlByUserId가 값이 없으면 자동으로 ""를 넣어줍니다.
+                    String imageUrl = userProfilePictureRepository.findImageUrlByUserId(inviterId).orElse("");
 
                     //챌린지 id
                     Long challengeId = challenge.getId();
@@ -127,6 +135,7 @@ public class ChallengeInviteService {
                     // DTO 생성 및 반환
                     return new ChallengeInviteListResponse(
                             inviterNickname,
+                            imageUrl,
                             challengeId,
                             challengeTitle,
                             participantCount,
@@ -180,6 +189,8 @@ public class ChallengeInviteService {
         
         // 초대 상태를 ACCEPTED로 변경
         invite.updateStatus(InviteStatus.ACCEPTED);
+
+
     }
     
     /*
@@ -204,6 +215,7 @@ public class ChallengeInviteService {
         
         // 초대 상태를 REJECTED로 변경
         invite.updateStatus(InviteStatus.REJECTED);
+
     }
     
 }

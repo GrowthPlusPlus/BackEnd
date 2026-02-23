@@ -51,6 +51,10 @@ public class Notification {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    //알림페이지에 관련 인물 프로필 조회를 위한 칼럼
+    @Column(name = "image_url")
+    private String imageUrl;
+
     @Builder
     public Notification(User user, NotificationType type, String message) {
         this.user = user;
@@ -64,5 +68,9 @@ public class Notification {
      */
     public void markAsRead() {
         this.isRead = true;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 }

@@ -16,6 +16,7 @@ import me.jsu.springbootdeveloper.post.exception.ArticleAccessDeniedException;
 import me.jsu.springbootdeveloper.post.exception.ArticleNotFoundException;
 import me.jsu.springbootdeveloper.post.exception.DuplicateDailyPostException;
 import me.jsu.springbootdeveloper.post.exception.InvalidImageException;
+import me.jsu.springbootdeveloper.user.repository.UserProfilePictureRepository;
 import me.jsu.springbootdeveloper.user.service.UserStatisticsService;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -61,6 +62,7 @@ public class PostService {
     private final ChallengeDeleteService challengeDeleteService;
     private final ChallengeParticipantRepository challengeParticipantRepository;
     private final NotificationService notificationService;
+    private final UserProfilePictureRepository userProfilePictureRepository;
     private final FcmService fcmService;
     private static final int MAX_IMAGE_COUNT = 3;
 
@@ -218,9 +220,11 @@ public class PostService {
         List<ChallengeParticipant> challengeParticipants = challengeParticipantRepository.findParticipantsInProgress(challenge.getId(), user.getId(), Status.IN_PROGRESS);
         for (ChallengeParticipant Participant : challengeParticipants) {
             User participatingUser = Participant.getUser();
-            // 인앱알림 보내기
-            notificationService.sendNotification(participatingUser, NotificationType.CHALLENGE, participatingUser.getNickname() + "님이 " + challenge.getTitle() + "챌린지에 인증했어요!");
-            // 전체 알림 활성화 검사하고 푸시 알림 보내기
+            //인앱알림 보내기, 게시글 작성자 프로필이미지 notification객체에 함께 저장
+            long userId = user.getId();
+            String imageUrl = userProfilePictureRepository.findImageUrlByUserId(userId).orElse("");
+            notificationService.sendNotification(participatingUser, NotificationType.CHALLENGE, participatingUser.getNickname() + "님이 " + challenge.getTitle() + "챌린지에 인증했어요!", imageUrl);
+            //전체 알림 활성화 검사하고 푸시 알림 보내기
             if (participatingUser.isAllPushNotificationEnabled()) {
                 fcmService.sendMessageTo(participatingUser.getFcmToken(), "챌린지 인증", participatingUser.getNickname() + "님이 " + challenge.getTitle() + "챌린지에 인증했어요!");
             }
