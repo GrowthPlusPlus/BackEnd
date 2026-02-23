@@ -214,7 +214,7 @@ public class ChallengeService {
      * 이미 참여 중인 유저는 제외하고, 초대됨/초대 가능 상태인 유저만 반환한다.
      * 초대 링크도 함께 반환한다.
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public ChallengeInviteResponse getFriendList_with_InviteStatus(String email, Long challengeId) {
         User user = userService.findByEmail(email);
 
