@@ -11,7 +11,7 @@ import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeQueryService;
 import me.jsu.springbootdeveloper.fcm.service.FcmService;
 import me.jsu.springbootdeveloper.notification.enumType.NotificationType;
 import me.jsu.springbootdeveloper.notification.service.NotificationService;
-import me.jsu.springbootdeveloper.post.dto.ArticleImageResponse;
+import me.jsu.springbootdeveloper.post.dto.article.ArticleImageResponse;
 import me.jsu.springbootdeveloper.post.exception.ArticleAccessDeniedException;
 import me.jsu.springbootdeveloper.post.exception.ArticleNotFoundException;
 import me.jsu.springbootdeveloper.post.exception.DuplicateDailyPostException;
@@ -25,7 +25,7 @@ import me.jsu.springbootdeveloper.challenge.domain.Challenge;
 import me.jsu.springbootdeveloper.post.domain.PostPicture;
 import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.user.domain.UserProfilePicture;
-import me.jsu.springbootdeveloper.post.dto.ArticleDetailResponse;
+import me.jsu.springbootdeveloper.post.dto.article.ArticleDetailResponse;
 import me.jsu.springbootdeveloper.view.dto.ChallengeCalendarPhotoResponse;
 import me.jsu.springbootdeveloper.view.dto.ChallengeCalendarPostResponse;
 import me.jsu.springbootdeveloper.cloudinary.dto.ImageUploadResult;
@@ -53,6 +53,7 @@ public class PostService {
     private final UserService userService;
     private final ChallengeService challengeService;
     private final PostLikeService postLikeService;
+    private final PostQueryService postQueryService;
     private final PostPictureRepository postPictureRepository;
     private final CloudinaryService cloudinaryService;
     private final UserStatisticsService userStatisticsService;
@@ -62,174 +63,6 @@ public class PostService {
     private final NotificationService notificationService;
     private final FcmService fcmService;
     private static final int MAX_IMAGE_COUNT = 3;
-
-    /*
-        게시글을 추가하는 함수이다.
-        유저로부터 받은 이미지는 검증 서비스를 거치고 왔다고 가정하고 수행한다.
-     */
-    @Transactional
-    public ArticleDetailResponse save(String email, String content, Long challengeId, List<MultipartFile> images) {
-        // 유저 이메일로 user 객체를 검색한다.
-        User user = userService.findByEmail(email);
-
-        // request로 온 챌린지 id로 post가 어떤 챌린지에 속하는지 검색한다.
-        Challenge challenge = challengeQueryService.findById(challengeId);
-
-        // 현재 진행중인 챌린지가 아니라면 예외를 던진다.
-        challengeQueryService.challengeStatusInProgress(user.getId(), challengeId);
-
-        // 챌린지 인증 시각을 정확하게 보기 위해 생성 시각과는 다른 인증 날짜 도메인을 생성한다.
-        LocalDateTime postDateTime = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
-
-        // 인증날짜용 도메인이다.
-        LocalDate postDate = postDateTime.toLocalDate();
-
-        // 하루 1회로 인증을 제한한다.
-        boolean alreadyPosted = postRepository.existsByUser_IdAndChallenge_IdAndPostDate(user.getId(), challenge.getId(), postDate);
-        if (alreadyPosted) {
-            throw new DuplicateDailyPostException("DAILY_POST_ALREADY_EXISTS");
-        }
-
-        // 이미지가 아에 비어있으면 빈 리스트를 대입한다.
-        images = (images == null) ? List.of() : images;
-
-        // 챌린지의 이미지 필수 여부를 확인한다.
-        boolean photoRequired = challenge.isPhotoRequired();
-        if (photoRequired && images.isEmpty()) {
-            throw new InvalidImageException("IMAGE_REQUIRED");  // 사진이 필수 인증인데 이미지가 없다면 예외처리 한다.
-        }
-
-        // 업로드 한 사진의 개수가 5개보다 많으면 예외처리 한다.
-        if (images.size() > MAX_IMAGE_COUNT) {
-            throw new InvalidImageException("MAX_IMAGE_COUNT_EXCEEDED");
-        }
-
-        // 서버에 글을 저장한다.
-        Article article = postRepository.save(Article.builder()
-                .content(content)
-                .user(user)
-                .challenge(challenge)
-                .updateAt(postDateTime)
-                .postDate(postDate)
-                .build());
-
-        // 검증된 사진을 DB와 클라우디너리에 저장한다.
-        saveImages(images, article);
-
-        // 인증글을 업데이트 했으므로 총 인증 횟수와 연속 인증 횟수를 업데이트 한다.
-        challengeService.succeedChallenge(user.getId(), challengeId, postDate);
-
-        // 인증글을 업데이트 했으므로 챌린지 데일리 로그도 업데이트 한다.
-        challengeService.createDailyLog(user, challenge, article, postDate);
-
-        // 오늘 인증한 사람 수를 증가시킨다.
-        challengeService.updateTodaySuccessCount(challenge, postDate);
-
-        // 주의 시작인 월요일을 계산한다.
-        LocalDate weekStartDate = postDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-
-        // 인증글을 업데이트 했으므로 챌린지 주간 상태도 업데이트 한다.
-        challengeService.updateWeeklyStatus(user, challenge, weekStartDate, challenge.getRequiredWeeklyCount());
-
-        // 유저 통계를 업데이트 한다.
-        userStatisticsService.onPostConfirmed(user, challenge.getId(), postDate);
-        //챌린지 멤버 인증 알림 전송
-        // challegeparticipant중 상태가 in progress 인 사람에게 전송
-        // "홍길동 님이 [챌린지명]챌린지에 인증했어요!"
-        List<ChallengeParticipant> challengeParticipants = challengeParticipantRepository.findParticipantsInProgress(challenge.getId(), user.getId(), Status.IN_PROGRESS);
-        for (ChallengeParticipant Participant : challengeParticipants) {
-            User participatingUser = Participant.getUser();
-            //인앱알림 보내기
-            notificationService.sendNotification(participatingUser, NotificationType.CHALLENGE, participatingUser.getNickname() + "님이 " + challenge.getTitle() + "챌린지에 인증했어요!");
-            //전체 알림 활성화 검사하고 푸시 알림 보내기
-            if (participatingUser.isAllPushNotificationEnabled()) {
-                fcmService.sendMessageTo(participatingUser.getFcmToken(), "챌린지 인증", participatingUser.getNickname() + "님이 " + challenge.getTitle() + "챌린지에 인증했어요!");
-            }
-        }
-        // 저장한 인증글 id로 검색하여 인증글 상세 정보를 반환한다.
-        return getPost(email, article.getId());
-    }
-
-    /*
-        클라우디너리에 사진을 저장하고, 사진 정보를 DB에 반영해주는 함수이다.
-     */
-    public void saveImages(List<MultipartFile> images, Article article) {
-        // 이미지가 없는 경우엔 if문을 실행하지 않는다.
-        if (!images.isEmpty()) {
-            for (MultipartFile multipartFile : images) {
-                if (multipartFile.isEmpty()) {  // 파일이 비어있으면 수행하지 않는다. (방어코드)
-                    continue;
-                }
-                // 인증글 이미지를 클라우디너리에 업로드하고 정보를 반환받는다.
-                ImageUploadResult imageUploadResult = cloudinaryService.uploadImage(multipartFile);
-
-                // 사진 정보를 DB에 반영한다.
-                postPictureRepository.save(PostPicture.builder()
-                        .article(article)
-                        .cloudinaryPublicId(imageUploadResult.publicId())
-                        .imageUrl(imageUploadResult.secureUrl())
-                        .build());
-            }
-        }
-    }
-
-    /*
-        클라우디너리의 사진을 삭제하고, 사진 정보를 DB에서 삭제하는 함수이다.
-     */
-    public void deleteImages(List<PostPicture> postPictures) {
-        // 인증글에 저장된 사진들을 클라우디너리에서 삭제한다. 이미지가 없는 경우엔 if문을 실행하지 않는다.
-        if (!postPictures.isEmpty()) {
-            for (PostPicture pp : postPictures) {
-                // 클라우디너리의 이미지를 삭제한다.
-                cloudinaryService.deleteImage(pp.getCloudinaryPublicId());
-
-                // 우리 서버의 DB에서도 정보를 삭제한다.
-                postPictureRepository.delete(pp);
-            }
-        }
-    }
-
-    /*
-        공개 인증글 목록을 조회한다.
-        오늘 날짜, 페이지 정보를 넘겨준다.
-        피드 생성에 사용된다.
-     */
-    public Page<Article> findPublicFeed(LocalDate targetDate, Pageable pageable) {
-        return postRepository.findPublicFeed(targetDate, pageable);
-    }
-
-    /*
-        친구 인증글 목록을 조회한다.
-        자신의 id, 오늘 날짜, 페이지 정보를 넘겨준다.
-        피드 생성에 사용된다.
-     */
-    public Page<Article> findFriendFeed(Long userId, LocalDate targetDate, Pageable pageable) {
-        return postRepository.findFriendFeed(userId, targetDate, pageable);
-    }
-
-    /*
-        챌린지 맴버들의 인증글 목록을 조회한다.
-        맴버 현황에 사용된다.
-     */
-    public Page<Article> findChallengeFeed(Long challengeId, Pageable pageable) {
-        return postRepository.findChallengeFeed(challengeId, pageable);
-    }
-
-    /*
-        인증글 id 여러 개로 그 인증글과 관련된 이미지들을 구한다.
-        피드 생성에 사용된다.
-     */
-    public List<Object[]> findImagesByPostIds(List<Long> postIds) {
-        return postPictureRepository.findImagesByPostIds(postIds);
-    }
-
-    /*
-        게시글 단일 정보를 게시글 id로 조회하는 함수이다.
-     */
-    public Article findById(Long postId) {
-        return postRepository.findById(postId)
-                .orElseThrow(() -> new ArticleNotFoundException("ARTICLE_NOT_FOUND_FOR_ID"));
-    }
 
     /*
         게시글 상제 정보를 게시글 id로 조회하는 함수이다.
@@ -307,21 +140,137 @@ public class PostService {
     }
 
     /*
+        게시글을 추가하는 함수이다.
+        유저로부터 받은 이미지는 검증 서비스를 거치고 왔다고 가정하고 수행한다.
+     */
+    @Transactional
+    public ArticleDetailResponse save(String email, String content, Long challengeId, List<MultipartFile> images) {
+        // 유저 이메일로 user 객체를 검색한다.
+        User user = userService.findByEmail(email);
+
+        // request로 온 챌린지 id로 post가 어떤 챌린지에 속하는지 검색한다.
+        Challenge challenge = challengeQueryService.findById(challengeId);
+
+        // 현재 진행중인 챌린지가 아니라면 예외를 던진다.
+        challengeQueryService.challengeStatusInProgress(user.getId(), challengeId);
+
+        // 챌린지 인증 시각을 정확하게 보기 위해 생성 시각과는 다른 인증 날짜 도메인을 생성한다.
+        LocalDateTime postDateTime = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+
+        // 인증날짜용 도메인이다.
+        LocalDate postDate = postDateTime.toLocalDate();
+
+        // 하루 1회로 인증을 제한한다.
+        boolean alreadyPosted = postRepository.existsByUser_IdAndChallenge_IdAndPostDate(user.getId(), challenge.getId(), postDate);
+        if (alreadyPosted) {
+            throw new DuplicateDailyPostException("DAILY_POST_ALREADY_EXISTS");
+        }
+
+        // 이미지가 아에 비어있으면 빈 리스트를 대입한다.
+        images = (images == null) ? List.of() : images;
+
+        // 챌린지의 이미지 필수 여부를 확인한다.
+        boolean photoRequired = challenge.isPhotoRequired();
+        if (photoRequired && images.isEmpty()) {
+            throw new InvalidImageException("IMAGE_REQUIRED");  // 사진이 필수 인증인데 이미지가 없다면 예외처리 한다.
+        }
+
+        // 업로드 한 사진의 개수가 5개보다 많으면 예외처리 한다.
+        if (images.size() > MAX_IMAGE_COUNT) {
+            throw new InvalidImageException("MAX_IMAGE_COUNT_EXCEEDED");
+        }
+
+        // 서버에 글을 저장한다.
+        Article article = postRepository.save(Article.builder()
+                .content(content)
+                .user(user)
+                .challenge(challenge)
+                .updateAt(postDateTime)
+                .postDate(postDate)
+                .build());
+
+        // 검증된 사진을 DB와 클라우디너리에 저장한다.
+        saveImages(images, article);
+
+        // 인증글을 업데이트 했으므로 총 인증 횟수와 연속 인증 횟수를 업데이트 한다.
+        challengeService.succeedChallenge(user.getId(), challengeId, postDate);
+
+        // 인증글을 업데이트 했으므로 챌린지 데일리 로그도 업데이트 한다.
+        challengeService.createDailyLog(user, challenge, article, postDate);
+
+        // 오늘 인증한 사람 수를 증가시킨다.
+        challengeService.updateTodaySuccessCount(challenge, postDate);
+
+        // 주의 시작인 월요일을 계산한다.
+        LocalDate weekStartDate = postDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+
+        // 인증글을 업데이트 했으므로 챌린지 주간 상태도 업데이트 한다.
+        challengeService.updateWeeklyStatus(user, challenge, weekStartDate, challenge.getRequiredWeeklyCount());
+
+        // 유저 통계를 업데이트 한다.
+        userStatisticsService.onPostConfirmed(user, challenge.getId(), postDate);
+
+        /*
+            챌린지 멤버 인증 알림 전송
+            challenge_participant중 상태가 in progress 인 사람에게 전송
+            "홍길동 님이 [챌린지명]챌린지에 인증했어요!"
+         */
+        List<ChallengeParticipant> challengeParticipants = challengeParticipantRepository.findParticipantsInProgress(challenge.getId(), user.getId(), Status.IN_PROGRESS);
+        for (ChallengeParticipant Participant : challengeParticipants) {
+            User participatingUser = Participant.getUser();
+            // 인앱알림 보내기
+            notificationService.sendNotification(participatingUser, NotificationType.CHALLENGE, participatingUser.getNickname() + "님이 " + challenge.getTitle() + "챌린지에 인증했어요!");
+            // 전체 알림 활성화 검사하고 푸시 알림 보내기
+            if (participatingUser.isAllPushNotificationEnabled()) {
+                fcmService.sendMessageTo(participatingUser.getFcmToken(), "챌린지 인증", participatingUser.getNickname() + "님이 " + challenge.getTitle() + "챌린지에 인증했어요!");
+            }
+        }
+        // 저장한 인증글 id로 검색하여 인증글 상세 정보를 반환한다.
+        return getPost(email, article.getId());
+    }
+
+    /*
+        클라우디너리에 사진을 저장하고, 사진 정보를 DB에 반영해주는 함수이다.
+     */
+    public void saveImages(List<MultipartFile> images, Article article) {
+        // 이미지가 없는 경우엔 if문을 실행하지 않는다.
+        if (!images.isEmpty()) {
+            for (MultipartFile multipartFile : images) {
+                if (multipartFile.isEmpty()) {  // 파일이 비어있으면 수행하지 않는다. (방어코드)
+                    continue;
+                }
+                // 인증글 이미지를 클라우디너리에 업로드하고 정보를 반환받는다.
+                ImageUploadResult imageUploadResult = cloudinaryService.uploadImage(multipartFile);
+
+                // 사진 정보를 DB에 반영한다.
+                postPictureRepository.save(PostPicture.builder()
+                        .article(article)
+                        .cloudinaryPublicId(imageUploadResult.publicId())
+                        .imageUrl(imageUploadResult.secureUrl())
+                        .build());
+            }
+        }
+    }
+
+    /*
+        클라우디너리의 사진을 삭제하고, 사진 정보를 DB에서 삭제하는 함수이다.
+     */
+    public void deleteImages(List<PostPicture> postPictures) {
+        // 인증글에 저장된 사진들을 클라우디너리에서 삭제한다. 이미지가 없는 경우엔 if문을 실행하지 않는다.
+        if (!postPictures.isEmpty()) {
+            for (PostPicture pp : postPictures) {
+                // 클라우디너리의 이미지를 삭제한다.
+                cloudinaryService.deleteImage(pp.getCloudinaryPublicId());
+
+                // 우리 서버의 DB에서도 정보를 삭제한다.
+                postPictureRepository.delete(pp);
+            }
+        }
+    }
+
+    /*
         게시글 하나를 삭제하는 함수로, 게시글 작성자 id가 요청자 id와 다르면 삭제하지 않는다.
         또한 당일 인증글만 삭제 가능하다.
-
-        다음은 @Transactional를 사용했을 때의 효과이다.
-        1) findById() 호출 시 엔티티는 영속성 컨텍스트에 등록되어
-           JPA의 관리 대상이 된다.
-
-        2) 엔티티의 필드를 변경하면 JPA는 즉시 DB에 반영하지 않고,
-           영속성 컨텍스트 내에서 변경된 상태를 유지한다.
-
-        3) 트랜잭션 커밋 시점에 flush가 발생하고,
-           JPA는 스냅샷과 현재 상태를 비교(dirty checking)하여
-           변경된 엔티티에 대해 UPDATE SQL을 생성하고 실행한다.
-
-        따라서 @Transactional는 DB 작업의 원자성, 일관성, 격리성, 지속성을 보장한다.
      */
     @Transactional
     public void delete(String email, Long postId) {
@@ -372,7 +321,7 @@ public class PostService {
     @Transactional
     public ArticleDetailResponse update(String email, Long postId, String content, List<Long> deleteImageIds, List<MultipartFile> images) {
         User user = userService.findByEmail(email);
-        Article article = findById(postId);
+        Article article = postQueryService.findById(postId);
 
         authorizeArticleAuthor(article, user);  // 글 작성자인지 확인한다.
 
@@ -452,22 +401,5 @@ public class PostService {
     @Transactional
     public void detachPostToUser(User user) {
         postRepository.detachUser(user);
-    }
-
-
-    /*
-        캘린더를 조회하기 위해 사용하는 함수이다.
-        DB 검색에서 자동으로 DTO를 생성하여 반환한다.
-     */
-    public List<ChallengeCalendarPhotoResponse> findCalendarPhotos(Long userId, Long challengeId, LocalDate start, LocalDate end) {
-        return postRepository.findCalendarPhotos(userId, challengeId, start, end);
-    }
-
-    /*
-        특정 챌린지의 해당 연 월에 내가 올린 인증글을 최신순으로 조회하여 반환한다.
-        캘린더 뷰 화면에 필요한 정보이다.
-     */
-    public Page<ChallengeCalendarPostResponse> findCalendarPosts(Long userId, Long challengeId, LocalDate start, LocalDate end, Pageable pageable) {
-        return postRepository.findCalendarPosts(userId, challengeId, start, end, pageable);
     }
 }

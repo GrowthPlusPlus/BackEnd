@@ -3,7 +3,7 @@
 package me.jsu.springbootdeveloper.challenge.repository;
 
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
-import me.jsu.springbootdeveloper.challenge.dto.RankingResponse;
+import me.jsu.springbootdeveloper.challenge.dto.ranking.RankingResponse;
 import me.jsu.springbootdeveloper.challenge.enumType.Status;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -137,11 +137,12 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
 
     // 상위 랭커를 조회하는 쿼리문이다. 등수는 서비스에서 다시 계산한다.
     @Query("""
-        select new me.jsu.springbootdeveloper.challenge.dto.RankingResponse(
+        select new me.jsu.springbootdeveloper.challenge.dto.ranking.RankingResponse(
             u.id,
             u.nickname,
             p.imageUrl,
-            cp.rankingScore,
+            cp.totalSuccessDays,
+            cp.currentStreakDays,
             0
         )
         from ChallengeParticipant cp

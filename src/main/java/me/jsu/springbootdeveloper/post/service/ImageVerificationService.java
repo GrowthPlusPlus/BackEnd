@@ -3,11 +3,9 @@
 package me.jsu.springbootdeveloper.post.service;
 
 import me.jsu.springbootdeveloper.challenge.domain.Challenge;
-import me.jsu.springbootdeveloper.challenge.service.ChallengePreviewService;
-import me.jsu.springbootdeveloper.challenge.service.ChallengeService;
 import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeQueryService;
-import me.jsu.springbootdeveloper.post.dto.ImageVerificationResponse;
-import me.jsu.springbootdeveloper.post.dto.ImageVerificationResult;
+import me.jsu.springbootdeveloper.post.dto.verify.ImageVerificationResponse;
+import me.jsu.springbootdeveloper.post.dto.verify.ImageVerificationResult;
 import me.jsu.springbootdeveloper.post.exception.ClipServerException;
 import me.jsu.springbootdeveloper.post.exception.InvalidImageException;
 import org.slf4j.Logger;

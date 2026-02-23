@@ -3,8 +3,8 @@
 //import com.fasterxml.jackson.databind.ObjectMapper;
 //import me.jsu.springbootdeveloper.post.domain.Article;
 //import me.jsu.springbootdeveloper.user.domain.User;
-//import me.jsu.springbootdeveloper.post.dto.AddArticleRequest;
-//import me.jsu.springbootdeveloper.post.dto.UpdateArticleRequest;
+//import me.jsu.springbootdeveloper.post.dto.article.AddArticleRequest;
+//import me.jsu.springbootdeveloper.post.dto.article.UpdateArticleRequest;
 //import me.jsu.springbootdeveloper.post.repository.PostRepository;
 //import me.jsu.springbootdeveloper.user.repository.UserRepository;
 //import org.junit.jupiter.api.BeforeEach;

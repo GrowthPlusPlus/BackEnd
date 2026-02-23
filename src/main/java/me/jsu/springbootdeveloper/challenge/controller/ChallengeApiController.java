@@ -9,9 +9,17 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import me.jsu.springbootdeveloper.challenge.dto.*;
-import me.jsu.springbootdeveloper.challenge.dto.CreateChallengeResponse;
-import me.jsu.springbootdeveloper.challenge.dto.CreateChallengeRequest;
+import me.jsu.springbootdeveloper.challenge.dto.basic.ChallengeDetailResponse;
+import me.jsu.springbootdeveloper.challenge.dto.basic.CreateChallengeResponse;
+import me.jsu.springbootdeveloper.challenge.dto.basic.CreateChallengeRequest;
+import me.jsu.springbootdeveloper.challenge.dto.basic.SearchChallengeResponse;
+import me.jsu.springbootdeveloper.challenge.dto.invite.ChallengeInviteListResponse;
+import me.jsu.springbootdeveloper.challenge.dto.invite.ChallengeInviteResponse;
+import me.jsu.springbootdeveloper.challenge.dto.member.ChallengeMemberResponse;
+import me.jsu.springbootdeveloper.challenge.dto.member.ChallengeOwnerDelegateRequest;
+import me.jsu.springbootdeveloper.challenge.dto.member.KickMemberRequest;
+import me.jsu.springbootdeveloper.challenge.dto.setting.ChallengeSettingsResponse;
+import me.jsu.springbootdeveloper.challenge.dto.setting.ChallengeSettingsUpdateRequest;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeInviteService;
 import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeDeleteService;
 import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeMemberService;
@@ -88,7 +96,7 @@ public class ChallengeApiController {
 
     @GetMapping("/api/challenges/{challengeId}/invite")
     public ResponseEntity<ChallengeInviteResponse> getFriendList_with_InviteStatus (@AuthenticationPrincipal UserDetails userDetails,
-                                                                              @PathVariable Long challengeId)
+                                                                                    @PathVariable Long challengeId)
 
     {
         ChallengeInviteResponse response = challengeService.getFriendList_with_InviteStatus(userDetails.getUsername(), challengeId);

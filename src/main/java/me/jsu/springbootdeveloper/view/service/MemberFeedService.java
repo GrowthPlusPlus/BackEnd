@@ -3,9 +3,9 @@
 package me.jsu.springbootdeveloper.view.service;
 
 import lombok.RequiredArgsConstructor;
-import me.jsu.springbootdeveloper.challenge.service.ChallengeService;
 import me.jsu.springbootdeveloper.post.domain.Article;
-import me.jsu.springbootdeveloper.post.dto.ArticleDetailResponse;
+import me.jsu.springbootdeveloper.post.dto.article.ArticleDetailResponse;
+import me.jsu.springbootdeveloper.post.service.PostQueryService;
 import me.jsu.springbootdeveloper.post.service.PostService;
 import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.user.service.UserService;
@@ -17,13 +17,12 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.*;
 
 @RequiredArgsConstructor
 @Service
 public class MemberFeedService {
     private final UserService userService;
-    private final PostService postService;
+    private final PostQueryService postQueryService;
     private final PostFeedMapper postFeedMapper;
 
     /*
@@ -42,7 +41,7 @@ public class MemberFeedService {
         LocalDate targetDate = LocalDate.now(ZoneId.of("Asia/Seoul"));
 
         // 인증글 목록을 챌린지 id로 조회한다.
-        Page<Article> articles = postService.findChallengeFeed(challengeId, pageable);
+        Page<Article> articles = postQueryService.findChallengeFeed(challengeId, pageable);
 
         return postFeedMapper.toDto(articles, user.getId());  // dto로 가공하여 반환한다.
     }

@@ -7,7 +7,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
-import me.jsu.springbootdeveloper.post.dto.ArticleDetailResponse;
+import me.jsu.springbootdeveloper.post.dto.article.ArticleDetailResponse;
 import me.jsu.springbootdeveloper.view.service.FriendFeedService;
 import me.jsu.springbootdeveloper.view.service.MemberFeedService;
 import me.jsu.springbootdeveloper.view.service.PublicFeedService;

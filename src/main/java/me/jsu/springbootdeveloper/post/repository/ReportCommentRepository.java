@@ -3,7 +3,7 @@
 package me.jsu.springbootdeveloper.post.repository;
 
 import me.jsu.springbootdeveloper.post.domain.ReportComment;
-import me.jsu.springbootdeveloper.post.dto.ReportCommentDetailResponse;
+import me.jsu.springbootdeveloper.post.dto.report.ReportCommentDetailResponse;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -19,7 +19,7 @@ public interface ReportCommentRepository extends JpaRepository<ReportComment, Lo
 
     // 댓글 신고 상세 정보를 가져오는 쿼리문이다.
     @Query("""
-    select new me.jsu.springbootdeveloper.post.dto.ReportCommentDetailResponse(
+    select new me.jsu.springbootdeveloper.post.dto.report.ReportCommentDetailResponse(
         r.id,
         u.id,
         u.nickname,

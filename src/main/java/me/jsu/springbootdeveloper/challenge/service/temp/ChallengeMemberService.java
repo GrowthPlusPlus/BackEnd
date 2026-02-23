@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.domain.Challenge;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeInvite;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
-import me.jsu.springbootdeveloper.challenge.dto.ChallengeMemberResponse;
+import me.jsu.springbootdeveloper.challenge.dto.member.ChallengeMemberResponse;
 import me.jsu.springbootdeveloper.challenge.exception.ChallengeInviteNotFoundException;
 import me.jsu.springbootdeveloper.challenge.exception.ChallengeOwnerCannotLeaveException;
 import me.jsu.springbootdeveloper.challenge.exception.NotAllowedChallengeActionException;

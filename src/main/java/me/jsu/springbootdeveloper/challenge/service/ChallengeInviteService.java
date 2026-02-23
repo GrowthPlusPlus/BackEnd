@@ -3,7 +3,7 @@ package me.jsu.springbootdeveloper.challenge.service;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.domain.Challenge;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeInvite;
-import me.jsu.springbootdeveloper.challenge.dto.ChallengeInviteListResponse;
+import me.jsu.springbootdeveloper.challenge.dto.invite.ChallengeInviteListResponse;
 import me.jsu.springbootdeveloper.challenge.enumType.InviteStatus;
 import me.jsu.springbootdeveloper.challenge.exception.ChallengeInviteNotFoundException;
 import me.jsu.springbootdeveloper.challenge.exception.NotAllowedChallengeActionException;

@@ -7,7 +7,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 // 정성우
 
-import me.jsu.springbootdeveloper.challenge.dto.RankingResultResponse;
+import me.jsu.springbootdeveloper.challenge.dto.ranking.RankingResultResponse;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeRankingService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;

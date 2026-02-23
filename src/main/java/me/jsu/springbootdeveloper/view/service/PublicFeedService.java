@@ -3,10 +3,9 @@
 package me.jsu.springbootdeveloper.view.service;
 
 import me.jsu.springbootdeveloper.post.domain.Article;
+import me.jsu.springbootdeveloper.post.service.PostQueryService;
 import me.jsu.springbootdeveloper.user.service.UserService;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeService;
-import me.jsu.springbootdeveloper.post.service.PostLikeService;
-import me.jsu.springbootdeveloper.post.service.PostService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -19,12 +18,12 @@ import java.time.LocalDate;
  */
 @Service
 public class PublicFeedService extends AbstractFeedService {
-    public PublicFeedService(UserService userService, PostService postService, ChallengeService challengeService, PostFeedMapper postFeedMapper) {
-        super(userService, postService, challengeService, postFeedMapper);
+    public PublicFeedService(UserService userService, PostQueryService postQueryService, ChallengeService challengeService, PostFeedMapper postFeedMapper) {
+        super(userService,postQueryService, challengeService, postFeedMapper);
     }
 
     @Override
     protected Page<Article> getArticles(Long userId, LocalDate targetDate, Pageable pageable) {
-        return postService.findPublicFeed(targetDate, pageable);
+        return postQueryService.findPublicFeed(targetDate, pageable);
     }
 }

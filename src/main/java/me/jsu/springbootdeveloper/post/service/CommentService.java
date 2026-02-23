@@ -16,7 +16,7 @@ import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.user.service.UserService;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
-import me.jsu.springbootdeveloper.post.dto.CommentResponse;
+import me.jsu.springbootdeveloper.post.dto.comment.CommentResponse;
 import me.jsu.springbootdeveloper.post.repository.CommentRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -36,6 +36,7 @@ public class CommentService {
     private final UserService userService;
     private final CommentRepository commentRepository;
     private final PostService postService;
+    private final PostQueryService postQueryService;
     private final FcmService fcmService;
     private final PostRepository postRepository;
     private final NotificationService notificationService;
@@ -86,7 +87,7 @@ public class CommentService {
     @Transactional
     public void createComment(String email, Long postId, String contents) {
         User user = userService.findByEmail(email);
-        Article article = postService.findById(postId);  // 댓글을 달려는 게시글을 검색한다.
+        Article article = postQueryService.findById(postId);  // 댓글을 달려는 게시글을 검색한다.
 
         // 댓글을 작성한 정확한 시간이다.
         LocalDateTime postDateTime = LocalDateTime.now(ZoneId.of("Asia/Seoul"));

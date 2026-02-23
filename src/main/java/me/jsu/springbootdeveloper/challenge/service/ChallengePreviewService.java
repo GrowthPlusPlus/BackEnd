@@ -2,25 +2,16 @@
 
 package me.jsu.springbootdeveloper.challenge.service;
 
-import lombok.RequiredArgsConstructor;
-import me.jsu.springbootdeveloper.challenge.dto.ChallengePreviewResponse;
-import me.jsu.springbootdeveloper.challenge.dto.ChallengePreviewResult;
-import me.jsu.springbootdeveloper.post.dto.ImageVerificationResponse;
-import me.jsu.springbootdeveloper.post.dto.ImageVerificationResult;
+import me.jsu.springbootdeveloper.challenge.dto.preview.ChallengePreviewResponse;
+import me.jsu.springbootdeveloper.challenge.dto.preview.ChallengePreviewResult;
 import me.jsu.springbootdeveloper.post.exception.ClipServerException;
-import me.jsu.springbootdeveloper.post.service.ImageVerificationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.io.IOException;
 import java.util.Map;
 
 /*

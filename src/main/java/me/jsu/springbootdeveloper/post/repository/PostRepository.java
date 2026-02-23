@@ -4,7 +4,7 @@ package me.jsu.springbootdeveloper.post.repository;
 
 import me.jsu.springbootdeveloper.challenge.domain.Challenge;
 import me.jsu.springbootdeveloper.post.domain.Article;
-import me.jsu.springbootdeveloper.post.dto.ReportedArticleResponse;
+import me.jsu.springbootdeveloper.post.dto.report.ReportedArticleResponse;
 import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.view.dto.ChallengeCalendarPhotoResponse;
 import me.jsu.springbootdeveloper.view.dto.ChallengeCalendarPostResponse;
@@ -219,7 +219,7 @@ public interface PostRepository extends JpaRepository<Article, Long> {
 
     // 신고된 인증글들을 한 번에 조회한다.
     @Query("""
-        select new me.jsu.springbootdeveloper.post.dto.ReportedArticleResponse(
+        select new me.jsu.springbootdeveloper.post.dto.report.ReportedArticleResponse(
             a.id,
             c.title,
             COALESCE(a.totalReport, 0)

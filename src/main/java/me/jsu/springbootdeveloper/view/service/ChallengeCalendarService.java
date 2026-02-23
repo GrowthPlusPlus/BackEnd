@@ -6,13 +6,12 @@ import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
 import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeMemberService;
 import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeQueryService;
+import me.jsu.springbootdeveloper.post.service.PostQueryService;
 import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.view.dto.ChallengeCalendarPhotoResponse;
 import me.jsu.springbootdeveloper.view.dto.ChallengeCalendarPostResponse;
 import me.jsu.springbootdeveloper.view.dto.ChallengeCalendarResponse;
 import me.jsu.springbootdeveloper.user.service.UserService;
-import me.jsu.springbootdeveloper.challenge.service.ChallengeService;
-import me.jsu.springbootdeveloper.post.service.PostService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -31,8 +30,7 @@ import java.util.List;
 @Transactional(readOnly = true)  // 해당 서비스는 조회 전용이다.
 public class ChallengeCalendarService {
     private final UserService userService;
-    private final ChallengeService challengeService;
-    private final PostService postService;
+    private final PostQueryService postQueryService;
     private final ChallengeQueryService challengeQueryService;
     private final ChallengeMemberService challengeMemberService;
 
@@ -66,7 +64,7 @@ public class ChallengeCalendarService {
         LocalDate end = start.withDayOfMonth(start.lengthOfMonth());  // start가 속한 연, 월을 유지한 채 day만 마지막 날로 변경한다.
 
         // 캘린더 정보를 검색하여 반환한다.
-        return postService.findCalendarPhotos(user.getId(), challengeId, start, end);
+        return postQueryService.findCalendarPhotos(user.getId(), challengeId, start, end);
     }
 
     /*
@@ -88,6 +86,6 @@ public class ChallengeCalendarService {
         LocalDate start = LocalDate.of(year, month, 1);  // 받은 연, 월로 해당 월의 1일 날짜를 만든다.
         LocalDate end = start.withDayOfMonth(start.lengthOfMonth());  // start가 속한 연, 월을 유지한 채 day만 마지막 날로 변경한다.
 
-        return postService.findCalendarPosts(user.getId(), challengeId, start, end, pageable);
+        return postQueryService.findCalendarPosts(user.getId(), challengeId, start, end, pageable);
     }
 }
