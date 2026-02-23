@@ -13,6 +13,7 @@ import me.jsu.springbootdeveloper.post.exception.CommentNotFoundException;
 import me.jsu.springbootdeveloper.post.exception.NotFoundException;
 import me.jsu.springbootdeveloper.post.repository.PostRepository;
 import me.jsu.springbootdeveloper.user.domain.User;
+import me.jsu.springbootdeveloper.user.repository.UserProfilePictureRepository;
 import me.jsu.springbootdeveloper.user.service.UserService;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,7 @@ public class CommentService {
     private final FcmService fcmService;
     private final PostRepository postRepository;
     private final NotificationService notificationService;
+    private final UserProfilePictureRepository userProfilePictureRepository;
 
     /*
         댓글을 id로 조회하는 함수이다.
@@ -115,7 +117,11 @@ public class CommentService {
                 daysPassed,
                 comment.getContents());
         //인앱 알림 발송
-        notificationService.sendNotification(writer, NotificationType.COMMENT, message);
+        //댓글 작성자의 프로필 이미지도 notificaiton객체로 같이 저장한다.
+        long commentUserId = user.getId();
+        String imageUrl = userProfilePictureRepository.findImageUrlByUserId(commentUserId).orElse("");
+        notificationService.sendNotification(writer, NotificationType.COMMENT, message, imageUrl);
+
         // 푸시 알림을 발송
         // 챌린지 푸시 알림이 활성화되어 있고, FCM 토큰이 있는 경우에만 발송한다.
         if (writer.isAllPushNotificationEnabled()

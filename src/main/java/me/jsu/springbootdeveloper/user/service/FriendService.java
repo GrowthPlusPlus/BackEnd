@@ -78,10 +78,13 @@ public class FriendService {
         //홍길동님이 친구 요청을 보냈어요.
         String message = fromUser.getNickname() + "님이 친구 요청을 보냈어요.";
 
+        //fromUser의 프로필 이미지도 notificaiton객체로 같이 저장한다.
+        long fromUserId = fromUser.getId();
+        String imageUrl = userProfilePictureRepository.findImageUrlByUserId(fromUserId).orElse("");
+        notificationService.sendNotification(toUser, NotificationType.FRIEND_REQUEST, message, imageUrl);
         // 친구 요청을 받은 사용자(toUser)에게 푸시 알림을 발송한다.
         if (toUser.isAllPushNotificationEnabled() && toUser.getFcmToken() != null && !toUser.getFcmToken().isBlank()) {
             String title = "친구 요청";
-            notificationService.sendNotification(toUser, NotificationType.FRIEND_REQUEST, message);
             fcmService.sendMessageTo(toUser.getFcmToken(), title, message);
         }
     }
@@ -165,8 +168,11 @@ public class FriendService {
         String title = "친구 신청 수락";
         String message = request.getToUser().getNickname() + "님과 친구가 되었어요.";
         User fromUser = request.getFromUser();
+        //보내는 사람에게 알림이 가므로 받아준 사람 (touser)의 이미지 url을 notification에 같이 저장한다.
+        long toUserId = request.getToUser().getId();
+        String imageUrl = userProfilePictureRepository.findImageUrlByUserId(toUserId).orElse("");
         notificationService.sendNotification(fromUser,
-                NotificationType.FRIEND_ACCEPT, message);
+                NotificationType.FRIEND_ACCEPT, message, imageUrl);
 
         // 친구 신청을 보낸 사용자(fromUser)에게 푸시 알림을 발송한다.
         // 푸시 알림이 활성화되어 있고, FCM 토큰이 있는 경우에만 발송한다.

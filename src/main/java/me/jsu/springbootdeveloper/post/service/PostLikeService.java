@@ -13,6 +13,7 @@ import me.jsu.springbootdeveloper.post.exception.DuplicatePostLikeException;
 import me.jsu.springbootdeveloper.post.exception.PostLikeNotFoundException;
 import me.jsu.springbootdeveloper.post.exception.NotFoundException;
 import me.jsu.springbootdeveloper.post.repository.PostRepository;
+import me.jsu.springbootdeveloper.user.repository.UserProfilePictureRepository;
 import me.jsu.springbootdeveloper.user.service.UserService;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,7 @@ public class PostLikeService {
     private final PostRepository postRepository;
     private final NotificationService notificationService;
     private final FcmService fcmService;
+    private final UserProfilePictureRepository userProfilePictureRepository;
 
     /*
         게시글 좋아요의 유저 fk값을 null로 바꿔주는 함수이다.
@@ -96,7 +98,10 @@ public class PostLikeService {
         );
 
         // 푸시 알림&인앱 알림 발송 - 작성자에게 발송
-        notificationService.sendNotification(writer, NotificationType.LIKE, message);
+        // 좋아요 누른 사람의 profileurl notification객체에 함께 저장
+        long userId = user.getId();
+        String imageUrl = userProfilePictureRepository.findImageUrlByUserId(userId).orElse("");
+        notificationService.sendNotification(writer, NotificationType.LIKE, message, imageUrl);
         if (writer.isFriendPushNotificationEnabled()
                 && writer.getFcmToken() != null
                 && !writer.getFcmToken().isBlank()) {
