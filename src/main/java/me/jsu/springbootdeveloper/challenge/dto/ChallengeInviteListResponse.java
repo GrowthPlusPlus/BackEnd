@@ -13,6 +13,7 @@ import java.util.List;
 @Getter
 public class ChallengeInviteListResponse {
     private final String inviterNickname;  // 초대자 닉네임
+    private final String profileUrl;
     private final long challengeId;
     private final String challengeTitle;  // 챌린지 이름
     private final int participantCount;  // 현재 챌린지에 참여중인 ChallengeParticipant 명수
@@ -21,6 +22,7 @@ public class ChallengeInviteListResponse {
 
     public ChallengeInviteListResponse(
             String inviterNickname,
+            String profileUrl,
             long challengeId,
             String challengeTitle,
             int participantCount,
@@ -28,6 +30,7 @@ public class ChallengeInviteListResponse {
             List<String> tags
     ) {
         this.inviterNickname = inviterNickname;
+        this.profileUrl = profileUrl;
         this.challengeId = challengeId;
         this.challengeTitle = challengeTitle;
         this.participantCount = participantCount;
