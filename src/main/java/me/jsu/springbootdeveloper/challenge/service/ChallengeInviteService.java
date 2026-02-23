@@ -53,13 +53,7 @@ public class ChallengeInviteService {
         User inviter = userService.findByEmail(inviterEmail);
         Challenge challenge = challengeQueryService.findById(challengeId);
         User invitee = userService.findByNickname(targetNickname);
-        //챌린지 참여 인원수 확인 후 참여
-        if (!challengeService.joinChallenge(challenge, invitee))
-        {
-            //참여 못했다면 exception 발동
-            throw new IllegalStateException("챌린지 참여 정원이 꽉 찼습니다");
 
-        }
 
         //초대 정보 저장
         ChallengeInvite invite = ChallengeInvite.builder()

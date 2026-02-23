@@ -8,6 +8,8 @@ import java.util.List;
 
 @Getter
 public class SearchChallengeResponse {
+    //챌린지 id
+    long id;
     //챌린지 이름
     private String title;
     //현재 참여자 수
@@ -22,7 +24,7 @@ public class SearchChallengeResponse {
     //인증률 -> 나중에 구현
 
     public SearchChallengeResponse(Challenge challenge, List<TagResponse> tags) {
-
+        this.id = challenge.getId();
         this.title = challenge.getTitle();
         this.participantNumber = challenge.getParticipantNumber();
         this.requiredWeeklyCount = challenge.getRequiredWeeklyCount();
