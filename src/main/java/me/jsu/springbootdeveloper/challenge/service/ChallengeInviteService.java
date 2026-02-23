@@ -99,7 +99,9 @@ public class ChallengeInviteService {
                     
                     // 초대자 닉네임
                     String inviterNickname = invite.getInviter().getNickname();
-                    
+
+                    //챌린지 id
+                    Long challengeId = challenge.getId();
                     // 챌린지 이름
                     String challengeTitle = challenge.getTitle();
                     
@@ -125,6 +127,7 @@ public class ChallengeInviteService {
                     // DTO 생성 및 반환
                     return new ChallengeInviteListResponse(
                             inviterNickname,
+                            challengeId,
                             challengeTitle,
                             participantCount,
                             remainingDays,

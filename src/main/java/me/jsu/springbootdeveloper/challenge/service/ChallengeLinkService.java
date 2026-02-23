@@ -33,7 +33,7 @@ public class ChallengeLinkService {
         @param user: 링크를 생성하는 사용자 (챌린지 생성자)
         @param linkType: 링크 타입 (SINGLE_USE, TIME_BASED, MULTI_USE)
         @param expirationDays: 만료 일수 (TIME_BASED 타입의 경우 사용)
-        @return 생성된 ChallengeInviteLink 객체 (아직 DB에 저장되지 않음)
+        @return 초대 링크 스트링 문자열
      */
     protected String createInviteLink(Challenge challenge, User user) {
         return createInviteLink(challenge, user, InviteLinkType.TIME_BASED, 30);
