@@ -11,10 +11,10 @@ import java.util.List;
 @Getter
 public class ChallengeInviteResponse {
     private final String inviteLink;  // 챌린지 초대 링크
-    private final List<ChallengeFriendInviteListResponse> reponseList;  // 친구 목록과 각 친구의 초대 상태
+    private final List<ChallengeFriendInviteListResponse> responseList;  // 친구 목록과 각 친구의 초대 상태
 
-    public ChallengeInviteResponse(String inviteLink, List<ChallengeFriendInviteListResponse> reponseList) {
+    public ChallengeInviteResponse(String inviteLink, List<ChallengeFriendInviteListResponse> responseList) {
         this.inviteLink = inviteLink;
-        this.reponseList = reponseList;
+        this.responseList = responseList;
     }
 }

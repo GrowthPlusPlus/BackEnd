@@ -214,7 +214,7 @@ public class ChallengeService {
      * 이미 참여 중인 유저는 제외하고, 초대됨/초대 가능 상태인 유저만 반환한다.
      * 초대 링크도 함께 반환한다.
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public ChallengeInviteResponse getFriendList_with_InviteStatus(String email, Long challengeId) {
         User user = userService.findByEmail(email);
 
@@ -248,23 +248,12 @@ public class ChallengeService {
 
         // 챌린지 초대 링크를 조회한다(1개라고 가정)
         // 유효한 챌린지 링크가 존재하지 않는다면 새로 생성하여 반환한다.
-        Optional<ChallengeInviteLink> challengeInviteLink = challengeInviteLinkRepository.findFirstValidLinkByChallengeId(challengeId, LocalDateTime.now());
-        
-        String link;
-        ChallengeInviteLink inviteLink;
-        if(challengeInviteLink.isPresent()){
-            Challenge challenge = challengeQueryService.findById(challengeId);
-            inviteLink = challengeInviteLink.get();
+        // 2. Optional의 기능을 활용하여 한 흐름으로 링크를 결정합니다.
 
-            link = baseUrl + "/v/"+ inviteLink.getInviteCode();
-        }
-        else{
-            Challenge challenge1 = challengeQueryService.findById(challengeId);
-
-            link = challengeLinkService.createInviteLink(challenge1, user);
-        }
-        
-
+        Challenge challenge =  challengeQueryService.findById(challengeId);
+        String link = challengeInviteLinkRepository.findFirstValidLinkByChallengeId(challengeId, LocalDateTime.now())
+                .map(inviteLink -> baseUrl + "/v/" + inviteLink.getInviteCode())
+                .orElseGet(() -> challengeLinkService.createInviteLink(challenge, user));
         // 초대 링크와 친구 목록을 함께 반환한다.
         return new ChallengeInviteResponse(link, friendList);
     }
