@@ -118,10 +118,10 @@ public class CommentService {
                 daysPassed,
                 comment.getContents());
         //인앱 알림 발송
-        //댓글 작성자의 프로필 이미지도 notificaiton객체로 같이 저장한다.
+        //댓글 작성자의 프로필 이미지도 notificaiton객체로 같이 저장한다, targetId: 게시글 Id
         long commentUserId = user.getId();
         String imageUrl = userProfilePictureRepository.findImageUrlByUserId(commentUserId).orElse("");
-        notificationService.sendNotification(writer, NotificationType.COMMENT, message, imageUrl);
+        notificationService.sendNotification(writer, NotificationType.COMMENT, message, imageUrl, postId);
 
         // 푸시 알림을 발송
         // 챌린지 푸시 알림이 활성화되어 있고, FCM 토큰이 있는 경우에만 발송한다.

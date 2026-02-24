@@ -10,6 +10,11 @@ import me.jsu.springbootdeveloper.challenge.repository.ChallengeParticipantRepos
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeRepository;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeWeeklyStatusRepository;
 import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeUtils;
+import me.jsu.springbootdeveloper.fcm.service.FcmService;
+import me.jsu.springbootdeveloper.notification.enumType.NotificationType;
+import me.jsu.springbootdeveloper.notification.service.NotificationService;
+import me.jsu.springbootdeveloper.user.domain.User;
+import me.jsu.springbootdeveloper.user.repository.UserProfilePictureRepository;
 import me.jsu.springbootdeveloper.user.service.UserStatisticsService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -33,6 +38,9 @@ public class ChallengeMaintenanceService {
     private final ChallengeParticipantRepository challengeParticipantRepository;
     private final ChallengeWeeklyStatusRepository challengeWeeklyStatusRepository;
     private final UserStatisticsService userStatisticsService;
+    private final NotificationService notificationService;
+    private final UserProfilePictureRepository userProfilePictureRepository;
+    private final FcmService fcmService;
 
     private static final int BATCH_SIZE = 500;  // 해당 배치 사이즈로 처리한다.
 
@@ -186,6 +194,27 @@ public class ChallengeMaintenanceService {
             }
             cp.markFail(today);  // 챌린지 상태를 실패로 바꾼다.
             userStatisticsService.updateFailedChallengeCount(cp.getUser().getId());  // 실패한 챌린지 개수를 늘린다.
+
+            //챌린지 실패 알림을 보낸다
+            //아쉬워요! '챌린지명' 달성에 실패했지만, 다음엔 꼭 해낼 수 있어요.
+            String title = "챌린지 실패";
+            String message = "아쉬워요! '" + challenge.getTitle() + "' 달성에 실패했지만, 다음엔 꼭 해낼 수 있어요.";
+            //인앱 알림 발송
+            User user = cp.getUser();
+            long userId = user.getId();
+            Long targetId = challenge.getId();
+            String imageUrl = userProfilePictureRepository.findImageUrlByUserId(userId).orElse("");
+            notificationService.sendNotification(user, NotificationType.CHALLENGE, message, imageUrl, targetId);
+
+            // 푸시 알림을 발송
+            // 챌린지 푸시 알림이 활성화되어 있고, FCM 토큰이 있는 경우에만 발송한다.
+            if (user.isAllPushNotificationEnabled()
+                    && user.getFcmToken() != null
+                    && !user.getFcmToken().isBlank()) {
+                fcmService.sendMessageTo(user.getFcmToken(), title, message);
+
+            }
+
         }
     }
 
@@ -205,6 +234,25 @@ public class ChallengeMaintenanceService {
                 cp.markSuccess(cp.getChallenge().getEndDate());  // 챌린지 상태를 성공으로 바꾼다.
                 userStatisticsService.updateCompletedChallengeCount(cp.getUser().getId());  // 성공한 챌린지 개수를 늘린다.
 
+                //챌린지 성공 알림을 보낸다
+                //축하합니다! '챌린지명' 목표를 훌륭하게 해냈어요!
+                String title = "챌린지 성공";
+                String message = "축하합니다! '" + cp.getChallenge().getTitle() + "' 목표를 훌륭하게 해냈어요!";
+                //인앱 알림 발송
+                User user = cp.getUser();
+                long userId = user.getId();
+                Long targetId = cp.getChallenge().getId();
+                String imageUrl = "";
+                notificationService.sendNotification(user, NotificationType.CHALLENGE, message, imageUrl, targetId);
+
+                // 푸시 알림을 발송
+                // 챌린지 푸시 알림이 활성화되어 있고, FCM 토큰이 있는 경우에만 발송한다.
+                if (user.isAllPushNotificationEnabled()
+                        && user.getFcmToken() != null
+                        && !user.getFcmToken().isBlank()) {
+                    fcmService.sendMessageTo(user.getFcmToken(), title, message);
+
+                }
                 lastId = cp.getId();  // 커서를 이동한다
             }
         } while (!batch.isEmpty());

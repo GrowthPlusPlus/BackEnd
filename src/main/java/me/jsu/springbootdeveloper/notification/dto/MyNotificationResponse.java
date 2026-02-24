@@ -17,6 +17,7 @@ import java.util.List;
 @Builder
 public class MyNotificationResponse {
     private String imageUrl;
+    private Long targetId;
     private String message;  // 알림 내용이다.
     private NotificationType type;  // 알림 유형이다.
     private boolean isRead;  // 읽음 여부를 나타낸다.
