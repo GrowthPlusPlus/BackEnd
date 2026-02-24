@@ -183,15 +183,12 @@ public class ChallengeService {
      - 검색
      - 링크 (구현예정)
     */
-
     public boolean joinChallenge(Challenge challenge, User user) {
         /*참여하기 전에 유효한 챌린지인지 확인한다
                 - challenge가 존재하는지 확인
                 - 이미 참여 중인 챌린지에는 참여 불가
                 - 이미 종료된 챌린지에는 참여 불가
                 - 참여 인원이 초과된 챌린지에는 참여 불가
-
-
          */
         LocalDate today = LocalDate.now();
 

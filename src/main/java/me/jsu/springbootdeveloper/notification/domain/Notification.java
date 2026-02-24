@@ -55,6 +55,10 @@ public class Notification {
     @Column(name = "image_url")
     private String imageUrl;
 
+    //타겟 id
+    @Column(name = "target_id")
+    private Long targetId;
+
     @Builder
     public Notification(User user, NotificationType type, String message) {
         this.user = user;
@@ -72,5 +76,8 @@ public class Notification {
 
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+    public void setTargetId(String targetId) {
+        this.targetId = targetId;
     }
 }

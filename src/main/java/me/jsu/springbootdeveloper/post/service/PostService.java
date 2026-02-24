@@ -213,10 +213,10 @@ public class PostService {
         userStatisticsService.onPostConfirmed(user, challenge.getId(), postDate);
 
         /*
-            챌린지 멤버 인증 알림 전송
+            챌린지 멤버 인증 알림 전송 - 삭제
             challenge_participant중 상태가 in progress 인 사람에게 전송
             "홍길동 님이 [챌린지명]챌린지에 인증했어요!"
-         */
+
         List<ChallengeParticipant> challengeParticipants = challengeParticipantRepository.findParticipantsInProgress(challenge.getId(), user.getId(), Status.IN_PROGRESS);
         for (ChallengeParticipant Participant : challengeParticipants) {
             User participatingUser = Participant.getUser();
@@ -228,7 +228,10 @@ public class PostService {
             if (participatingUser.isAllPushNotificationEnabled()) {
                 fcmService.sendMessageTo(participatingUser.getFcmToken(), "챌린지 인증", participatingUser.getNickname() + "님이 " + challenge.getTitle() + "챌린지에 인증했어요!");
             }
+
+
         }
+        */
         // 저장한 인증글 id로 검색하여 인증글 상세 정보를 반환한다.
         return getPost(email, article.getId());
     }

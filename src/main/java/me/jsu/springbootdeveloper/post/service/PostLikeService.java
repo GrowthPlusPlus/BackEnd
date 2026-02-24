@@ -101,7 +101,8 @@ public class PostLikeService {
         // 좋아요 누른 사람의 profileurl notification객체에 함께 저장
         long userId = user.getId();
         String imageUrl = userProfilePictureRepository.findImageUrlByUserId(userId).orElse("");
-        notificationService.sendNotification(writer, NotificationType.LIKE, message, imageUrl);
+        Long targetId = challenge.getId();
+        notificationService.sendNotification(writer, NotificationType.LIKE, message, imageUrl, targetId);
         if (writer.isFriendPushNotificationEnabled()
                 && writer.getFcmToken() != null
                 && !writer.getFcmToken().isBlank()) {

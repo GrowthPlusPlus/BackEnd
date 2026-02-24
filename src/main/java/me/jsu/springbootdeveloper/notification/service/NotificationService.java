@@ -45,9 +45,9 @@ public class NotificationService {
         */
     }
 
-    //notification에 프로필 이미지 필요할 경우 호출
+    //notification에 프로필 이미지, 타겟id 필요할 경우 호출
     @Transactional
-    public void sendNotification(User user, NotificationType notificationType, String message, String imageUrl) {
+    public void sendNotification(User user, NotificationType notificationType, String message, String imageUrl, Long targetId ) {
         // 1. 인앱 알림 DB 저장
         Notification notification = Notification.builder()
                 .user(user)
@@ -56,6 +56,8 @@ public class NotificationService {
                 .build();
         //이미지 url 설정
         notification.setImageUrl(imageUrl);
+        //타겟 id 설정
+        notification.setTargetId(targetId);
         notificationRepository.save(notification);
 
         /* 2. 실시간 푸시 알림 발송(구현 예정)
