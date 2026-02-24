@@ -2,6 +2,7 @@
 
 package me.jsu.springbootdeveloper.challenge.repository;
 
+import lombok.NonNull;
 import me.jsu.springbootdeveloper.challenge.domain.Challenge;
 import me.jsu.springbootdeveloper.challenge.enumType.ChallengeVisibility;
 import org.springframework.data.domain.Page;
@@ -62,4 +63,6 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
         order by c.startDate desc
     """)
     List<Challenge> findPublicChallenges(@Param("today") LocalDate today);
+
+    boolean existsById(@NonNull Long Id);
 }

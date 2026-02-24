@@ -17,6 +17,7 @@ import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeMemberService;
 import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeQueryService;
 import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeUtils;
 import me.jsu.springbootdeveloper.fcm.service.FcmService;
+import me.jsu.springbootdeveloper.post.exception.NotFoundException;
 import me.jsu.springbootdeveloper.tag.domain.TagToChallenge;
 import me.jsu.springbootdeveloper.user.domain.UserStatistics;
 import me.jsu.springbootdeveloper.user.repository.FriendshipRepository;
@@ -173,14 +174,42 @@ public class ChallengeService {
         joinChallenge(challenge, user);  // 챌린지에 실제로 참여한다.
     }
 
-    // 챌린지 참여하기
-    // 반환 값: 참여 성공하면 true, 실패하면 false
+    /*
+     챌린지 참여하기
+     반환 값: 참여 성공하면 true, 실패하면 false
+
+     참여하는 경로 (경로가 다양하므로 joinChallenge에서 초대 상태를 바꾸지 않음)
+     - 초대
+     - 검색
+     - 링크 (구현예정)
+    */
+
     public boolean joinChallenge(Challenge challenge, User user) {
         /*참여하기 전에 유효한 챌린지인지 확인한다
+                - challenge가 존재하는지 확인
+                - 이미 참여 중인 챌린지에는 참여 불가
                 - 이미 종료된 챌린지에는 참여 불가
                 - 참여 인원이 초과된 챌린지에는 참여 불가
+
+
          */
         LocalDate today = LocalDate.now();
+
+        //존재하는 챌린지인지 확인
+        if (!challengeRepository.existsById(challenge.getId()))
+        {
+            throw new NotFoundException("존재하지 않는 챌린지입니다.");
+        }
+
+        // 이미 참여 중인지 확인 (중복 참여 방지)
+        if (challengeParticipantRepository.existsByUser_IdAndChallenge_Id(
+                user.getId(),
+                challenge.getId()
+            ))
+        {
+            throw new IllegalStateException("이미 참여 중인 챌린지입니다.");
+        }
+        //이미 종료되지 않은 챌린지 && 인원초과가 되지 않은 챌린지 인 경우
         if (!challenge.getEndDate().isBefore(today) && !challenge.checkIfOverMaxParticipantNumber()){
 
             /* joinDate 설정

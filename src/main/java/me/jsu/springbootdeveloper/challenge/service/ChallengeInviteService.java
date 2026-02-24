@@ -161,7 +161,7 @@ public class ChallengeInviteService {
                 challengeId,
                 user.getId()
         ).orElseThrow(() -> new ChallengeInviteNotFoundException("CHALLENGE_INVITE_NOT_FOUND"));
-        
+
         // 초대 상태가 INVITED인지 확인 (이미 수락하거나 거절한 경우 처리 불가)
         if (invite.getStatus() != InviteStatus.INVITED) {
             throw new NotAllowedChallengeActionException("이미 처리된 초대입니다.");
@@ -169,27 +169,14 @@ public class ChallengeInviteService {
         
         Challenge challenge = invite.getChallenge();
         
-        // 이미 참여 중인지 확인 (중복 참여 방지)
-        boolean isAlreadyParticipant = challengeParticipantRepository.findByUser_IdAndChallenge_Id(
-                user.getId(),
-                challengeId
-        ).isPresent();
-        
-        // 아직 참여하지 않은 경우에만 챌린지에 참여
-        if (!isAlreadyParticipant) {
-            // 챌린지 참여 인원수 확인 후 참여
-            if (!challengeService.joinChallenge(challenge, user)) {
-                // 참여 못했다면 예외 발생
-                throw new IllegalStateException("챌린지에 참여할 수 없습니다.");
-            }
-        }
-        else{
-            throw new NotAllowedChallengeActionException("이미 참여한 챌린지입니다.");
-        }
-        
-        // 초대 상태를 ACCEPTED로 변경
-        invite.updateStatus(InviteStatus.ACCEPTED);
 
+        // 챌린지 참여 시도
+        if (!challengeService.joinChallenge(challenge, user)) {
+            // 참여 못했다면 예외 발생
+            throw new IllegalStateException("챌린지에 참여할 수 없습니다.");
+        }
+        // 참여 성공 - 초대 상태를 ACCEPTED로 변경
+        invite.updateStatus(InviteStatus.ACCEPTED);
 
     }
     
