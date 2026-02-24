@@ -45,7 +45,22 @@ public class NotificationService {
         */
     }
 
-    //notification에 프로필 이미지, 타겟id 필요할 경우 호출
+    //친구 관련 알림 등 imageUrl 필요, targetId 필요하지 않을 경우 호출
+    @Transactional
+    public void sendNotification(User user, NotificationType notificationType, String message, String imageUrl ) {
+        // 1. 인앱 알림 DB 저장
+        Notification notification = Notification.builder()
+                .user(user)
+                .message(message)
+                .type(notificationType)
+                .build();
+        //이미지 url 설정
+        notification.setImageUrl(imageUrl);
+        notificationRepository.save(notification);
+
+    }
+
+    //챌린지, 게시글 관련 타겟id 필요할 경우 호출
     @Transactional
     public void sendNotification(User user, NotificationType notificationType, String message, String imageUrl, Long targetId ) {
         // 1. 인앱 알림 DB 저장
@@ -60,11 +75,6 @@ public class NotificationService {
         notification.setTargetId(targetId);
         notificationRepository.save(notification);
 
-        /* 2. 실시간 푸시 알림 발송(구현 예정)
-        // user 객체에 fcmToken 필드가 있다고 가정합니다.
-        String title = "새로운 챌린지 알림";
-        fcmPushService.sendMessageTo(user.getFcmToken(), title, message);
-        */
     }
     /*
         유저가 읽지 않은 알람 개수를 검색해주는 함수이다.
@@ -94,6 +104,7 @@ public class NotificationService {
         return notifications.map(notification ->
                         MyNotificationResponse.builder()
                                 .imageUrl(notification.getImageUrl())
+                                .targetId(notification.getTargetId())
                                 .message(notification.getMessage())
                                 .type(notification.getType())
                                 .isRead(notification.isRead())

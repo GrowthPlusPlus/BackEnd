@@ -77,7 +77,7 @@ public class Notification {
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
     }
-    public void setTargetId(String targetId) {
+    public void setTargetId(Long targetId) {
         this.targetId = targetId;
     }
 }

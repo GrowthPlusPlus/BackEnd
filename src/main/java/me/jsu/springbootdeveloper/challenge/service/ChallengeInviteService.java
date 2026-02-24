@@ -41,11 +41,6 @@ public class ChallengeInviteService {
     private final TagToChallengeRepository tagToChallengeRepository;
     private final ChallengeParticipantRepository challengeParticipantRepository;
     private final UserProfilePictureRepository userProfilePictureRepository;
-    /*
-       작성된 함수 목록
-       - 친구를 챌린지에 초대하는 함수/public void inviteUser(String inviterEmail, Long challengeId, String targetNickname)
-       -
-     */
 
     /*
         친구를 챌린지에 초대하는 함수이다.
@@ -71,7 +66,9 @@ public class ChallengeInviteService {
         //전체 알림 활성화 여부 검사 후 초대되는 사람에게 푸시알림 전송
         String message = inviter.getNickname() + "님이 " + challenge.getTitle()+ " 방에 나를 초대했어요.";
         String title = "챌린지 초대";
-        notificationService.sendNotification(invitee, NotificationType.CHALLENGE, message); // 예시 메서드
+        String imageUrl = userProfilePictureRepository.findImageUrlByUserId(inviter.getId()).orElse("");
+        Long targetId = challenge.getId();
+        notificationService.sendNotification(invitee, NotificationType.CHALLENGE, message, imageUrl, targetId); // 예시 메서드
         if (invitee.isAllPushNotificationEnabled()
                 && invitee.getFcmToken() != null
                 && !invitee.getFcmToken().isBlank()) {
