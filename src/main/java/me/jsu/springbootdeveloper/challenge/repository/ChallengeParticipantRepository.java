@@ -74,6 +74,8 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
     // 챌린지 id와 유저 id로 챌린지 참여 DB를 검색한다. 챌린지 참여 DB 정보만 필요하므로 쿼리문은 사용하지 않는다.
     Optional<ChallengeParticipant> findByUser_IdAndChallenge_Id(Long userId, Long challengeId);
 
+    //유저가 이미 챌린지에 참여하고 있는지 검사한다.
+    boolean existsByUser_IdAndChallenge_Id(Long userId, Long challengeId);
     // 챌린지 id로 해당 챌린지에 참여한 유저의 id, 이름, 프로필 사진 링크를 가져오는 쿼리문이다. (닉네임은 필요하다면 사용한다.)
     @Query(
             value = """
