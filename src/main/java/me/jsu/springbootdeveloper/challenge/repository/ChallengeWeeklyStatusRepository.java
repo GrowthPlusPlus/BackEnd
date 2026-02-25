@@ -50,18 +50,21 @@ public interface ChallengeWeeklyStatusRepository extends JpaRepository<Challenge
             @Param("weekStartDate") LocalDate weekStartDate
     );
 
-    // 챌린지 주간 상태의 값 중, 그 주의 총 인증 횟수를 유저 id와 챌린지 id로 검색하여 페이지 크기만큼 내림차순으로 반환한다.
+    // 챌린지 주간 상태의 값 중, 그 주의 총 인증 횟수를 구하기 위해 유저 id 리스트로 검색한다. cutoffDate로 너무 오래된 주차까지 검색하지 않도록 한다.
     @Query("""
-        select ws.successCount
+        select ws.user.id,
+               ws.challenge.id,
+               ws.successCount
         from ChallengeWeeklyStatus ws
-        where ws.user.id = :userId
-          and ws.challenge.id = :challengeId
-        order by ws.weekStartDate desc
+        where ws.user.id in :userIds
+            and ws.weekStartDate >= :cutoffDate
+        order by ws.user.id,
+                 ws.challenge.id,
+                 ws.weekStartDate desc
     """)
-    List<Integer> findRecentSuccessCounts(
-            @Param("userId") Long userId,
-            @Param("challengeId") Long challengeId,
-            Pageable pageable
+    List<Object[]> findRecentSuccessCountsForUsers(
+            @Param("userIds") List<Long> userIds,
+            @Param("cutoffDate") LocalDate cutoffDate
     );
 
     // 유저 id와 챌린지 id로 이번주 상태를 삭제한다.

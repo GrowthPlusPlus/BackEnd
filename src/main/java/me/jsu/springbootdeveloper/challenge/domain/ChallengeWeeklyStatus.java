@@ -34,6 +34,10 @@ import java.time.LocalDateTime;
                 @Index(  // 유저 id로 이번주 챌린지 리스트들을 검색하는 인덱싱이다.
                         name = "idx_user_id_weekly",
                         columnList = "user_id"
+                ),
+                @Index(  // 유저 업데이트의 배치 쿼리를 위해 사용한다.
+                        name = "idx_weekly_user_challenge_date",
+                        columnList = "user_id, challenge_id, week_start_date desc"
                 )
         }
 )

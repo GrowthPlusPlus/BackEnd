@@ -22,7 +22,7 @@ public interface TagToUserRepository extends JpaRepository<TagToUser, Long> {
     """)
     List<TagToUser> findWithTagByUserId(@Param("userId") Long userId);  // 유저 id로 유저와 관련된 태그를 검색한다.
 
-    boolean existsByUser_IdAndTag_Id(Long userId, Long tagId);  // 태그 id와 유저 id로 해당 유저가 태그를 가지고 있는지 확인한다.
+    void deleteByUser_IdAndTag_IdIn(Long userId, List<Long> tagIds);  // 유저의 관심 태그를 id 리스트로 삭제한다.
 
-    void deleteByUser_IdAndTag_Id(Long userId, Long tagId);  // 유저의 관심 태그를 삭제한다.
+    List<TagToUser> findAllByUser_Id(Long userId);  // 유저의 기존 태그를 검색한다.
 }

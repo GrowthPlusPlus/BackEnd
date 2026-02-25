@@ -1,6 +1,6 @@
 // 정성우
 
-package me.jsu.springbootdeveloper.challenge.service.temp;
+package me.jsu.springbootdeveloper.challenge.service;
 
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.domain.Challenge;
@@ -51,6 +51,13 @@ public class ChallengeQueryService {
      */
     public List<ChallengeParticipant> findStatusWithChallengeByUserIdAndStatus(Long userId, Status status) {
         return challengeParticipantRepository.findStatusWithChallengeByUserIdAndStatus(userId, status);
+    }
+
+    /*
+        유저 id 리스트와 챌린지 상태로 검색한다. 위 함수와의 차이는 유저 id를 리스트로 매개변수로 준다.
+     */
+    public List<ChallengeParticipant> findAllByUserIdsAndStatus(List<Long> userIds, Status status) {
+        return challengeParticipantRepository.findAllByUserIdsAndStatus(userIds, status);
     }
 
     /*
@@ -124,5 +131,23 @@ public class ChallengeQueryService {
      */
     public List<Object[]> findSuccessDays(List<Long> userIds, List<Long> challengeIds) {
         return challengeParticipantRepository.findSuccessDays(userIds, challengeIds);
+    }
+
+    /*
+        유저 id, 챌린지 id로 해당 챌린지의 주간 상태에서 주마다의 인증 횟수를 리스트로 반환하는 함수이다.
+        유저 통계를 업데이트하기 위해 사용한다.
+     */
+    public List<Object[]> findRecentSuccessCountsForUsers(List<Long> userId, LocalDate cutoffDate) {
+        return challengeWeeklyStatusRepository.findRecentSuccessCountsForUsers(userId, cutoffDate);
+    }
+
+    /*
+        유저 id, 챌린지 id, 이번주 날짜로 챌린지 주간 상태 값을 리턴하는 함수이다.
+        주간 상태 업데이트에 사용된다.
+     */
+    public ChallengeWeeklyStatus findWeeklyStatus(Long userId, Long challengeId, LocalDate weekStartDate) {
+        return challengeWeeklyStatusRepository.findByUser_IdAndChallenge_IdAndWeekStartDate(
+                        userId, challengeId, weekStartDate)
+                .orElse(null);
     }
 }

@@ -5,17 +5,21 @@ package me.jsu.springbootdeveloper.user.service;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
 import me.jsu.springbootdeveloper.challenge.enumType.Status;
-import me.jsu.springbootdeveloper.challenge.service.ChallengeService;
-import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeQueryService;
+import me.jsu.springbootdeveloper.challenge.service.ChallengeQueryService;
 import me.jsu.springbootdeveloper.user.domain.UserStatistics;
 import me.jsu.springbootdeveloper.user.repository.UserStatisticsRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.util.Pair;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /*
     주마다 유저 통계의 대표 실패 챌린지, 챌린지 수행 variance를 계산하는 클래스이다.
@@ -23,7 +27,6 @@ import java.util.List;
 @RequiredArgsConstructor
 @Service
 public class UserWeeklyStatisticsService {
-    private final ChallengeService challengeService;
     private final UserStatisticsRepository userStatisticsRepository;
     private final ChallengeQueryService challengeQueryService;
 
@@ -43,19 +46,68 @@ public class UserWeeklyStatisticsService {
         Long lastId = 0L;  // 0번 유저부터 모든 통계를 조사한다.
         List<UserStatistics> batch;
 
-        do {
+        while (true) {
             // 유저 통계를 검색한다.
             batch = userStatisticsRepository.findAllAfterId(lastId, PageRequest.of(0, BATCH_SIZE));
 
+            // 배치가 비어있으면 탈출한다.
+            if (batch.isEmpty()) {
+                break;
+            }
+
+            // 배치에서 검색한 유저 통계의 유저 id를 매핑한다.
+            List<Long> userIds = batch.stream()
+                    .map(us -> us.getUser().getId())
+                    .toList();
+
+            // 해당 유저의 실패한 챌린지들을 가져온다.
+            List<ChallengeParticipant> failedParticipants = challengeQueryService.findAllByUserIdsAndStatus(userIds, Status.FAIL);
+
+            // 분산 계산을 위해 해당 유저의 진행중인 챌린지들을 가져온다.
+            List<ChallengeParticipant> inProgressParticipants = challengeQueryService.findAllByUserIdsAndStatus(userIds, Status.IN_PROGRESS);
+
+            LocalDate cutoff = today.minusWeeks(WEEKS_TO_LOOK_BACK);  // 너무 오래된 주차까지 계산되지 않도록 한다.
+            // 분산 계산을 위해 최근 주차들을 가져온다.
+            List<Object[]> weeklySuccess = challengeQueryService.findRecentSuccessCountsForUsers(userIds, cutoff);
+
+            // 실패한 챌린지들을 유저 id로 그룹화 한다.
+            Map<Long, List<ChallengeParticipant>> failedMap = failedParticipants.stream()
+                            .collect(Collectors.groupingBy(cp -> cp.getUser().getId()));
+
+            // 진행중인 챌린지들을 유저 id로 그룹화 한다.
+            Map<Long, List<ChallengeParticipant>> progressMap = inProgressParticipants.stream()
+                            .collect(Collectors.groupingBy(cp -> cp.getUser().getId()));
+
+            Map<Pair<Long, Long>, List<Integer>> weeklyMap = new HashMap<>();
+            for (Object[] row : weeklySuccess) {
+                Long userId = (Long) row[0];
+                Long challengeId = (Long) row[1];
+                Integer successCount = (Integer) row[2];
+
+                Pair<Long, Long> key = Pair.of(userId, challengeId);  // 챌린지 id와 유저 id로 키를 만든다.
+
+                weeklyMap  // pair키로 챌린지 주간 상태를 그룹화한다.
+                        .computeIfAbsent(key, k -> new ArrayList<>())
+                        .add(successCount);
+            }
+
+            // 배치 크기로 계산한 실패 챌린지, 진행중인 챌린지, 분산 계산을 위한 최근 주차들을 유저별로 처리한다.
             for (UserStatistics userStats : batch) {
                 Long userId = userStats.getUser().getId();
 
-                updateMostFailedChallenge(userStats, userId, today);  // 실패 챌린지를 선정한다.
-                updateMostUnstableChallenge(userStats, userId,  WEEKS_TO_LOOK_BACK);  // 분산을 계산한다.
+                updateMostFailedChallenge(
+                        userStats,
+                        failedMap.getOrDefault(userId, List.of()),  // 유저 id로 map에서 실패한 챌린지들을 검색하여 전달한다.
+                        today);  // 실패 챌린지를 선정한다.
+                updateMostUnstableChallenge(  // 분산을 계산한다.
+                        userStats,
+                        progressMap.getOrDefault(userId, List.of()),  // 유저 id로 map에서 진행중인 챌린지들을 검색하여 전달한다.
+                        weeklyMap  // 최근 주간 챌린지 상태 map을 통째로 준다.
+                );
 
                 lastId = userStats.getId();
             }
-        } while (!batch.isEmpty());
+        }
     }
 
     /*
@@ -64,10 +116,7 @@ public class UserWeeklyStatisticsService {
        실패 챌린지는 4주마다 초기화 된다.
        실패율 = 실패한 주차 개수 / 총 주차 개수
      */
-    private void updateMostFailedChallenge(UserStatistics userStats, Long userId, LocalDate today) {
-        // 유저가 참여한 모든 실패한 챌린지를 검색한다.
-        List<ChallengeParticipant> participants = challengeQueryService.findStatusWithChallengeByUserIdAndStatus(userId, Status.FAIL);
-
+    private void updateMostFailedChallenge(UserStatistics userStats, List<ChallengeParticipant> participants, LocalDate today) {
         // 대표 실패 챌린지가 오랜 시간이 지났다면 초기화 한다.
         if (userStats.getMostFailedUpdatedAt() == null || ChronoUnit.WEEKS.between(userStats.getMostFailedUpdatedAt(), today) >= MAX_WEEK_FAILED_CHALLENGE) {
             userStats.updateMostFailed(null, 0.0, today);
@@ -93,18 +142,15 @@ public class UserWeeklyStatisticsService {
        최근 N주 weekly successCount의 분산(variance)이 최대인 챌린지 선택
        이 값은 주간 정산에서만 갱신한다.
      */
-    private void updateMostUnstableChallenge(UserStatistics userStats, Long userId, int weeksToLookBack) {
-        // 참가한 진행중인 챌린지들을 가져와서 각 챌린지마다 최근 N주의 주마다의 성공 횟수를 가진 배열을 만든 뒤 분산을 계산한다.
-        List<ChallengeParticipant> participants = challengeQueryService.findStatusWithChallengeByUserIdAndStatus(userId, Status.IN_PROGRESS);
-
+    private void updateMostUnstableChallenge(UserStatistics userStats, List<ChallengeParticipant> participants, Map<Pair<Long, Long>, List<Integer>> weeklyMap) {
         Long mostUnstableId = null;
         double maxVariance = -1.0;
 
         for (ChallengeParticipant p : participants) {
             Long challengeId = p.getChallenge().getId();
 
-            // 최근 주의 인증글 성공 횟수 리스트를 검색한다.
-            List<Integer> weeklyCounts = loadRecentWeeklySuccessCounts(userId, challengeId, weeksToLookBack);
+            Pair<Long, Long> key = Pair.of(userStats.getUser().getId(), challengeId);  // 유저 id와 챌린지 id로 map을 검색하기 위한 key를 계산한다.
+            List<Integer> weeklyCounts = weeklyMap.getOrDefault(key, List.of());  // 최근 주의 인증글 성공 횟수 리스트를 검색한다.
 
             // 해당 챌린지의 최근 주에 수행한 인증글이 아에 없다면 분산 계산에 포함하지 않는다.
             if (weeklyCounts.isEmpty()) {
@@ -121,13 +167,6 @@ public class UserWeeklyStatisticsService {
         if (mostUnstableId != null) {  // 최근 분산 편향이 가장 큰 챌린지를 업데이트 한다.
             userStats.updateMostUnstable(mostUnstableId, maxVariance);
         }
-    }
-
-    /*
-       최근 n주의 successCount 리스트를 반환한다.
-     */
-    private List<Integer> loadRecentWeeklySuccessCounts(Long userId, Long challengeId, int weeksToLookBack) {
-        return challengeService.findRecentSuccessCounts(userId, challengeId, PageRequest.of(0, weeksToLookBack));
     }
 
     /*

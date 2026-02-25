@@ -4,19 +4,14 @@ package me.jsu.springbootdeveloper.post.service;
 
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeDailyLog;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeWeeklyStatus;
-import me.jsu.springbootdeveloper.challenge.enumType.Status;
-import me.jsu.springbootdeveloper.challenge.repository.ChallengeParticipantRepository;
-import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeDeleteService;
-import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeQueryService;
+import me.jsu.springbootdeveloper.challenge.service.ChallengeDeleteService;
+import me.jsu.springbootdeveloper.challenge.service.ChallengeQueryService;
 import me.jsu.springbootdeveloper.fcm.service.FcmService;
-import me.jsu.springbootdeveloper.notification.enumType.NotificationType;
-import me.jsu.springbootdeveloper.notification.service.NotificationService;
 import me.jsu.springbootdeveloper.post.dto.article.ArticleImageResponse;
 import me.jsu.springbootdeveloper.post.exception.ArticleAccessDeniedException;
 import me.jsu.springbootdeveloper.post.exception.ArticleNotFoundException;
 import me.jsu.springbootdeveloper.post.exception.DuplicateDailyPostException;
 import me.jsu.springbootdeveloper.post.exception.InvalidImageException;
-import me.jsu.springbootdeveloper.user.repository.UserProfilePictureRepository;
 import me.jsu.springbootdeveloper.user.service.UserStatisticsService;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -27,16 +22,12 @@ import me.jsu.springbootdeveloper.post.domain.PostPicture;
 import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.user.domain.UserProfilePicture;
 import me.jsu.springbootdeveloper.post.dto.article.ArticleDetailResponse;
-import me.jsu.springbootdeveloper.view.dto.ChallengeCalendarPhotoResponse;
-import me.jsu.springbootdeveloper.view.dto.ChallengeCalendarPostResponse;
 import me.jsu.springbootdeveloper.cloudinary.dto.ImageUploadResult;
 import me.jsu.springbootdeveloper.post.repository.PostPictureRepository;
 import me.jsu.springbootdeveloper.post.repository.PostRepository;
 import me.jsu.springbootdeveloper.user.service.UserService;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeService;
 import me.jsu.springbootdeveloper.cloudinary.service.CloudinaryService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -60,9 +51,6 @@ public class PostService {
     private final UserStatisticsService userStatisticsService;
     private final ChallengeQueryService challengeQueryService;
     private final ChallengeDeleteService challengeDeleteService;
-    private final ChallengeParticipantRepository challengeParticipantRepository;
-    private final NotificationService notificationService;
-    private final UserProfilePictureRepository userProfilePictureRepository;
     private final FcmService fcmService;
     private static final int MAX_IMAGE_COUNT = 3;
 
@@ -283,7 +271,7 @@ public class PostService {
     public void delete(String email, Long postId) {
         User user = userService.findByEmail(email);
 
-        Article article = postRepository.findById(postId)  // 삭제할 글을 찾는다.
+        Article article = postRepository.findWithChallengeById(postId)  // 삭제할 글을 찾는다.
                 .orElseThrow(() -> new ArticleNotFoundException("ARTICLE_NOT_FOUND_FOR_ID"));
 
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
@@ -303,7 +291,7 @@ public class PostService {
         deleteImages(postPictures);  // 인증글에 저장된 사진들을 클라우디너리에서 삭제한다.
 
         // 챌린지의 오늘 성공 횟수를 감소시킨다.
-        Challenge challenge = challengeQueryService.findById(article.getChallenge().getId());
+        Challenge challenge = article.getChallenge();
         challenge.decreaseTodaySuccess();
 
         // 해당 유저의 총 챌린지 성공 일수를 감소시킨다.
@@ -312,7 +300,7 @@ public class PostService {
 
         // 이번주 챌린지 총 성공 횟수를 감소시킨다.
         LocalDate thisWeekMonday = article.getPostDate().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-        ChallengeWeeklyStatus challengeWeeklyStatus = challengeService.findWeeklyStatus(user.getId(), challenge.getId(), thisWeekMonday);
+        ChallengeWeeklyStatus challengeWeeklyStatus = challengeQueryService.findWeeklyStatus(user.getId(), challenge.getId(), thisWeekMonday);
         challengeWeeklyStatus.decreaseSuccessCount(challenge.getRequiredWeeklyCount());
 
         // 유저 통계의 내용을 롤백한다.
@@ -350,7 +338,7 @@ public class PostService {
             }
         }
 
-        int currentCount = article.getPostPictures().size();  // 기존 사진 개수
+        int currentCount = (int) postPictureRepository.countByArticle_Id(article.getId());  // 기존 사진 개수를 검색한다.
         int deleteCount = deleteImageIds.size();  // 삭제할 사진 개수
         int newCount = images.size();  // 새로 추가할 사진 개수
 
