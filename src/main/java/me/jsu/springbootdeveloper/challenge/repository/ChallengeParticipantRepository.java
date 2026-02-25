@@ -42,17 +42,30 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
             @Param("status") Status status
     );
 
-    // 챌린지 id와 오너 id로 해당 챌린지의 참가자를 참가 순서대로 오너 제외하고 반환한다.
+    // 유저 id 리스트와 챌린지 참여 db로 챌린지를 검색한다.
     @Query("""
         select cp
         from ChallengeParticipant cp
-        join fetch cp.user
-        where cp.challenge.id = :challengeId
-          and cp.user.id <> :ownerId
-        order by cp.createdAt asc
+        join fetch cp.challenge
+        where cp.user.id in :userIds
+          and cp.status = :status
     """)
-    List<ChallengeParticipant> findParticipantsExceptOwner(
-            @Param("challengeId") Long challengeId,
+    List<ChallengeParticipant> findAllByUserIdsAndStatus(
+            @Param("userIds") List<Long> userIds,
+            @Param("status") Status status
+    );
+
+    // 챌린지 id 리스트와 오너 id로 해당 챌린지의 참가자를 참가 순서대로 오너 제외하고 반환한다.
+    @Query("""
+        select cp
+        from ChallengeParticipant cp
+        join fetch cp.user u
+        where cp.challenge.id in :challengeIds
+          and cp.user.id <> :ownerId
+        order by cp.challenge.id asc, cp.createdAt asc
+    """)
+    List<ChallengeParticipant> findParticipantsExceptOwnerForChallenges(
+            @Param("challengeIds") List<Long> challengeIds,
             @Param("ownerId") Long ownerId
     );
 
@@ -71,6 +84,7 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
             @Param("ownerId") Long ownerId,
             @Param("status") Status status
     );
+
     // 챌린지 id와 유저 id로 챌린지 참여 DB를 검색한다. 챌린지 참여 DB 정보만 필요하므로 쿼리문은 사용하지 않는다.
     Optional<ChallengeParticipant> findByUser_IdAndChallenge_Id(Long userId, Long challengeId);
 

@@ -21,10 +21,8 @@ import me.jsu.springbootdeveloper.tag.repository.TagToUserRepository;
 import me.jsu.springbootdeveloper.user.service.UserService;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /*
     태그와 관련된 처리를 하는 서비스 클래스이다.
@@ -84,19 +82,32 @@ public class TagService {
             return;
         }
 
-        for (Long tagId : tagIds) {  // 태그 id로 하나씩 찾아가며 DB에 관계를 저장한다.
-            if (tagToUserRepository.existsByUser_IdAndTag_Id(user.getId(), tagId)) {
-                continue;  // 태그가 두 번 저장되지 않도록 중복을 방지한다.
-            }
+        // 추가하려는 태그를 한 번에 조회한다.
+        List<Tag> tags = tagRepository.findAllById(tagIds);
 
-            Tag tag = tagRepository.findById(tagId)
-                    .orElseThrow(() -> new TagNotFoundException("TAG_NOT_FOUND_FOR_ID"));
-
-            tagToUserRepository.save(TagToUser.builder()  // 유저와 태그 관계를 DB에 저장한다.
-                    .tag(tag)
-                    .user(user)
-                    .build());
+        // 들어온 태그 개수랑 검색한 태그 개수랑 일치하는지 확인한다.
+        if (tags.size() != tagIds.size()) {
+            throw new TagNotFoundException("TAG_NOT_FOUND_FOR_ID");
         }
+
+        // 유저의 기존 태그 관계를 한 번에 조회한다.
+        List<TagToUser> existingMappings = tagToUserRepository.findAllByUser_Id(user.getId());
+
+        // 기존 태그 관계의 id를 set으로 만든다.
+        Set<Long> existingTagIds = existingMappings.stream()
+                .map(tu -> tu.getTag().getId())
+                .collect(Collectors.toSet());
+
+        // id를 비교하여 기존 태그 관계에서 없는 태그만 새로 태그 관계로 저장한다.
+        List<TagToUser> newMappings = tags.stream()
+                .filter(tag -> !existingTagIds.contains(tag.getId()))
+                .map(tag -> TagToUser.builder()
+                        .tag(tag)
+                        .user(user)
+                        .build())
+                .toList();
+
+        tagToUserRepository.saveAll(newMappings);  // 태그를 db에 저장한다.
     }
 
     /*
@@ -110,9 +121,8 @@ public class TagService {
             return;
         }
 
-        for (Long tagId : tagIds) {  // 관심 태그를 삭제한다.
-            tagToUserRepository.deleteByUser_IdAndTag_Id(user.getId(), tagId);
-        }
+        // 관심 태그를 삭제한다.
+        tagToUserRepository.deleteByUser_IdAndTag_IdIn(user.getId(), tagIds);
     }
 
     /*
@@ -183,9 +193,7 @@ public class TagService {
         }
 
         // 챌린지 태그를 삭제한다.
-        for (Long tagId : tagIds) {
-            tagToChallengeRepository.deleteByChallenge_IdAndTag_Id(challengeId, tagId);  // 태그를 삭제한다.
-        }
+        tagToChallengeRepository.deleteByChallenge_IdAndTag_IdIn(challengeId, tagIds);
     }
 
     /*
@@ -211,19 +219,32 @@ public class TagService {
             return;
         }
 
-        for (Long tagId : tagIds) {  // 태그 id로 하나씩 찾아가며 DB에 관계를 저장한다.
-            if (tagToChallengeRepository.existsByChallenge_IdAndTag_Id(challenge.getId(), tagId)) {
-                continue;  // 태그가 두 번 저장되지 않도록 중복을 방지한다.
-            }
+        // 추가하려는 태그를 한 번에 조회한다.
+        List<Tag> tags = tagRepository.findAllById(tagIds);
 
-            Tag tag = tagRepository.findById(tagId)
-                    .orElseThrow(() -> new TagNotFoundException("TAG_NOT_FOUND_FOR_ID"));
-
-            tagToChallengeRepository.save(TagToChallenge.builder()  // 챌린지와 태그 관계를 DB에 저장한다.
-                    .tag(tag)
-                    .challenge(challenge)
-                    .build());
+        // 들어온 태그 개수랑 검색한 태그 개수랑 일치하는지 확인한다.
+        if (tags.size() != tagIds.size()) {
+            throw new TagNotFoundException("TAG_NOT_FOUND_FOR_ID");
         }
+
+        // 챌린지의 기존 태그를 조회한다.
+        List<TagToChallenge> existing = tagToChallengeRepository.findAllByChallenge_Id(challenge.getId());
+
+        // 기존 태그 관계의 id를 set으로 만든다.
+        Set<Long> existingTagIds = existing.stream()
+                .map(t -> t.getTag().getId())
+                .collect(Collectors.toSet());
+
+        // 기존에 없는 태그만 추가한다.
+        List<TagToChallenge> newMappings = tags.stream()
+                .filter(tag -> !existingTagIds.contains(tag.getId()))  // 있던 것은 제외한다.
+                .map(tag -> TagToChallenge.builder()
+                        .tag(tag)
+                        .challenge(challenge)
+                        .build())
+                .toList();
+
+        tagToChallengeRepository.saveAll(newMappings);  // db에 저장한다.
     }
 
     /*

@@ -2,7 +2,7 @@
 
 package me.jsu.springbootdeveloper.user.service;
 
-import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeDeleteService;
+import me.jsu.springbootdeveloper.challenge.service.ChallengeDeleteService;
 import me.jsu.springbootdeveloper.post.service.ReportService;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +13,6 @@ import me.jsu.springbootdeveloper.cloudinary.service.CloudinaryService;
 import me.jsu.springbootdeveloper.post.service.CommentService;
 import me.jsu.springbootdeveloper.post.service.PostLikeService;
 import me.jsu.springbootdeveloper.post.service.PostService;
-import me.jsu.springbootdeveloper.token.service.RefreshTokenService;
 import org.springframework.stereotype.Service;
 
 /*

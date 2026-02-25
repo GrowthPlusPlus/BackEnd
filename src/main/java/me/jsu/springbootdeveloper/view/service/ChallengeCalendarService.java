@@ -4,8 +4,8 @@ package me.jsu.springbootdeveloper.view.service;
 
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
-import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeMemberService;
-import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeQueryService;
+import me.jsu.springbootdeveloper.challenge.service.ChallengeMemberService;
+import me.jsu.springbootdeveloper.challenge.service.ChallengeQueryService;
 import me.jsu.springbootdeveloper.post.service.PostQueryService;
 import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.view.dto.ChallengeCalendarPhotoResponse;

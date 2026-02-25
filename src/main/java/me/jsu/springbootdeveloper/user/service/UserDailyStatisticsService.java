@@ -3,8 +3,7 @@
 package me.jsu.springbootdeveloper.user.service;
 
 import lombok.RequiredArgsConstructor;
-import me.jsu.springbootdeveloper.challenge.service.ChallengeService;
-import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeQueryService;
+import me.jsu.springbootdeveloper.challenge.service.ChallengeQueryService;
 import me.jsu.springbootdeveloper.user.domain.UserStatistics;
 import me.jsu.springbootdeveloper.user.repository.UserStatisticsRepository;
 import org.springframework.data.domain.PageRequest;

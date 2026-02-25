@@ -23,11 +23,14 @@ import java.util.Optional;
     게시글을 저장하는 DB로, 테이블에 매핑되는 엔티티 타입은 Article, 엔티티의 pk 타입은 Long이다.
  */
 public interface PostRepository extends JpaRepository<Article, Long> {
-    // 오늘 하루 유저의 모든 종류의 post를 조회하기 위한 쿼리문이다.
-    List<Article> findByUser_IdAndPostDate(
-            Long userId,
-            LocalDate postDate
-    );
+    // 인증글 id로 인증글과 챌린지를 한 번에 조회한다.
+    @Query("""
+        select a
+        from Article a
+        left join fetch a.challenge c
+        where a.id = :postId
+""")
+    Optional<Article> findWithChallengeById(@Param("postId") Long postId);
 
     // 최신순으로 공개 피드의 인증글을 보여주기 위한 쿼리문이다. 날짜를 받아 챌린지 기간을 구별한다.
     @Query(value = """
@@ -198,6 +201,7 @@ public interface PostRepository extends JpaRepository<Article, Long> {
         from Article p
         join fetch p.user u
         left join fetch u.userProfilePicture
+        left join fetch p.challenge c
         where p.id = :articleId
     """)
     Optional<Article> findWithUserAndProfileById(@Param("articleId") Long postId);

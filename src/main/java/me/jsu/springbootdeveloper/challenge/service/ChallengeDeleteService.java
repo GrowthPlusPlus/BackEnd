@@ -1,6 +1,6 @@
 // 정성우
 
-package me.jsu.springbootdeveloper.challenge.service.temp;
+package me.jsu.springbootdeveloper.challenge.service;
 
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.domain.Challenge;
@@ -17,6 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /*
     챌린지와 관련된 값을 삭제하는 서비스이다.
@@ -40,23 +42,35 @@ public class ChallengeDeleteService {
         List<Long> toDelete = new ArrayList<>();  // 삭제할 챌린지들의 id를 모은 배열이다.
         List<Challenge> challenges = challengeQueryService.findByUser_Id(userId);  // 현재 관리하는 챌린지들을 검색한다.
 
-        for (Challenge challenge : challenges) {
-            List<ChallengeParticipant> participants =  // 오너를 제외한 챌린지 참가자를 검색한다.
-                    challengeParticipantRepository.findParticipantsExceptOwner(challenge.getId(), userId);
+        if (challenges.isEmpty()) {  // 관리하는 챌린지가 없다면 리턴한다.
+            return;
+        }
 
-            /*
-                참여자가 오너 말고 없다면 챌린지를 삭제한다.
-             */
-            if (participants.isEmpty()) {
+        // 관리하는 챌린지의 id들을 따로 map으로 만든다.
+        List<Long> challengeIds = challenges.stream()
+                .map(Challenge::getId)
+                .toList();
+
+        // 챌린지 오너를 제외한 챌린지 참가자들을 검색한다.
+        List<ChallengeParticipant> allParticipants = challengeParticipantRepository.findParticipantsExceptOwnerForChallenges(challengeIds, userId);
+
+        // 검색한 참가자들의 정보를 challengeId를 기준으로 그룹화한다.
+        Map<Long, List<ChallengeParticipant>> grouped = allParticipants.stream()
+                        .collect(Collectors.groupingBy(cp -> cp.getChallenge().getId()));
+
+        // 챌린지별로 위임할 참가자들을 선택한다.
+        for (Challenge challenge : challenges) {
+            List<ChallengeParticipant> participants = grouped.getOrDefault(challenge.getId(), List.of());
+
+            if (participants.isEmpty()) {  // 위임할 참가자가 없다면 챌린지를 삭제 목록에 추가한다.
                 toDelete.add(challenge.getId());
-            }
-            else {  // 가장 먼저 참여한 사람에게 권한을 위임한다.
+            } else {  // 가장 먼저 참여한 사람에게 위임한다.
                 User newMaster = participants.get(0).getUser();
                 challenge.updateUser(newMaster);
             }
         }
 
-        // 반복 끝난 후 챌린지를 삭제한다.
+        // 반복이 끝난 후 챌린지를 삭제한다.
         for (Long id : toDelete) {
             deleteChallengeInternal(id);
         }

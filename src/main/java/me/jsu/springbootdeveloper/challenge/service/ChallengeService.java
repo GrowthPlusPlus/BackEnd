@@ -2,7 +2,6 @@
 
 package me.jsu.springbootdeveloper.challenge.service;
 
-import me.jsu.springbootdeveloper.challenge.domain.ChallengeInviteLink;
 import me.jsu.springbootdeveloper.challenge.dto.basic.ChallengeDetailResponse;
 import me.jsu.springbootdeveloper.challenge.dto.basic.CreateChallengeRequest;
 import me.jsu.springbootdeveloper.challenge.dto.basic.CreateChallengeResponse;
@@ -13,16 +12,11 @@ import me.jsu.springbootdeveloper.challenge.enumType.Status;
 import me.jsu.springbootdeveloper.challenge.dto.invite.ChallengeFriendInviteListResponse;
 import me.jsu.springbootdeveloper.challenge.dto.invite.ChallengeInviteResponse;
 import me.jsu.springbootdeveloper.challenge.repository.*;
-import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeMemberService;
-import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeQueryService;
-import me.jsu.springbootdeveloper.challenge.service.temp.ChallengeUtils;
 import me.jsu.springbootdeveloper.fcm.service.FcmService;
 import me.jsu.springbootdeveloper.post.exception.NotFoundException;
 import me.jsu.springbootdeveloper.tag.domain.TagToChallenge;
 import me.jsu.springbootdeveloper.user.domain.UserStatistics;
 import me.jsu.springbootdeveloper.user.repository.FriendshipRepository;
-import me.jsu.springbootdeveloper.user.repository.UserProfilePictureRepository;
-import me.jsu.springbootdeveloper.notification.service.NotificationService;
 import me.jsu.springbootdeveloper.user.repository.UserStatisticsRepository;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +34,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import me.jsu.springbootdeveloper.user.dto.FriendListResponse;
-import me.jsu.springbootdeveloper.user.repository.UserRepository;
 import me.jsu.springbootdeveloper.user.service.FriendService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -400,7 +393,7 @@ public class ChallengeService {
      */
     public void updateWeeklyStatus(User user, Challenge challenge, LocalDate weekStartDate, int requiredWeeklyCount) {
         // 이번주에 해당하는 챌린지 주간 상태 튜플이 있는지 검색한다.
-       ChallengeWeeklyStatus challengeWeeklyStatus = findWeeklyStatus(user.getId(), challenge.getId(), weekStartDate);
+       ChallengeWeeklyStatus challengeWeeklyStatus = challengeQueryService.findWeeklyStatus(user.getId(), challenge.getId(), weekStartDate);
 
         if (challengeWeeklyStatus == null) {  // 이번 주 첫 인증이면 새로 생성한다.
             challengeWeeklyStatus = ChallengeWeeklyStatus.builder()
@@ -424,22 +417,5 @@ public class ChallengeService {
         if (challengeWeeklyStatus.getStatus() == Status.SUCCESS && challengeParticipant.getSuccessWeeks() < weekIndex) {
             challengeParticipant.increaseSuccessWeeks();
         }
-    }
-
-    /*
-        유저 id, 챌린지 id, 이번주 날짜로 챌린지 주간 상태 값을 리턴하는 함수이다.
-        주간 상태 업데이트에 사용된다.
-     */
-    public ChallengeWeeklyStatus findWeeklyStatus(Long userId, Long challengeId, LocalDate weekStartDate) {
-        return challengeWeeklyStatusRepository.findByUser_IdAndChallenge_IdAndWeekStartDate(
-                        userId, challengeId, weekStartDate)
-                .orElse(null);
-    }
-
-    /*
-        유저 id, 챌린지 id로 해당 챌린지의 주간 상태에서 주마다의 인증 횟수를 리스트로 반환하는 함수이다.
-     */
-    public List<Integer> findRecentSuccessCounts(Long userId, Long challengeId, Pageable pageable) {
-        return challengeWeeklyStatusRepository.findRecentSuccessCounts(userId, challengeId, pageable);
     }
 }

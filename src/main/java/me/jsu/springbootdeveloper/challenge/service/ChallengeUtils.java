@@ -1,6 +1,6 @@
 // 정성우
 
-package me.jsu.springbootdeveloper.challenge.service.temp;
+package me.jsu.springbootdeveloper.challenge.service;
 
 import me.jsu.springbootdeveloper.challenge.domain.Challenge;
 
