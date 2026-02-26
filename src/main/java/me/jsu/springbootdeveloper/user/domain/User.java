@@ -91,46 +91,43 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
         다음 코드는 CASCADE 설정으로 User 엔티티를 fk값으로 가지고 있는 DB들을 자동으로 삭제해주는 설정이다.
         회원탈퇴 등의로 유저 정보가 삭제될 때, 밑의 정보들도 함께 전부 삭제된다.
      */
-    @OneToMany(mappedBy = "user", cascade = REMOVE)
+    @OneToMany(mappedBy = "user", cascade = REMOVE, fetch = FetchType.LAZY)
     private List<ChallengeInviteLink> challengeInviteLinks;
 
-    @OneToMany(mappedBy = "inviter", cascade = CascadeType.REMOVE)
+    @OneToMany(mappedBy = "inviter", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
     private List<ChallengeInvite> sentInvites;
 
-    @OneToMany(mappedBy = "invitee", cascade = CascadeType.REMOVE)
+    @OneToMany(mappedBy = "invitee", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
     private List<ChallengeInvite> receivedInvites;
 
-    @OneToMany(mappedBy = "user", cascade = REMOVE)
+    @OneToMany(mappedBy = "user", cascade = REMOVE, fetch = FetchType.LAZY)
     private List<ChallengeWeeklyStatus> challengeWeeklyStatus;
 
-    @OneToMany(mappedBy = "user", cascade = REMOVE)
+    @OneToMany(mappedBy = "user", cascade = REMOVE, fetch = FetchType.LAZY)
     private List<ChallengeParticipant> challengeParticipants;
 
-    @OneToMany(mappedBy = "user", cascade = REMOVE)
+    @OneToMany(mappedBy = "user", cascade = REMOVE, fetch = FetchType.LAZY)
     private List<Notification> notifications;
 
-    @OneToMany(mappedBy = "user", cascade = REMOVE)
+    @OneToMany(mappedBy = "user", cascade = REMOVE, fetch = FetchType.LAZY)
     private List<TagToUser> tagToUsers;
 
     // 친구 요청을 양방향으로 매핑한다.
-    @OneToMany(mappedBy = "fromUser", cascade = REMOVE)
+    @OneToMany(mappedBy = "fromUser", cascade = REMOVE, fetch = FetchType.LAZY)
     private List<FriendRequest> sentRequests;
 
-    @OneToMany(mappedBy = "toUser", cascade = REMOVE)
+    @OneToMany(mappedBy = "toUser", cascade = REMOVE, fetch = FetchType.LAZY)
     private List<FriendRequest> receivedRequests;
 
     // 친구 관계를 양방향으로 매핑한다.
-    @OneToMany(mappedBy = "user1", cascade = REMOVE)
+    @OneToMany(mappedBy = "user1", cascade = REMOVE, fetch = FetchType.LAZY)
     private List<Friendship> friendshipsAsUser1;
 
-    @OneToMany(mappedBy = "user2", cascade = REMOVE)
+    @OneToMany(mappedBy = "user2", cascade = REMOVE, fetch = FetchType.LAZY)
     private List<Friendship> friendshipsAsUser2;
 
-    @OneToOne(mappedBy = "user", cascade = REMOVE)
+    @OneToOne(mappedBy = "user", cascade = REMOVE, fetch = FetchType.LAZY)
     private UserProfilePicture userProfilePicture;
-
-    @OneToOne(mappedBy = "user", cascade = REMOVE)
-    private RefreshToken refreshToken;
 
     @Builder
     public User(String email, String password, Role role, String nickname) {

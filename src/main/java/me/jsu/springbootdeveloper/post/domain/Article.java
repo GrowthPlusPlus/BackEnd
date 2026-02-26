@@ -45,6 +45,10 @@ import static jakarta.persistence.CascadeType.REMOVE;
                 @Index(
                         name = "idx_user_challenge_for_post",
                         columnList = "user_id, challenge_id"  // 유저 id와 챌린지 id로 인증글을 찾기 위한 인덱싱이다.
+                ),
+                @Index(
+                        name = "idx_challenge_created_at",
+                        columnList = "challenge_id, created_at desc"
                 )
         }
 )

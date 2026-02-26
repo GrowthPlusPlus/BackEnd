@@ -4,6 +4,7 @@ package me.jsu.springbootdeveloper.user.service;
 
 import me.jsu.springbootdeveloper.challenge.service.ChallengeDeleteService;
 import me.jsu.springbootdeveloper.post.service.ReportService;
+import me.jsu.springbootdeveloper.token.service.RefreshTokenService;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.user.domain.User;
@@ -22,7 +23,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class UserWithdrawalService {
     private final UserService userService;
-    private final ChallengeService challengeService;
+    private final RefreshTokenService refreshTokenService;
     private final ChallengeDeleteService challengeDeleteService;
     private final PostService postService;
     private final CommentService commentService;
@@ -57,6 +58,9 @@ public class UserWithdrawalService {
         if (userProfilePicture != null) {  // 사진이 존재하면 삭제한다.
             cloudinaryService.deleteImage(userProfilePicture.getCloudinaryPublicId());  // public id로 삭제한다.
         }
+
+        // 유저의 리프레시 토큰을 직접 삭제한다.
+        refreshTokenService.deleteByUser_Id(user.getId());
 
         // 유저를 삭제한다. 유저가 사라짐에 따라 필요 없는 정보들은 CASCADE로 자동으로 삭제된다.
         userService.deleteUser(user);
