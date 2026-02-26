@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -161,14 +160,15 @@ public class ChallengeMaintenanceService {
 
         /*
             effectiveStart와 effectiveEnd는 남은 가능 일수를 계산하기 위해 필요한 값이다.
-            effectiveStart는 12시가 넘어간 시점이므로 내일부터 챌린지를 수행 가능한 날짜에 포함한다.
+            effectiveStart는 12시가 넘어간 시점이므로 오늘부터 챌린지를 수행 가능한 날짜에 포함한다.
+            오늘을 기준으로 effectiveStart가 계산된다.
          */
         LocalDate effectiveStart;
-        if (today.plusDays(1).isAfter(challenge.getStartDate())) {  // 내일이 챌린지 시작 이후인지 검사한다.
-            effectiveStart = today.plusDays(1);  // 보통은 내일부터 수행 가능한 날로 정한다.
+        if (challenge.getStartDate().isAfter(today)) {  // 챌린지 시작일보다 오늘이 더 이전이라면 문제 상황이므로 리턴한다.
+            return;
         }
         else {
-            effectiveStart = challenge.getStartDate();  // 방어코드이다.
+            effectiveStart = today;  // 모든 경우이다.
         }
 
         // 챌린지 종료일과 이번주 종료일 중, 더 이른 날짜를 수행 가능한 날짜로 잡는다. 주가 더 남았어도 챌린지가 종료되면 수행이 불가능하기 때문이다.

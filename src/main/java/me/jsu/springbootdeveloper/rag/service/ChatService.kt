@@ -52,7 +52,7 @@ class ChatService(private val openAiApi: OpenAiApi) {  // config에서 반환한
                     생성되는 응답의 최대 토큰 수를 제한하여 비용 및 응답 길이를 통제한다.
                     정확한 토큰 사용 수를 알고 싶다면 OpenAI API 사용 또는 Spring AI에서 ChatResponse.getUsage()로 확인이 필요하다.
                  */
-                .maxTokens(512)
+                .maxTokens(300)
                 .build()
 
             /*
