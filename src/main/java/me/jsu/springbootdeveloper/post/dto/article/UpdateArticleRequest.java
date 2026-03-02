@@ -22,4 +22,5 @@ public class UpdateArticleRequest {
     private String content;   // 수정할 인증글 내용
     @NotNull
     private List<Long> deleteImageIds;  // 삭제할 이미지 id 목록으로, 빈 리스트를 허용한다.
+    private List<Long> tempImageIds;
 }

@@ -7,12 +7,12 @@ import me.jsu.springbootdeveloper.challenge.domain.ChallengeWeeklyStatus;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeDeleteService;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeQueryService;
 import me.jsu.springbootdeveloper.fcm.service.FcmService;
+import me.jsu.springbootdeveloper.post.domain.PostPictureTemporary;
 import me.jsu.springbootdeveloper.post.dto.article.ArticleImageResponse;
-import me.jsu.springbootdeveloper.post.exception.ArticleAccessDeniedException;
-import me.jsu.springbootdeveloper.post.exception.ArticleNotFoundException;
-import me.jsu.springbootdeveloper.post.exception.DuplicateDailyPostException;
-import me.jsu.springbootdeveloper.post.exception.InvalidImageException;
+import me.jsu.springbootdeveloper.post.event.CloudinaryDeleteEvent;
+import me.jsu.springbootdeveloper.post.exception.*;
 import me.jsu.springbootdeveloper.user.service.UserStatisticsService;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
@@ -22,14 +22,11 @@ import me.jsu.springbootdeveloper.post.domain.PostPicture;
 import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.user.domain.UserProfilePicture;
 import me.jsu.springbootdeveloper.post.dto.article.ArticleDetailResponse;
-import me.jsu.springbootdeveloper.cloudinary.dto.ImageUploadResult;
 import me.jsu.springbootdeveloper.post.repository.PostPictureRepository;
 import me.jsu.springbootdeveloper.post.repository.PostRepository;
 import me.jsu.springbootdeveloper.user.service.UserService;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeService;
-import me.jsu.springbootdeveloper.cloudinary.service.CloudinaryService;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -47,10 +44,11 @@ public class PostService {
     private final PostLikeService postLikeService;
     private final PostQueryService postQueryService;
     private final PostPictureRepository postPictureRepository;
-    private final CloudinaryService cloudinaryService;
     private final UserStatisticsService userStatisticsService;
     private final ChallengeQueryService challengeQueryService;
     private final ChallengeDeleteService challengeDeleteService;
+    private final ImageTemporaryService imageTemporaryService;
+    private final ApplicationEventPublisher applicationEventPublisher;
     private final FcmService fcmService;
     private static final int MAX_IMAGE_COUNT = 3;
 
@@ -134,7 +132,7 @@ public class PostService {
         유저로부터 받은 이미지는 검증 서비스를 거치고 왔다고 가정하고 수행한다.
      */
     @Transactional
-    public ArticleDetailResponse save(String email, String content, Long challengeId, List<MultipartFile> images) {
+    public ArticleDetailResponse save(String email, String content, Long challengeId, List<Long> tempImageIds) {
         // 유저 이메일로 user 객체를 검색한다.
         User user = userService.findByEmail(email);
 
@@ -157,16 +155,16 @@ public class PostService {
         }
 
         // 이미지가 아에 비어있으면 빈 리스트를 대입한다.
-        images = (images == null) ? List.of() : images;
+        tempImageIds = (tempImageIds == null) ? List.of() : tempImageIds;
 
         // 챌린지의 이미지 필수 여부를 확인한다.
         boolean photoRequired = challenge.isPhotoRequired();
-        if (photoRequired && images.isEmpty()) {
+        if (photoRequired && tempImageIds.isEmpty()) {
             throw new InvalidImageException("IMAGE_REQUIRED");  // 사진이 필수 인증인데 이미지가 없다면 예외처리 한다.
         }
 
         // 업로드 한 사진의 개수가 5개보다 많으면 예외처리 한다.
-        if (images.size() > MAX_IMAGE_COUNT) {
+        if (tempImageIds.size() > MAX_IMAGE_COUNT) {
             throw new InvalidImageException("MAX_IMAGE_COUNT_EXCEEDED");
         }
 
@@ -180,7 +178,7 @@ public class PostService {
                 .build());
 
         // 검증된 사진을 DB와 클라우디너리에 저장한다.
-        saveImages(images, article);
+        saveImages(tempImageIds, article, user.getId(), challengeId);
 
         // 인증글을 업데이트 했으므로 총 인증 횟수와 연속 인증 횟수를 업데이트 한다.
         challengeService.succeedChallenge(user.getId(), challengeId, postDate);
@@ -227,23 +225,33 @@ public class PostService {
     /*
         클라우디너리에 사진을 저장하고, 사진 정보를 DB에 반영해주는 함수이다.
      */
-    public void saveImages(List<MultipartFile> images, Article article) {
-        // 이미지가 없는 경우엔 if문을 실행하지 않는다.
-        if (!images.isEmpty()) {
-            for (MultipartFile multipartFile : images) {
-                if (multipartFile.isEmpty()) {  // 파일이 비어있으면 수행하지 않는다. (방어코드)
-                    continue;
-                }
-                // 인증글 이미지를 클라우디너리에 업로드하고 정보를 반환받는다.
-                ImageUploadResult imageUploadResult = cloudinaryService.uploadImage(multipartFile);
+    public void saveImages(List<Long> tempImageIds, Article article, Long userId, Long challengeId) {
+        // 임시 파일들을 검색한다.
+        List<PostPictureTemporary> postPictureTemporaries = imageTemporaryService.findAllById(tempImageIds);
 
-                // 사진 정보를 DB에 반영한다.
-                postPictureRepository.save(PostPicture.builder()
-                        .article(article)
-                        .cloudinaryPublicId(imageUploadResult.publicId())
-                        .imageUrl(imageUploadResult.secureUrl())
-                        .build());
+        // 검색한 임시 파일들의 개수와 검색에 사용한 id 개수가 같은지 비교한다.
+        if (postPictureTemporaries.size() != tempImageIds.size()) {
+            throw new InvalidImageException("검색된 임시파일 개수와 검색에 사용한 id 개수가 다릅니다.");
+        }
+
+        // 업로드하려는 임시 사진 파일이 해당 유저가 업로드 한 것인지, 다른 챌린지에 업로드한 사진이 아닌지 검사한다.
+        for (PostPictureTemporary postPictureTemporary : postPictureTemporaries) {
+            if (!postPictureTemporary.getUser().getId().equals(userId)) {
+                throw new InvalidImageException("임시로 업로드 한 유저와 사용하려는 유저가 다릅니다.");
             }
+            if (!postPictureTemporary.getChallenge().getId().equals(challengeId)) {
+                throw new InvalidImageException("임시로 업로드 했을 때의 챌린지 id와 현재 인증하려는 챌린지 id가 다릅니다.");
+            }
+
+            // 임시 사진 파일의 정보를 이용하여 실제 인증글 사진 DB에 저장한다.
+            postPictureRepository.save(PostPicture.builder()
+                    .article(article)
+                    .cloudinaryPublicId(postPictureTemporary.getCloudinaryPublicId())
+                    .imageUrl(postPictureTemporary.getImageUrl())
+                    .build());
+
+            // 사용이 끝난 임시파일의 DB 정보를 삭제한다.
+            imageTemporaryService.deleteTempFile(postPictureTemporary);
         }
     }
 
@@ -254,11 +262,13 @@ public class PostService {
         // 인증글에 저장된 사진들을 클라우디너리에서 삭제한다. 이미지가 없는 경우엔 if문을 실행하지 않는다.
         if (!postPictures.isEmpty()) {
             for (PostPicture pp : postPictures) {
-                // 클라우디너리의 이미지를 삭제한다.
-                cloudinaryService.deleteImage(pp.getCloudinaryPublicId());
+                String publicId = pp.getCloudinaryPublicId();
 
-                // 우리 서버의 DB에서도 정보를 삭제한다.
+                // 우리 서버의 DB에서 정보를 삭제한다.
                 postPictureRepository.delete(pp);
+
+                // 클라우디너리의 이미지를 삭제한다. 모든 트렌젝션이 끝난 후에 수행한다.
+                applicationEventPublisher.publishEvent(new CloudinaryDeleteEvent(publicId));
             }
         }
     }
@@ -314,14 +324,17 @@ public class PostService {
         수정하는 값은 인증 내용, 사진이다.
      */
     @Transactional
-    public ArticleDetailResponse update(String email, Long postId, String content, List<Long> deleteImageIds, List<MultipartFile> images) {
+    public ArticleDetailResponse update(String email, Long postId, String content, List<Long> deleteImageIds, List<Long> tempImageIds) {
         User user = userService.findByEmail(email);
         Article article = postQueryService.findById(postId);
 
         authorizeArticleAuthor(article, user);  // 글 작성자인지 확인한다.
 
         // 이미지가 비어있는 경우 빈 리스트로 정규화 한다.
-        images = (images == null) ? List.of() : images;
+        tempImageIds = (tempImageIds == null) ? List.of() : tempImageIds;
+
+        // 삭제하려는 이미지가 비어있는 경우 빈 리스트로 정규화 한다.
+        deleteImageIds = (deleteImageIds == null) ? List.of() : deleteImageIds;
 
         // 기존 사진 객체를 검색한다.
         List<PostPicture> postPictures = postPictureRepository.findAllById(deleteImageIds);
@@ -340,7 +353,7 @@ public class PostService {
 
         int currentCount = (int) postPictureRepository.countByArticle_Id(article.getId());  // 기존 사진 개수를 검색한다.
         int deleteCount = deleteImageIds.size();  // 삭제할 사진 개수
-        int newCount = images.size();  // 새로 추가할 사진 개수
+        int newCount = tempImageIds.size();  // 새로 추가할 사진 개수
 
         int finalCount = currentCount - deleteCount + newCount;  // 최종 사진 개수
 
@@ -349,7 +362,12 @@ public class PostService {
         }
 
         // 업데이트 되는 시간이다.
-        LocalDateTime postDateTime= LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+        LocalDateTime postDateTime = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+
+        // 업데이트 하는 시간이 업로드한 날에서 자정이 지난 시점이라면 예외처리 한다. 즉 12시가 지나면 바로 수정이 불가능하다.
+        if (!article.getPostDate().equals(postDateTime.toLocalDate())) {
+            throw new PostModificationPeriodExpiredException("하루가 지나면 수정할 수 없습니다.");
+        }
 
         // 인증글 내용을 업데이트 한다.
         article.updateContent(content, postDateTime);
@@ -358,7 +376,7 @@ public class PostService {
         deleteImages(postPictures);
 
         // 인증글의 사진을 업데이트 한다.
-        saveImages(images, article);
+        saveImages(tempImageIds, article, user.getId(), article.getChallenge().getId());
 
         // 수정된 게시글 정보를 반환한다.
         return getPost(email, postId);

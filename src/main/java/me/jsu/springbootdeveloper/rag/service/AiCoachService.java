@@ -31,27 +31,31 @@ public class AiCoachService {
     public QueryResponseDto coach(String email) {
         User user = userService.findByEmail(email);
 
+        UserStatistics stats = userStatisticsService.findByUser_IdStatistics(user.getId());  // 통계를 조회한다.
+
         // AI에게 보낼 질문이다.
         String query = """
                 유저 통계 정보를 기반으로 적절한 조언을 부탁해.
                 어떤 점이 잘 했고, 어떤 점은 개선해 나가야 하고 등
                 """;
 
+        if (stats.getTotalChallengeCount() == 0) {  // 만약 참여한 챌린지가 하나도 없다면 예외처리한다.
+            return new QueryResponseDto(query, "챌린지에 참여해서 목표를 이루어보세요!");
+        }
+
         // AI에게 보낼 유저 통계 기반 가짜 문서를 생성한다.
-        DocumentSearchResultDto userStatsDoc = buildUserStatisticsDocument(user.getId());
+        DocumentSearchResultDto userStatsDoc = buildUserStatisticsDocument(stats, user.getId());
         List<DocumentSearchResultDto> contexts = List.of(userStatsDoc);
 
         String answer = ragService.generateAnswerWithContexts(query, contexts);  // 답변을 생성한다.
 
-        return new QueryResponseDto(query, answer);  // 생성한 답변을 반환한다.
+        return new QueryResponseDto(query, removeCitation(answer));  // 생성한 답변을 반환한다.
     }
 
     /*
         유저 통계를 기반으로 RAG에 전달할 문서 DTO를 생성한다.
      */
-    private DocumentSearchResultDto buildUserStatisticsDocument(Long userId) {
-        UserStatistics stats = userStatisticsService.findByUser_IdStatistics(userId);
-
+    private DocumentSearchResultDto buildUserStatisticsDocument(UserStatistics stats, Long userId) {
         // 문서의 내용을 생성한다.
         String content = buildContent(stats);
 
@@ -143,5 +147,12 @@ public class AiCoachService {
         }
 
         return meta;
+    }
+
+    /*
+        답변의 참고 문헌을 제거한다.
+     */
+    private String removeCitation(String answer) {
+        return answer.replaceAll("\\[1].*", "").trim();
     }
 }
