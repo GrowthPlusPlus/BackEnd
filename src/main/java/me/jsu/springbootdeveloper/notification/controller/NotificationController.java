@@ -50,6 +50,8 @@ public class NotificationController {
         // 서비스에서 정제한 정보를 response 객체에 담는다.
         Page<MyNotificationResponse> response = notificationService.getNotification(userDetails.getUsername(), page);
 
+        // 여기서 알림 상태(isRead)를 바꾸면 db값은바뀌어도 dto값은 변하지 않는다. 따라서 알림 상태를 수정한다
+
         // 검색한 값을 클라이언트에게 반환한다.
         return ResponseEntity.ok(response);
     }
