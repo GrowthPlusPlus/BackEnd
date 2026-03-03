@@ -4,7 +4,7 @@ spring:
     active: prod
 
   datasource:
-    url: jdbc:postgresql://avnadmin:AVNS__yupPU6qosmn6Cmvtp4@hanaemdb-hanaem.e.aivencloud.com:16313/defaultdb?sslmode=require
+    url: jdbc:postgresql://hanaemdb-hanaem.e.aivencloud.com:16313/defaultdb?sslmode=require
     username: avnadmin
     password: AVNS__yupPU6qosmn6Cmvtp4
     driver-class-name: org.postgresql.Driver
