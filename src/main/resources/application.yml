@@ -4,9 +4,9 @@ spring:
     active: prod
 
   datasource:
-    url: jdbc:postgresql://dpg-d5ubio4oud1c73bk5he0-a.virginia-postgres.render.com/hanaemdb
-    username: haneul
-    password: JuWVt8IzASwO4LIkmNNux96Q67hYqXN5
+    url: jdbc:postgresql://hanaemdb-hanaem.e.aivencloud.com:16313/defaultdb?sslmode=require
+    username: avnadmin
+    password: AVNS__yupPU6qosmn6Cmvtp4
     driver-class-name: org.postgresql.Driver
 
   jpa:

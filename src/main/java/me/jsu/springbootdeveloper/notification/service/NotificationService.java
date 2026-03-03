@@ -100,6 +100,7 @@ public class NotificationService {
         // 알림을 검색한다.
         Page<Notification> notifications = notificationRepository.findByUser_Id(user.getId(), pageable);
 
+        //notRead, firstRead, secondRead 상태에서
         // dto에 매핑하여 반환한다.
         return notifications.map(notification ->
                         MyNotificationResponse.builder()
