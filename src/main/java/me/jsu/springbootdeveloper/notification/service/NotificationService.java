@@ -9,10 +9,14 @@ import me.jsu.springbootdeveloper.notification.enumType.NotificationType;
 import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.user.service.UserService;
 import me.jsu.springbootdeveloper.notification.repository.NotificationRepository;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -88,8 +92,20 @@ public class NotificationService {
         유저 id로 알람을 검색하여 DTO 형태로 반환하는 함수이다.
         반환된 알림들은 자동으로 읽음 처리되지만, DTO에는 읽음 처리 전 원래 상태가 담긴다.
         한 번의 DB 조회로 성능을 최적화한다.
+
+        DB 일시 장애(DataAccessException 등)가 발생할 수 있으므로, @Retryable을 사용해
+        동일 요청을 최대 3번까지 재시도한다. (지수 백오프 적용)
      */
     @Transactional
+    @Retryable(
+            // DataAccessException은 스프링에서 제공하는 DB 관련 런타임 예외의 상위 타입이다.
+            value = {DataAccessException.class, RuntimeException.class},
+            maxAttempts = 3,  // 최대 3번까지 재시도한다.
+            backoff = @org.springframework.retry.annotation.Backoff(
+                    delay = 200,           // 최초 대기 시간(밀리초)
+                    multiplier = 2.0      // 재시도마다 대기 시간을 2배씩 증가시킨다. (200ms → 400ms → 800ms)
+            )
+    )
     public Page<MyNotificationResponse> getNotifications(String email, int page) {
         User user = userService.findByEmail(email);
 
@@ -118,7 +134,35 @@ public class NotificationService {
         // DTO는 이미 생성되었으므로 원래 isRead 상태가 유지된다.
         // 이미 읽은 알림도 markAsRead()를 호출해도 결과는 동일하므로 필터링 없이 모든 알림을 처리한다.
         notifications.getContent().forEach(Notification::markAsRead);  // 읽음 처리
-
         return response;
+    }
+
+    /*
+        getNotifications 함수의 재시도가 모두 실패했을 때 호출되는 복구 함수이다.
+        @Recover 메서드는 첫 번째 인자로 예외 타입을 받고, 나머지 인자는 @Retryable 메서드와 동일해야 한다.
+
+        여기서는 로그성 처리를 위해 예외 메시지를 참고하고,
+        클라이언트에게는 "빈 페이지"를 반환하여 서비스 전체 장애로 번지지 않도록 방어한다.
+     */
+    @Recover
+    public Page<MyNotificationResponse> recoverGetNotifications(
+            RuntimeException exception, String email, int page) {
+
+        // 1. 실제 운영 환경에서는 여기서 로깅 시스템(Sentry, CloudWatch 등)에 예외를 기록하는 것이 좋다.
+        //    현재 예제에선 별도의 로깅 라이브러리를 사용하지 않으므로, 주석으로만 의도를 남긴다.
+        //    ex) log.error("알림 조회 실패 - email: {}, page: {}", email, page, exception);
+
+        // 2. 클라이언트에게는 "정상적인 빈 응답"을 반환하여 화면이 깨지지 않도록 한다.
+        Pageable pageable = PageRequest.of(
+                page,
+                20,
+                Sort.by("createdAt").descending()
+        );
+
+        return new PageImpl<>(
+                java.util.List.of(),  // 빈 리스트
+                pageable,
+                0                     // 전체 개수 0
+        );
     }
 }

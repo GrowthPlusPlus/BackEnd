@@ -97,6 +97,9 @@ dependencies {
     // 스케줄러의 초기화되지 않은 DB 참조 방지를 위한 AOP 의존성
     implementation 'org.springframework.boot:spring-boot-starter-aop'
 
+    // Spring Retry를 사용하여 재시도 및 복구 로직을 구현하기 위한 의존성이다.
+    implementation 'org.springframework.retry:spring-retry'
+
     //firebase FCM의존성
     implementation 'com.google.firebase:firebase-admin:9.2.0'
 }

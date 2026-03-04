@@ -8,6 +8,18 @@ spring:
     username: avnadmin
     password: AVNS__yupPU6qosmn6Cmvtp4
     driver-class-name: org.postgresql.Driver
+    hikari:
+      #데이터베이스 연결을 동시에 5명까지는 대기 없이 즉시 처리/Aiven 최대 연결수가 20이기 때문에 연결수 제한 필요
+      maximum-pool-size: 5
+
+      #5명이 넘어가도 '30초 동안은 참고 기다려라'는 설정
+      connection-timeout: 30000
+      # 사용하지 않는 연결은 30초 내로 빠르게 반납 (회전율 극대화)
+      idle-timeout: 30000
+      # 최대 연결 생존 시간/쿼리 처리중이면 해당 쿼리까지 처리하고 연결 반납 후 새로 생성
+      max-lifetime: 1800000
+      #2초 이상 걸리는 쿼리는 로그 남기기 (2초마다 찍히는 것이 아닌 2초가 넘어간 연결에 대해 한번 찍힘)
+      leak-detection-threshold: 2000
 
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
@@ -18,7 +30,9 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        #데이터베이스 초기화 시점을 hibernate가 테이블을 다 생성한 이후로 미룸
+        # [성능] 쿼리 한 번에 전송할 데이터 양을 조절하여 성능을 최적화합니다.이미지 등을 로드할경우 @BatchSize로 개별 설정 추가 필요
+        default_batch_fetch_size: 100
+    #데이터베이스 초기화 시점을 hibernate가 테이블을 다 생성한 이후로 미룸
     defer-datasource-initialization: true
 
   h2:
