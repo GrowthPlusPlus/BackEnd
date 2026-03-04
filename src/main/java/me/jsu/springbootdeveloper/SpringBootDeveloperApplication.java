@@ -11,7 +11,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling  // 스케줄러가 동작하도록 한다.
 @EnableJpaAuditing  // created, updated를 자동 업데이트
 @EnableConfigurationProperties(GoogleOAuthProperties.class)
-@EnableRetry
+@EnableRetry  // Spring Retry 기능을 활성화한다.
 @SpringBootApplication
 public class SpringBootDeveloperApplication {
         public static void main(String[] args) {
