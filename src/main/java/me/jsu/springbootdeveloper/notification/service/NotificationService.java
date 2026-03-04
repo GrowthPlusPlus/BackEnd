@@ -4,10 +4,10 @@ package me.jsu.springbootdeveloper.notification.service;
 
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.notification.domain.Notification;
+import me.jsu.springbootdeveloper.notification.dto.MyNotificationResponse;
 import me.jsu.springbootdeveloper.notification.enumType.NotificationType;
 import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.user.service.UserService;
-import me.jsu.springbootdeveloper.notification.dto.MyNotificationResponse;
 import me.jsu.springbootdeveloper.notification.repository.NotificationRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -85,9 +85,12 @@ public class NotificationService {
     }
 
     /*
-        유저 id로 알람을 검색하여 페이지 형태로 반환하는 함수이다.
+        유저 id로 알람을 검색하여 DTO 형태로 반환하는 함수이다.
+        반환된 알림들은 자동으로 읽음 처리되지만, DTO에는 읽음 처리 전 원래 상태가 담긴다.
+        한 번의 DB 조회로 성능을 최적화한다.
      */
-    public Page<MyNotificationResponse> getNotification(String email, int page) {
+    @Transactional
+    public Page<MyNotificationResponse> getNotifications(String email, int page) {
         User user = userService.findByEmail(email);
 
         // 유저가 받은 알람을 한 번에 20개까지만 조회한다.
@@ -100,16 +103,22 @@ public class NotificationService {
         // 알림을 검색한다.
         Page<Notification> notifications = notificationRepository.findByUser_Id(user.getId(), pageable);
 
-        //notRead, firstRead, secondRead 상태에서
-        // dto에 매핑하여 반환한다.
-        return notifications.map(notification ->
+        // DTO로 변환한다. 이 시점의 isRead 상태(읽음 처리 전 원래 상태)를 DTO에 담는다.
+        Page<MyNotificationResponse> response = notifications.map(notification ->
                         MyNotificationResponse.builder()
                                 .imageUrl(notification.getImageUrl())
                                 .targetId(notification.getTargetId())
                                 .message(notification.getMessage())
                                 .type(notification.getType())
-                                .isRead(notification.isRead())
+                                .isRead(notification.isRead())  // 읽음 처리 전 원래 상태
                                 .created(notification.getCreatedAt().toLocalDate())
                                 .build());
+
+        // 반환된 알림들을 읽음 처리한다.
+        // DTO는 이미 생성되었으므로 원래 isRead 상태가 유지된다.
+        // 이미 읽은 알림도 markAsRead()를 호출해도 결과는 동일하므로 필터링 없이 모든 알림을 처리한다.
+        notifications.getContent().forEach(Notification::markAsRead);  // 읽음 처리
+
+        return response;
     }
 }

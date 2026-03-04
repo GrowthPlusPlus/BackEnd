@@ -9,9 +9,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.notification.dto.MyNotificationResponse;
 import me.jsu.springbootdeveloper.notification.service.NotificationService;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.data.domain.Page;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -34,6 +34,9 @@ public class NotificationController {
         로그인한 사용자의 알림 목록을 페이지 단위로 조회하여 반환한다.
         프론트엔드에서는 스크롤 또는 페이지 이동 시 page 값을 증가시켜 호출한다.
         ex) GET /api/notification?page=0
+        - 26.3.4 알림 읽음 표시 추가
+        - 처음 조회한 알림의 isRead 값: false
+        - 두번이상 조회한 알림의 isRead 값: true
         """
     )
     @ApiResponses({
@@ -47,10 +50,9 @@ public class NotificationController {
             @Parameter(description = "페이지 번호 (0부터 시작)", required = true, example = "0")
             @RequestParam int page)
     {
-        // 서비스에서 정제한 정보를 response 객체에 담는다.
-        Page<MyNotificationResponse> response = notificationService.getNotification(userDetails.getUsername(), page);
-
-        // 여기서 알림 상태(isRead)를 바꾸면 db값은바뀌어도 dto값은 변하지 않는다. 따라서 알림 상태를 수정한다
+        // 서비스에서 알림 목록을 조회하고 읽음 처리까지 수행한다.
+        // DTO에는 읽음 처리 전 원래 isRead 상태가 담긴다.
+        Page<MyNotificationResponse> response = notificationService.getNotifications(userDetails.getUsername(), page);
 
         // 검색한 값을 클라이언트에게 반환한다.
         return ResponseEntity.ok(response);
