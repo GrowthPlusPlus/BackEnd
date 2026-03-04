@@ -13,8 +13,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.sql.SQLException;
 
 /*
     알람을 관리하기 위한 서비스이다.
@@ -89,6 +93,12 @@ public class NotificationService {
         반환된 알림들은 자동으로 읽음 처리되지만, DTO에는 읽음 처리 전 원래 상태가 담긴다.
         한 번의 DB 조회로 성능을 최적화한다.
      */
+    //DB 연결 오류(SQLException) 발생 시 2초 간격으로 최대 3번 시도합니다.
+    @Retryable(
+            value = { SQLException.class },
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 2000)
+    )
     @Transactional
     public Page<MyNotificationResponse> getNotifications(String email, int page) {
         User user = userService.findByEmail(email);

@@ -8,6 +8,15 @@ spring:
     username: avnadmin
     password: AVNS__yupPU6qosmn6Cmvtp4
     driver-class-name: org.postgresql.Driver
+    hikari:
+      # 팀원 5명의 DBeaver 자리를 비워주기 위해 5개로 제한합니다.
+      maximum-pool-size: 5
+      # 통로가 꽉 찼을 때 최대 30초까지 기다리게 해서 에러 발생을 최소화합니다.
+      connection-timeout: 30000
+      # 사용하지 않는 연결은 1분 안에 반납하여 팀원들이 쓸 수 있게 합니다.
+      idle-timeout: 60000
+      #커넥션을 오래 잡고 있는 연결을 추적해서 서버 로그에 띄우는 설정 (2000:2초)
+      leak-detection-threshold: 2000
 
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
