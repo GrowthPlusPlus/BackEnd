@@ -361,9 +361,7 @@ public class ChallengeService {
         특정 챌린지를 완수한 경우, 연속 챌린지 달성 일수와 총 챌린지 일수를 업데이트하기 위해 호출하는 함수이다.
         반드시 하루에 최대 한 번만 수행한다.
      */
-    public void succeedChallenge(Long userId, Long challengeId, LocalDate postDate) {
-        // 챌린지 참여 DB를 검색한다.
-        ChallengeParticipant challengeParticipant = challengeQueryService.findByUser_IdAndChallenge_IdForParticipant(userId, challengeId);
+    public void succeedChallenge(ChallengeParticipant challengeParticipant, LocalDate postDate) {
         challengeParticipant.recordDailySuccess(postDate);  // 챌린지 참여 DB를 업데이트 한다.
     }
 

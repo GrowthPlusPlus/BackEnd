@@ -114,6 +114,7 @@ public class PostService {
                 .postId(article.getId())
                 .challengeTitle(challengeTitle)
                 .totalSuccessDays(totalSuccessDays)  // 총 성공 일수이다.
+                .title(article.getTitle())
                 .content(article.getContent())
                 .images(images)  // 게시글의 사진, id이다.
                 .userNickname(userNickname)
@@ -140,7 +141,7 @@ public class PostService {
         Challenge challenge = challengeQueryService.findById(challengeId);
 
         // 현재 진행중인 챌린지가 아니라면 예외를 던진다.
-        challengeQueryService.challengeStatusInProgress(user.getId(), challengeId);
+        ChallengeParticipant challengeParticipant = challengeQueryService.challengeStatusInProgress(user.getId(), challengeId);
 
         // 챌린지 인증 시각을 정확하게 보기 위해 생성 시각과는 다른 인증 날짜 도메인을 생성한다.
         LocalDateTime postDateTime = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
@@ -181,7 +182,10 @@ public class PostService {
         saveImages(tempImageIds, article, user.getId(), challengeId);
 
         // 인증글을 업데이트 했으므로 총 인증 횟수와 연속 인증 횟수를 업데이트 한다.
-        challengeService.succeedChallenge(user.getId(), challengeId, postDate);
+        challengeService.succeedChallenge(challengeParticipant, postDate);
+
+        // 인증글의 제목을 업데이트 한다.
+        article.updateTitle(challenge.getTitle() + " " + challengeParticipant.getTotalSuccessDays() + "일차");
 
         // 인증글을 업데이트 했으므로 챌린지 데일리 로그도 업데이트 한다.
         challengeService.createDailyLog(user, challenge, article, postDate);

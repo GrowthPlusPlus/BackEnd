@@ -141,6 +141,13 @@ public class Article {
     }
 
     /*
+        제목을 업데이트 한다.
+     */
+    public void updateTitle(String title) {
+        this.title = title;
+    }
+
+    /*
         내용을 업데이트 한다.
      */
     public void updateContent(String content, LocalDateTime updateAt) {

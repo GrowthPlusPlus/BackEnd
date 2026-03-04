@@ -17,6 +17,7 @@ public class ArticleDetailResponse {
     private Long postId;  // 게시글 수정을 위해 필요하다.
     private String challengeTitle;
     private int totalSuccessDays;
+    private String title;
     private String content;
     private List<ArticleImageResponse> images;
     private String userNickname;

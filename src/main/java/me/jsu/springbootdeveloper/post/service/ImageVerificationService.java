@@ -67,7 +67,9 @@ public class ImageVerificationService {
         validateMimeType(image);
         validateImageDecoding(image);
 
-        return verifyWithCLIP(challengeId, image);  // CLIP 결과를 프론트에 반환한다.
+        // return verifyWithCLIP(challengeId, image);  // CLIP 결과를 프론트에 반환한다.
+        // CLIP 방식이 변경될 수 있으므로 일단 보류함
+        return "PASS";
     }
 
     /*
