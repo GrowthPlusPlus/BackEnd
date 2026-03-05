@@ -10,8 +10,6 @@ import me.jsu.springbootdeveloper.challenge.enumType.Status;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeQueryService;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeUtils;
 import me.jsu.springbootdeveloper.user.domain.User;
-import me.jsu.springbootdeveloper.challenge.service.ChallengeMaintenanceService;
-import me.jsu.springbootdeveloper.challenge.service.ChallengeService;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.view.dto.MainHomeResponse;
@@ -37,8 +35,6 @@ import java.util.stream.Collectors;
 public class MainHomeService {
     private final UserService userService;
     private final NotificationService notificationService;
-    private final ChallengeService challengeService;
-    private final ChallengeMaintenanceService challengeMaintenanceService;
     private final ChallengeQueryService challengeQueryService;
 
     public MainHomeResponse getMainHome(String userEmail, LocalDate today, LocalDate weekStartDate, LocalDate targetDate) {
