@@ -6,10 +6,11 @@ import lombok.Builder;
 import lombok.Getter;
 
 /*
-    이미지 검증 결과를 유저에게 돌려주는 함수이다.
+    이미지 검증 결과와 임시로 업로드한 파일의 id를 가진 dto이다.
  */
 @Getter
 @Builder
 public class ImageVerificationResponse {
     private String passed;
+    private Long tempImageId;
 }

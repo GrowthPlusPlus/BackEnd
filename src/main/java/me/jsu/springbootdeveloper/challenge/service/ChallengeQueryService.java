@@ -117,13 +117,15 @@ public class ChallengeQueryService {
     }
 
     /*
-        해당 유저의 챌린지가 진행중인 챌린지인지 검사한다.
+        해당 유저의 챌린지가 진행중인 챌린지인지 검사하고, 진행중이라면 반환한다.
      */
-    public void challengeStatusInProgress(Long userId, Long challengeId) {
+    public ChallengeParticipant challengeStatusInProgress(Long userId, Long challengeId) {
         ChallengeParticipant challengeParticipant = findByUser_IdAndChallenge_IdForParticipant(userId, challengeId);
         if (challengeParticipant.getStatus() != Status.IN_PROGRESS) {
             throw new ChallengeNotInProgressException("CHALLENGE_IS_NOT_IN_PROGRESS");
         }
+
+        return challengeParticipant;
     }
 
     /*

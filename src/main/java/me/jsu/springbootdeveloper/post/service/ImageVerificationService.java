@@ -4,7 +4,6 @@ package me.jsu.springbootdeveloper.post.service;
 
 import me.jsu.springbootdeveloper.challenge.domain.Challenge;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeQueryService;
-import me.jsu.springbootdeveloper.post.dto.verify.ImageVerificationResponse;
 import me.jsu.springbootdeveloper.post.dto.verify.ImageVerificationResult;
 import me.jsu.springbootdeveloper.post.exception.ClipServerException;
 import me.jsu.springbootdeveloper.post.exception.InvalidImageException;
@@ -57,17 +56,20 @@ public class ImageVerificationService {
     /*
         사용자가 업로드한 이미지를 검증하는 함수이다.
      */
-    public ImageVerificationResponse verify(Long challengeId, MultipartFile image) {
+    public String verify(Long challengeId, MultipartFile image) {
         // 이미지가 없는 경우이다.
         if (image == null || image.isEmpty()) {
             throw new InvalidImageException("EMPTY_IMAGE");
         }
 
+        // 이미지에 대해 각종 검증을 한다.
         validateFileSize(image);
         validateMimeType(image);
         validateImageDecoding(image);
 
-        return verifyWithCLIP(challengeId, image);
+        // return verifyWithCLIP(challengeId, image);  // CLIP 결과를 프론트에 반환한다.
+        // CLIP 방식이 변경될 수 있으므로 일단 보류함
+        return "PASS";
     }
 
     /*
@@ -107,7 +109,7 @@ public class ImageVerificationService {
     /*
         clip 서버에 챌린지 제목과 이미지를 보내 검증 결과를 얻는 함수이다.
      */
-    public ImageVerificationResponse verifyWithCLIP(Long challengeId, MultipartFile image) {
+    public String verifyWithCLIP(Long challengeId, MultipartFile image) {
         Challenge challenge = challengeQueryService.findById(challengeId);
 
         // 보낼 값을 map으로 만든다.
@@ -139,9 +141,7 @@ public class ImageVerificationService {
                 throw new ClipServerException("CLIP server error");
             }
 
-            return ImageVerificationResponse.builder()
-                    .passed(result.passed())
-                    .build();
+            return result.passed();
 
         } catch (Exception e) {  // 그 외의 예외 처리이다.
             log.error("CLIP verification failed", e);

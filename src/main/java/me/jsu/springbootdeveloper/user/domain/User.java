@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeInvite;
+import me.jsu.springbootdeveloper.post.domain.PostPictureTemporary;
 import me.jsu.springbootdeveloper.post.domain.ReportArticle;
 import me.jsu.springbootdeveloper.post.domain.ReportComment;
 import me.jsu.springbootdeveloper.token.domain.RefreshToken;
@@ -128,6 +129,9 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
 
     @OneToOne(mappedBy = "user", cascade = REMOVE, fetch = FetchType.LAZY)
     private UserProfilePicture userProfilePicture;
+
+    @OneToMany(mappedBy = "user", cascade = REMOVE, fetch = FetchType.LAZY)
+    private List<PostPictureTemporary> postPictureTemporaries;
 
     @Builder
     public User(String email, String password, Role role, String nickname) {

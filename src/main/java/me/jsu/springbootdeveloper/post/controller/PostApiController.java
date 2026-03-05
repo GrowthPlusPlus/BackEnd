@@ -15,10 +15,7 @@ import me.jsu.springbootdeveloper.post.dto.comment.CommentCreateRequest;
 import me.jsu.springbootdeveloper.post.dto.comment.CommentResponse;
 import me.jsu.springbootdeveloper.post.dto.comment.CommentUpdateRequest;
 import me.jsu.springbootdeveloper.post.dto.verify.ImageVerificationResponse;
-import me.jsu.springbootdeveloper.post.service.CommentService;
-import me.jsu.springbootdeveloper.post.service.ImageVerificationService;
-import me.jsu.springbootdeveloper.post.service.PostLikeService;
-import me.jsu.springbootdeveloper.post.service.PostService;
+import me.jsu.springbootdeveloper.post.service.*;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -39,7 +36,7 @@ public class PostApiController {
     private final PostService postService;  // 의존성을 주입하여 빈으로 등록된 PostService클래스의 함수를 사용한다.
     private final CommentService commentService;
     private final PostLikeService postLikeService;
-    private final ImageVerificationService imageVerificationService;
+    private final ImageTemporaryService temporaryService;
 
     /*
         서버에 사진을 올리기 전에, 해당 사진이 올바른 사진인지 검사하는 컨트롤러이다.
@@ -48,8 +45,8 @@ public class PostApiController {
     @Operation(
             summary = "인증 사진 검사",
             description = """
-        챌린지 인증을 위해 올린 사진을 검사한다. 사진 1장을 사용자가 올릴 때마다 수행한다.
-        현재 하는 검사는 이미지 크기 검사, 이미지 포멧 검사, 손상된 이미지 업로드 차단 이다. AI 검사는 추후에 추가해야 한다.
+        챌린지 인증을 위해 올린 사진을 검사하고, 임시로 업로드한다. 사진 1장을 사용자가 올릴 때마다 수행한다.
+        현재 하는 검사는 이미지 크기 검사, 이미지 포멧 검사, 손상된 이미지 업로드 차단이다.
         ex) POST /api/image/verify?challengeId=3
         """
     )
@@ -59,14 +56,15 @@ public class PostApiController {
     })
     @PostMapping(value = "/api/image/verify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ImageVerificationResponse> verify(
+            @AuthenticationPrincipal UserDetails userDetails,
             @Parameter(description = "이미지가 사용되는 챌린지 번호", required = true)
             @RequestParam Long challengeId,
             @Parameter(description = "검사할 이미지 파일", required = true)
             @RequestPart("image") MultipartFile image
     ) {
-        ImageVerificationResponse response = imageVerificationService.verify(challengeId, image);
+        ImageVerificationResponse response = temporaryService.uploadTempImage(userDetails.getUsername(), challengeId, image);
 
-        return ResponseEntity.ok(response);  // 사진 인증 결과를 반환한다.
+        return ResponseEntity.ok(response);  // 사진 인증 결과와 임시 파일 id를 반환한다.
     }
 
     /*
@@ -91,18 +89,11 @@ public class PostApiController {
             @ApiResponse(responseCode = "500", description = "외부 이미지 스토리지 업로드 실패")
     })
     @PostMapping("/api/articles")  // post형태는 REST API에서는 생성하는 경우에 사용한다.
-    /*
-        AddArticleRequest 맴버변수에 맞지 않는 request값이 들어오면 무시한다.
-        principal은 스프링 시큐리티 환경에서 인증된 사용자임을 나타내는 매개변수이다.
-     */
     public ResponseEntity<ArticleDetailResponse> addArticle(
-            // 안정성을 위하여 Principal 대신 사용한다.
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestPart("data") @Valid AddArticleRequest request,
-            @Parameter(description = "업로드할 인증 이미지 파일 목록")
-            @RequestPart(value = "image", required = false) List<MultipartFile> images
+            @RequestBody @Valid AddArticleRequest request
     ) {
-        ArticleDetailResponse response = postService.save(userDetails.getUsername(), request.getContent(), request.getChallengeId(), images);
+        ArticleDetailResponse response = postService.save(userDetails.getUsername(), request.getContent(), request.getChallengeId(), request.getTempImageIds());
 
         // post가 성공하면, 게시글 정보를 응답 객체에 담아 JSON으로 반환하여 클라이언트가 바로 게시글 화면으로 넘어갈 수 있도록 한다.
         return ResponseEntity
@@ -187,10 +178,9 @@ public class PostApiController {
             @AuthenticationPrincipal UserDetails userDetails,
             @Parameter(description = "게시글 ID", required = true, example = "1")
             @PathVariable Long postId,
-            @RequestPart("request") @Valid UpdateArticleRequest request,
-            @RequestPart(value = "image", required = false) List<MultipartFile> images
+            @RequestBody @Valid UpdateArticleRequest request
     ) {
-        ArticleDetailResponse response = postService.update(userDetails.getUsername(), postId, request.getContent(), request.getDeleteImageIds(), images);
+        ArticleDetailResponse response = postService.update(userDetails.getUsername(), postId, request.getContent(), request.getDeleteImageIds(), request.getTempImageIds());
 
         return ResponseEntity.ok(response);
     }
