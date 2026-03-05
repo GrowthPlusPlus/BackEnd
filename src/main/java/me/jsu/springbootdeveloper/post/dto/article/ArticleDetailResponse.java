@@ -26,6 +26,7 @@ public class ArticleDetailResponse {
     private LocalDateTime createdAt;
     private boolean isEdited;
 
+    boolean isAuthor;
     private long likeNumber;
     private long commentNumber;
     boolean liked;

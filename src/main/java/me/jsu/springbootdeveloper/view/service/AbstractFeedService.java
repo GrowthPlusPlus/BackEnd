@@ -21,7 +21,6 @@ import java.time.ZoneId;
 public abstract class AbstractFeedService {
     protected final UserService userService;
     protected final PostQueryService postQueryService;
-    protected final ChallengeService challengeService;
     protected final PostFeedMapper postFeedMapper;
 
     /*

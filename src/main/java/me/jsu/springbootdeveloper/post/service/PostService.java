@@ -90,6 +90,9 @@ public class PostService {
             }
         }
 
+        // 현재 조회한 유저가 게시글 작성자인지 확인한다.
+        boolean isAuthor = author != null && author.getId().equals(user.getId());
+
         // 챌린지가 null인 경우를 방어한다.
         if (challenge == null) {
             challengeTitle = "삭제된 챌린지";
@@ -122,6 +125,7 @@ public class PostService {
                 .updatedAt(article.getUpdateAt())
                 .createdAt(article.getCreatedAt())
                 .isEdited(Boolean.TRUE.equals(article.getIsEdited()))
+                .isAuthor(isAuthor)
                 .likeNumber(article.getLikeNumber())  // 좋아요 개수이다.
                 .commentNumber(article.getCommentNumber())  // 댓글 개수이다.
                 .liked(liked)
