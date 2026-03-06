@@ -70,8 +70,8 @@ spring:
         - 433865217738-gu6vtmh4d7dpephj0mb152vm4s3vcap9.apps.googleusercontent.com  # IOS
 
     kakao:
-      client-id: 111
-      redirect-uri: kakao<REST_API_KEY>://oauth
+      client-id: kakao1399325
+      redirect-uri: kakao9fdd13c0777c415d8fa4055b5b26a6c5://oauth
 
 # 페이징 기능으로 클라이언트가 요청하여 한 번에 최대 검색 가능한 게시글 수를 50개로 제한한다.
   data:
