@@ -20,6 +20,8 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 /*
     알람을 관리하기 위한 서비스이다.
  */
@@ -144,14 +146,12 @@ public class NotificationService {
         여기서는 로그성 처리를 위해 예외 메시지를 참고하고,
         클라이언트에게는 "빈 페이지"를 반환하여 서비스 전체 장애로 번지지 않도록 방어한다.
      */
+    
     @Recover
     public Page<MyNotificationResponse> recoverGetNotifications(
             RuntimeException exception, String email, int page) {
 
-        // 1. 실제 운영 환경에서는 여기서 로깅 시스템(Sentry, CloudWatch 등)에 예외를 기록하는 것이 좋다.
-        //    현재 예제에선 별도의 로깅 라이브러리를 사용하지 않으므로, 주석으로만 의도를 남긴다.
-        //    ex) log.error("알림 조회 실패 - email: {}, page: {}", email, page, exception);
-
+        
         // 2. 클라이언트에게는 "정상적인 빈 응답"을 반환하여 화면이 깨지지 않도록 한다.
         Pageable pageable = PageRequest.of(
                 page,
@@ -163,6 +163,36 @@ public class NotificationService {
                 java.util.List.of(),  // 빈 리스트
                 pageable,
                 0                     // 전체 개수 0
+        );
+    }
+
+
+    /*
+        프론트에서 사용자가 여러 알림을 한 번에 읽음 처리할 수 있도록 하는 함수이다.
+        알림 ID 리스트와 사용자 이메일을 받아서,
+        해당 사용자의 알림들만 한 번에 읽음 처리한다.
+
+        정책 B: 요청한 ID 중 일부가 존재하지 않거나 다른 사용자의 알림이어도
+        예외를 던지지 않고, 내가 가진 알림만 읽음 처리한다.
+
+        @param email 사용자 이메일 (인증 정보)
+        @param notificationIds 읽음 처리할 알림 ID 리스트
+     */
+    @Transactional
+    public void markNotificationsAsRead(String email, List<Long> notificationIds) {
+        // 1. 빈 리스트인 경우 조기 반환한다.
+        if (notificationIds == null || notificationIds.isEmpty()) {
+            return;
+        }
+
+        // 2. 사용자 정보를 조회한다.
+        User user = userService.findByEmail(email);
+
+        // 3. 여러 알림을 쿼리 한 번으로 읽음 처리한다.
+        //    - 내가 가진 알림만 읽음 처리되고, 나머지는 무시된다.
+        notificationRepository.markAsReadByIdsAndUserId(
+                user.getId(),
+                notificationIds
         );
     }
 }
