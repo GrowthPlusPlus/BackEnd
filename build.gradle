@@ -102,6 +102,10 @@ dependencies {
 
     //firebase FCM의존성
     implementation 'com.google.firebase:firebase-admin:9.2.0'
+
+    //재시도 로직을 위한 의존성
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
+    implementation 'org.springframework.retry:spring-retry'
 }
 
 test {
