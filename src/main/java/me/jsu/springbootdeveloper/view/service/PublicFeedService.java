@@ -5,7 +5,6 @@ package me.jsu.springbootdeveloper.view.service;
 import me.jsu.springbootdeveloper.post.domain.Article;
 import me.jsu.springbootdeveloper.post.service.PostQueryService;
 import me.jsu.springbootdeveloper.user.service.UserService;
-import me.jsu.springbootdeveloper.challenge.service.ChallengeService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -18,8 +17,8 @@ import java.time.LocalDate;
  */
 @Service
 public class PublicFeedService extends AbstractFeedService {
-    public PublicFeedService(UserService userService, PostQueryService postQueryService, ChallengeService challengeService, PostFeedMapper postFeedMapper) {
-        super(userService,postQueryService, challengeService, postFeedMapper);
+    public PublicFeedService(UserService userService, PostQueryService postQueryService, PostFeedMapper postFeedMapper) {
+        super(userService,postQueryService, postFeedMapper);
     }
 
     @Override

@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.enumType.ChallengeVisibility;
+import me.jsu.springbootdeveloper.post.domain.PostPictureTemporary;
 import me.jsu.springbootdeveloper.tag.domain.TagToChallenge;
 import me.jsu.springbootdeveloper.user.domain.User;
 import org.springframework.data.annotation.CreatedDate;
@@ -120,6 +121,9 @@ public class Challenge {
 
     @OneToMany(mappedBy = "challenge", cascade = CascadeType.REMOVE)
     private List<TagToChallenge> tagMappings;
+
+    @OneToMany(mappedBy = "challenge", cascade = CascadeType.REMOVE)
+    private List<PostPictureTemporary> postPictureTemporaries;
 
     @Builder
     public Challenge(String title, String content, User user, int maxParticipantNumber, ChallengeVisibility challengeVisibility,

@@ -64,4 +64,26 @@ public class SchemaGuardService {
             return false;
         }
     }
+
+    /*
+        임시 사진 파일의 created_at 칼럼 존재 여부를 확인한다.
+     */
+    public boolean isTempImageSchemaReady() {
+        String sql = """
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'post_picture_temporary'
+          AND column_name = 'created_at'
+    """;
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            return rs.next();
+
+        } catch (SQLException e) {
+            return false;
+        }
+    }
 }

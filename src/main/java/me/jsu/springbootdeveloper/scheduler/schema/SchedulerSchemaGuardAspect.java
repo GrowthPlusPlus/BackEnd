@@ -36,4 +36,15 @@ public class SchedulerSchemaGuardAspect {
 
         return pjp.proceed();
     }
+
+    // 임시 사진 파일의 스키마가 존재하는지 검증한다.
+    @Around("@annotation(RequireTempImageSchema)")
+    public Object guardTempImageSchema(ProceedingJoinPoint pjp) throws Throwable {
+
+        if (!schemaGuardService.isTempImageSchemaReady()) {
+            return null;  // 스키마 준비 안되면 실행하지 않음
+        }
+
+        return pjp.proceed();
+    }
 }

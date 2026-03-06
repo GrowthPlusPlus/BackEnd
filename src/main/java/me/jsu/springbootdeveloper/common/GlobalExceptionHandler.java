@@ -498,6 +498,21 @@ public class GlobalExceptionHandler {
     }
 
     /*
+        업로드 한 지 하루가 지난 경우에 인증글을 업데이트 하는 경우의 예외를 처리하는 핸들러이다.
+     */
+    @ExceptionHandler(PostModificationPeriodExpiredException.class)
+    public ResponseEntity<ErrorResponse> handleChallengeNotInProgress(
+            PostModificationPeriodExpiredException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(
+                        "POST_MODIFICATION_PERIOD_EXPIRED",
+                        e.getMessage()
+                ));
+    }
+
+    /*
         위에서 정의하지 않은 모든 기타 서버 오류들을 처리해준다.
         spring 기본 처리에 예외를 맡기는 것이 좋다. 따라서 비활성화 한다.
 
