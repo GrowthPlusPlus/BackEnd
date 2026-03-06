@@ -7,8 +7,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.oauth.dto.GoogleCodeExchangeRequest;
+import me.jsu.springbootdeveloper.oauth.dto.KakaoCodeExchangeRequest;
 import me.jsu.springbootdeveloper.oauth.dto.LoginResponse;
-import me.jsu.springbootdeveloper.oauth.service.OAuthLoginService;
+import me.jsu.springbootdeveloper.oauth.service.OAuthGoogleService;
+import me.jsu.springbootdeveloper.oauth.service.OAuthKakaoService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,10 +20,10 @@ import org.springframework.web.bind.annotation.*;
     그 결과를 HTTP 응답으로 반환하는 웹 계층 컴포넌트이다.
  */
 @RestController  // 반환 값을 json으로 자동 직렬화 한다.
-@RequestMapping("/api/oauth/google")  // 구글 oauth관련 api 공통 url이다.
 @RequiredArgsConstructor  // final 필드를 생성자로 주입한다.
-public class GoogleOAuthController {
-    private final OAuthLoginService oauthLoginService;
+public class OAuthController {
+    private final OAuthGoogleService oauthGoogleService;
+    private final OAuthKakaoService oauthKakaoService;
 
     /*
         이 함수는 OAuth + PKCE 로그인 흐름의 HTTP 엔드포인트이다.
@@ -54,14 +56,14 @@ public class GoogleOAuthController {
             @ApiResponse(responseCode = "401", description = "OAuth 로그인 실패"),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
-    @PostMapping("/token")
+    @PostMapping("/api/oauth/google/token")
     public ResponseEntity<LoginResponse> login(@RequestBody GoogleCodeExchangeRequest request) {
         /*
             실제 처리를 위해 service 계층을 호출한다.
             서비스 계층에서 로그인에 성공하면 response에 엑세스 토큰, 리프레스 토큰을 반환한다. 이 값이 json 응답이다.
             예외 처리는 모두 서비스 계층에 위임한다.
          */
-        LoginResponse response = oauthLoginService.loginWithGoogle(
+        LoginResponse response = oauthGoogleService.loginWithGoogle(
                 request.getCode(),
                 request.getCodeVerifier(),
                 request.getClientId(),
@@ -69,5 +71,35 @@ public class GoogleOAuthController {
         );
 
         return ResponseEntity.ok(response);  // 200 OK + json 응답을 반환한다.
+    }
+
+    @Operation(
+            summary = "Kakao OAuth 로그인 (PKCE)",
+            description = """
+        모바일 앱에서 전달된 Kakao OAuth authorization code와 PKCE code_verifier를 이용하여 로그인 처리한다.
+        위 값은 모바일 -> 카카오 서버로 거치면서서 만든 값이다.
+        해당 값을 우리 서버에서 받아 값을 만들어준 카카오 서버와 다시 비교하는 작업을 거친다.
+        따라서 클라이언트는 KakaoCodeExchangeRequest dto를 보내야 한다.
+        
+        로그인 성공 시 Access Token과 Refresh Token, 최초 로그인 사용자 인지에 대한 여부를 반환한다.
+        최초 사용자라면 회원 초기 설정으로 화면을 띄우는데 도움을 준다.
+        ex) POST /api/oauth/kakao/token
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "OAuth 로그인 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @ApiResponse(responseCode = "401", description = "OAuth 로그인 실패"),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+    })
+    @PostMapping("/api/oauth/kakao/token")
+    public ResponseEntity<LoginResponse> login(@RequestBody KakaoCodeExchangeRequest request) {
+        LoginResponse response = oauthKakaoService.loginWithKakao(
+                        request.getCode(),
+                        request.getCodeVerifier(),
+                        request.getFcmToken()
+        );
+
+        return ResponseEntity.ok(response);
     }
 }

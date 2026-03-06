@@ -15,6 +15,7 @@ import java.util.List;
 @Builder
 public class ArticleDetailResponse {
     private Long postId;  // 게시글 수정을 위해 필요하다.
+    private Long challengeId;
     private String challengeTitle;
     private int totalSuccessDays;
     private String title;
