@@ -122,10 +122,10 @@ public class FriendService {
 
         return requests.stream()
                 .map(request -> {
-                    // 신청한 유저(toUser)의 프로필 사진을 조회
-                    User fromUser = request.getFromUser();
+                    // 친구 신청한 유저(toUser)의 프로필 사진을 조회
+                    User toUser = request.getToUser();
 
-                    UserProfilePicture picture = fromUser.getUserProfilePicture();
+                    UserProfilePicture picture = toUser.getUserProfilePicture();
                     String profileUrl = (picture != null) ? picture.getImageUrl() : null;  // 사진이 없다면 링크를 null 처리한다.
 
                     return new FriendRequestResponse_Sent(request, profileUrl);
