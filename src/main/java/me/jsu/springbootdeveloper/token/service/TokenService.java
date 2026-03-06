@@ -18,10 +18,8 @@ import java.time.Duration;
 @RequiredArgsConstructor
 @Service
 public class TokenService {
-
     private final TokenProvider tokenProvider;
     private final RefreshTokenService refreshTokenService;
-    private final UserService userService;
 
     /*
         유효한 리프레시 토큰을 받아서 새로운 엑세스 토큰과 리프레시 토큰을 만들어 반환하는 함수이다.

@@ -68,6 +68,7 @@ public class PostService {
         String userNickname;
         String userImageUrl = null;  // 작성자의 프로필 사진이 없는 경우를 대비한다.
         int totalSuccessDays = 0;
+        Long challengeId = null;
         String challengeTitle = null;
 
         if (author == null) {  // 작성자가 null인 경우를 방어한다.
@@ -98,6 +99,7 @@ public class PostService {
             challengeTitle = "삭제된 챌린지";
         }
         else {
+            challengeId = challenge.getId();
             challengeTitle = challenge.getTitle();
         }
 
@@ -115,6 +117,7 @@ public class PostService {
 
         return ArticleDetailResponse.builder()
                 .postId(article.getId())
+                .challengeId(challengeId)
                 .challengeTitle(challengeTitle)
                 .totalSuccessDays(totalSuccessDays)  // 총 성공 일수이다.
                 .title(article.getTitle())
