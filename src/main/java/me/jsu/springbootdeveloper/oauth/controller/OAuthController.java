@@ -9,8 +9,10 @@ import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.oauth.dto.GoogleCodeExchangeRequest;
 import me.jsu.springbootdeveloper.oauth.dto.KakaoCodeExchangeRequest;
 import me.jsu.springbootdeveloper.oauth.dto.LoginResponse;
+import me.jsu.springbootdeveloper.oauth.dto.NaverCodeExchangeRequest;
 import me.jsu.springbootdeveloper.oauth.service.OAuthGoogleService;
 import me.jsu.springbootdeveloper.oauth.service.OAuthKakaoService;
+import me.jsu.springbootdeveloper.oauth.service.OAuthNaverService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 public class OAuthController {
     private final OAuthGoogleService oauthGoogleService;
     private final OAuthKakaoService oauthKakaoService;
+    private final OAuthNaverService oauthNaverService;
 
     /*
         이 함수는 OAuth + PKCE 로그인 흐름의 HTTP 엔드포인트이다.
@@ -57,7 +60,7 @@ public class OAuthController {
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
     @PostMapping("/api/oauth/google/token")
-    public ResponseEntity<LoginResponse> login(@RequestBody GoogleCodeExchangeRequest request) {
+    public ResponseEntity<LoginResponse> loginGoogle(@RequestBody GoogleCodeExchangeRequest request) {
         /*
             실제 처리를 위해 service 계층을 호출한다.
             서비스 계층에서 로그인에 성공하면 response에 엑세스 토큰, 리프레스 토큰을 반환한다. 이 값이 json 응답이다.
@@ -93,11 +96,42 @@ public class OAuthController {
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
     @PostMapping("/api/oauth/kakao/token")
-    public ResponseEntity<LoginResponse> login(@RequestBody KakaoCodeExchangeRequest request) {
+    public ResponseEntity<LoginResponse> loginKakao(@RequestBody KakaoCodeExchangeRequest request) {
         LoginResponse response = oauthKakaoService.loginWithKakao(
                         request.getCode(),
                         request.getCodeVerifier(),
                         request.getFcmToken()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "Naver OAuth 로그인 (PKCE)",
+            description = """
+        모바일 앱에서 전달된 Naver OAuth authorization code와 State를 이용하여 로그인 처리한다.
+        구글, 카카오와는 다르게 code_verifier를 네이버는 사용하지 않고 State값만 사용한다.
+        위 값은 모바일 -> 네이버 서버로 거치면서서 만든 값이다.
+        해당 값을 우리 서버에서 받아 값을 만들어준 네이버 서버와 다시 비교하는 작업을 거친다.
+        따라서 클라이언트는 NaverCodeExchangeRequest dto를 보내야 한다.
+        
+        로그인 성공 시 Access Token과 Refresh Token, 최초 로그인 사용자 인지에 대한 여부를 반환한다.
+        최초 사용자라면 회원 초기 설정으로 화면을 띄우는데 도움을 준다.
+        ex) POST /api/oauth/Naver/token
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "OAuth 로그인 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @ApiResponse(responseCode = "401", description = "OAuth 로그인 실패"),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+    })
+    @PostMapping("/api/oauth/naver/token")
+    public ResponseEntity<LoginResponse> loginNaver(@RequestBody NaverCodeExchangeRequest request) {
+        LoginResponse response = oauthNaverService.loginWithNaver(
+                request.getCode(),
+                request.getState(),
+                request.getFcmToken()
         );
 
         return ResponseEntity.ok(response);

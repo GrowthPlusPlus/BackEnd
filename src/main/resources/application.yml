@@ -72,6 +72,11 @@ spring:
       client-id: kakao1399325
       redirect-uri: kakao9fdd13c0777c415d8fa4055b5b26a6c5://oauth
 
+    naver:  # 네이버 개발자센터의 제공 정보 선택에서 이메일을 필수로 받아야 함
+      client-id: NAVER_CLIENT_ID
+      client-secret: ${NAVER_CLIENT_SECRET}
+      redirect-uri: com.haenaem.oauth://naver
+
 # 페이징 기능으로 클라이언트가 요청하여 한 번에 최대 검색 가능한 게시글 수를 50개로 제한한다.
   data:
     web:

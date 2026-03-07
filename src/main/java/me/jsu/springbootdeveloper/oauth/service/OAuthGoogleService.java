@@ -50,7 +50,7 @@ public class OAuthGoogleService {
         GoogleTokenResponse googleToken = tokenService.exchangeCode(code, codeVerifier, clientId, redirectUri);
         // 구글에서 온 토큰 응답이 유효하지 않으면 OAuth 로그인을 실패로 하고 해당 오류 처리를 위한 OAuthLoginException를 생성한다.
         if (googleToken == null || googleToken.idToken() == null) {
-            throw new OAuthLoginException("INVALID_AUTH_CODE");  // OAuth 로그인 실패라는 예외를 발생시킨다. 이유는 INVALID_AUTH_CODE 이다.
+            throw new OAuthLoginException("INVALID_GOOGLE_AUTH_CODE");  // OAuth 로그인 실패라는 예외를 발생시킨다. 이유는 INVALID_AUTH_CODE 이다.
         }
 
         /*

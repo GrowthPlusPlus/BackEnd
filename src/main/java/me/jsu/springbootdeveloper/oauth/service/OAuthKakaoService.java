@@ -9,6 +9,7 @@ import me.jsu.springbootdeveloper.oauth.dto.LoginResponse;
 import me.jsu.springbootdeveloper.oauth.exception.OAuthLoginException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 /*
     카카오톡으로 로그인하는 경우 사용되는 서비스이다.
@@ -29,7 +30,7 @@ public class OAuthKakaoService {
 
         // 카카오에서 온 토큰 응답이 유효하지 않은 경우이다.
         if (kakaoToken == null || kakaoToken.accessToken() == null) {
-            throw new OAuthLoginException("INVALID_AUTH_CODE");
+            throw new OAuthLoginException("INVALID_KAKAO_AUTH_CODE");
         }
 
         // Google과 다른 부분으로, 구글은 id_token 방식으로 정보를 가져왔지만 카카오톡은 user/me API를 호출한다.
@@ -43,11 +44,16 @@ public class OAuthKakaoService {
         카카오에서 받은 토큰을 바탕으로 유저의 정보를 검색하는 함수이다.
      */
     public KakaoUserResponse getUserInfo(String accessToken) {
-        return webClient.get()
-                .uri("https://kapi.kakao.com/v2/user/me")
-                .header("Authorization", "Bearer " + accessToken)
-                .retrieve()
-                .bodyToMono(KakaoUserResponse.class)
-                .block();
+        try {
+            return webClient.get()
+                    .uri("https://kapi.kakao.com/v2/user/me")
+                    .header("Authorization", "Bearer " + accessToken)
+                    .retrieve()
+                    .bodyToMono(KakaoUserResponse.class)
+                    .block();
+        }
+        catch (WebClientResponseException e) {
+            throw new OAuthLoginException("KAKAO_USER_INFO_FAILED");
+        }
     }
 }
