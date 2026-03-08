@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.List;
 
 /*
     게시글의 댓글을 관리하는 서비스 클래스이다.
@@ -177,7 +178,7 @@ public class CommentService {
         회원 탈퇴 시에 사용한다.
      */
     @Transactional
-    public void detachCommentToUser(User user) {
-        commentRepository.detachUser(user);
+    public void detachCommentToUser(List<Long> userIds) {
+        commentRepository.detachUser(userIds);
     }
 }

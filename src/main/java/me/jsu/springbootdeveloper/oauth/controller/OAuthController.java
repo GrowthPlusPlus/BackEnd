@@ -107,7 +107,7 @@ public class OAuthController {
     }
 
     @Operation(
-            summary = "Naver OAuth 로그인 (PKCE)",
+            summary = "Naver OAuth 로그인",
             description = """
         모바일 앱에서 전달된 Naver OAuth authorization code와 State를 이용하여 로그인 처리한다.
         구글, 카카오와는 다르게 code_verifier를 네이버는 사용하지 않고 State값만 사용한다.

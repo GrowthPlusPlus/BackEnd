@@ -47,4 +47,15 @@ public class SchedulerSchemaGuardAspect {
 
         return pjp.proceed();
     }
+
+    // 회원 탈퇴의 삭제 시각 스키마 존재 여부를 검증한다.
+    @Around("@annotation(RequireUserDeleteSchema)")
+    public Object guardUserDeleteSchema(ProceedingJoinPoint pjp) throws Throwable {
+
+        if (!schemaGuardService.isUserDeleteSchemaReady()) {
+            return null;  // 스키마 준비 안되면 실행 안 함
+        }
+
+        return pjp.proceed();
+    }
 }

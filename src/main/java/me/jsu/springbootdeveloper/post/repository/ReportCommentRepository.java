@@ -47,7 +47,7 @@ public interface ReportCommentRepository extends JpaRepository<ReportComment, Lo
     @Query("""
         update ReportComment rc
         set rc.user = null
-        where rc.user.id = :userId
+        where rc.user.id in :userIds
     """)
-    void detachUser(@Param("userId") Long userId);
+    void detachUser(@Param("userIds") List<Long> userIds);
 }

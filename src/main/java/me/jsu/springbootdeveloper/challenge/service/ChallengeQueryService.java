@@ -61,6 +61,14 @@ public class ChallengeQueryService {
     }
 
     /*
+        유저 id 리스트로 검색한다. 위 함수와의 차이는 참여 상태를 고려하지 않는다.
+     */
+    public List<ChallengeParticipant> findAllByUserIds(List<Long> userIds) {
+        return challengeParticipantRepository.findAllByUserIds(userIds);
+    }
+
+
+    /*
         오늘 해당 챌린지를 수행한 유저를 로그의 존재 여부로 조회한다.
         오늘 인증한 유저를 찾을 때 사용한다.
      */

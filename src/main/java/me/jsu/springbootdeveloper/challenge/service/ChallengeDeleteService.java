@@ -111,17 +111,18 @@ public class ChallengeDeleteService {
         모든 챌린지에서 유저가 나올때 사용하는 함수이다. 회원탈퇴 시에 사용된다.
         해당 함수는 방장 위임이 끝난 뒤에 사용해야 한다.
      */
-    public void deleteParticipant(Long userId) {
+    public void deleteParticipant(List<Long> userIds) {
         // 유저 아이디로 해당 유저가 참가한 챌린지들을 검색한다.
-        List<ChallengeParticipant> participants = challengeQueryService.findWithChallengeByUserId(userId);
+        List<ChallengeParticipant> participants = challengeQueryService.findAllByUserIds(userIds);
         if (participants.isEmpty()) {  // 참여한 챌린지가 없다면 리턴한다.
             return;
         }
 
         for (ChallengeParticipant challengeParticipant : participants) {
             challengeParticipant.getChallenge().updateLeave();  // 챌린지 참여자 수를 감소시킨다.
-            challengeParticipantRepository.delete(challengeParticipant);  // 챌린지 참여에서 삭제한다.
         }
+
+        challengeParticipantRepository.deleteAllInBatch(participants);  // 챌린지 참여에서 삭제한다.
     }
 
     /*
@@ -136,7 +137,7 @@ public class ChallengeDeleteService {
         챌린지 데일리 로그의 유저 fk값을 null로 바꿔주는 함수이다.
         회원 탈퇴 시에 사용한다.
      */
-    public void detachLogToUser(User user) {
-        challengeDailyLogRepository.detachUser(user);
+    public void detachLogToUser(List<Long> userIds) {
+        challengeDailyLogRepository.detachUser(userIds);
     }
 }

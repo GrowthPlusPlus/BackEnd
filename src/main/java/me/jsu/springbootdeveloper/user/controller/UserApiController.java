@@ -247,7 +247,7 @@ public class UserApiController {
             summary = "회원 탈퇴",
             description = """
         로그인한 사용자의 계정을 탈퇴 처리한다.
-        리프레시 토큰, 유저 정보, 유저가 없으면 의미가 없는 정보 등을 함께 삭제한다.
+        리프레시 토큰을 삭제하고 방장인 챌린지를 위임한다. 실제로 삭제하는 것에는 유예기간을 둔다.
         추후 서버 통계에 사용될 수 있는 유저 통계나 챌린지 로그 등의 기록은 삭제하지 않는다.
         이미 구글 OAuth 인증을 받은 유저이므로, 추후에 다시 회원가입 해도 로그인 하는 과정과 같다.
         ex) DELETE /api/me
@@ -258,10 +258,9 @@ public class UserApiController {
             @ApiResponse(responseCode = "401", description = "인증 실패")
     })
     @DeleteMapping("/api/me")
-    public ResponseEntity<Void> withdraw(
-            @AuthenticationPrincipal UserDetails userDetails
-    ) {
-        userWithdrawalService.withdraw(userDetails.getUsername());
+    public ResponseEntity<Void> unregister(@AuthenticationPrincipal UserDetails userDetails) {
+        userWithdrawalService.unregister(userDetails.getUsername());
+
         return ResponseEntity.noContent().build();
     }
 

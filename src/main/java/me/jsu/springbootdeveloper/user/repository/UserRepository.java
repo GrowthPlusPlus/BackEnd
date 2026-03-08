@@ -3,10 +3,12 @@
 package me.jsu.springbootdeveloper.user.repository;
 
 import me.jsu.springbootdeveloper.user.domain.User;
+import me.jsu.springbootdeveloper.user.enumType.UserStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,5 +45,17 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<UserFriendshipSearchProjection> searchAllUsersWithRelationship(
             @Param("nickname") String nickname,
             @Param("myId") Long myId);
+
+    // 회원탈퇴한 유저 중, 30일이 지난 유저를 검색하는 쿼리문이다.
+    @Query("""
+        select u
+        from User u
+        where u.userStatus = :status
+          and u.deletedAt < :threshold
+    """)
+    List<User> findUsersToHardDelete(
+            @Param("status") UserStatus status,
+            @Param("threshold") LocalDateTime threshold
+    );
 }
 

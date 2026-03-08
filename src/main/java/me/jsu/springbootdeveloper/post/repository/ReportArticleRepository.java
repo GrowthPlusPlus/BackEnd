@@ -53,7 +53,7 @@ public interface ReportArticleRepository extends JpaRepository<ReportArticle, Lo
     @Query("""
         update ReportArticle ra
         set ra.user = null
-        where ra.user.id = :userId
+        where ra.user.id in :userIds
     """)
-    void detachUser(@Param("userId") Long userId);
+    void detachUser(@Param("userIds") List<Long> userIds);
 }

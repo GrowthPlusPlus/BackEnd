@@ -163,15 +163,15 @@ public class ReportService {
         신고 인증글의 유저 fk값을 null로 바꿔주는 함수이다.
         회원 탈퇴 시에 사용한다.
      */
-    public void detachReportArticleToUser(Long userId) {
-        reportArticleRepository.detachUser(userId);
+    public void detachReportArticleToUser(List<Long> userIds) {
+        reportArticleRepository.detachUser(userIds);
     }
 
     /*
         신고 댓글의 유저 fk값을 null로 바꿔주는 함수이다.
         회원 탈퇴 시에 사용한다.
      */
-    public void detachReportCommentToUser(Long userId) {
-        reportCommentRepository.detachUser(userId);
+    public void detachReportCommentToUser(List<Long> userIds) {
+        reportCommentRepository.detachUser(userIds);
     }
 }

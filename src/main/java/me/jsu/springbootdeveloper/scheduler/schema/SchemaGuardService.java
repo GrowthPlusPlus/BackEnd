@@ -86,4 +86,27 @@ public class SchemaGuardService {
             return false;
         }
     }
+
+    /*
+        유저의 deleted_at 칼럼 존재 여부를 확인한다.
+     */
+    public boolean isUserDeleteSchemaReady() {
+        String sql = """
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'users'
+          AND column_name = 'deleted_at'
+    """;
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            return rs.next();
+
+        } catch (SQLException e) {
+            return false;
+
+        }
+    }
 }
