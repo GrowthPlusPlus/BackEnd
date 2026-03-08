@@ -28,9 +28,9 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     @Query("""
         update Comment c
         set c.user = null
-        where c.user = :user
+        where c.user.id in :userIds
     """)
-    void detachUser(@Param("user") User user);
+    void detachUser(@Param("userIds") List<Long> userIds);
 
     // 댓글과 댓글을 작성한 유저, 유저의 프로필 사진을 함께 조회하는 쿼리문이다.
     @Query(

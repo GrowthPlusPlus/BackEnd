@@ -94,6 +94,12 @@ public class UserService {
                         )
                 );
 
+        // 유저의 상태가 DELETE였다면 ACTIVE로 바꾼다.
+        if (user.getUserStatus() == UserStatus.DELETE) {
+            user.userToActive();
+            user.clearDeletedAt();
+        }
+
         // 유저의 통계 DB를 생성한다.
         UserStatistics userStats = userStatisticsRepository.findByUser_Id(user.getId())
                 .orElseGet(() -> userStatisticsRepository.save(UserStatistics.builder()
@@ -193,14 +199,6 @@ public class UserService {
     }
 
     /*
-        유저 정보를 삭제한다.
-     */
-    @Transactional
-    public void deleteUser(User user) {
-        userRepository.delete(user);
-    }
-
-    /*
         유저 id로 프로필 사진 정보를 검색한다.
         사진을 검색하지 못해도 정상 상태이다.
      */
@@ -215,15 +213,6 @@ public class UserService {
      */
     public void deleteProfilePicture(UserProfilePicture userProfilePicture) {
         userProfilePictureRepository.delete(userProfilePicture);
-    }
-
-    /*
-        유저 통계의 유저 fk값을 null로 바꿔주는 함수이다.
-        회원 탈퇴 시에 사용한다.
-     */
-    @Transactional
-    public void detachStatistics(User user) {
-        userStatisticsRepository.detachUser(user);
     }
 
     /*

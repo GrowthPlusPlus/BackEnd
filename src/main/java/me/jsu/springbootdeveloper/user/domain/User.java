@@ -9,8 +9,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeInvite;
 import me.jsu.springbootdeveloper.post.domain.PostPictureTemporary;
-import me.jsu.springbootdeveloper.post.domain.ReportArticle;
-import me.jsu.springbootdeveloper.post.domain.ReportComment;
 import me.jsu.springbootdeveloper.token.domain.RefreshToken;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeInviteLink;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
@@ -42,6 +40,11 @@ import static jakarta.persistence.CascadeType.REMOVE;
                         name = "uk_user_email",
                         columnNames = {"email"}
                 )
+        },
+        indexes = {
+                @Index(
+                        name = "idx_delete_user",  // 회원탈퇴한 유저를 검색하기 위한 인덱싱이다.
+                        columnList = "status, deleted_at")
         }
 )
 @EntityListeners(AuditingEntityListener.class)  // 생성 및 수정시간을 감시하고 기록할 수 있게 해준다.
@@ -88,6 +91,9 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;  // 유저가 회원탈퇴한 시각이다.
+
     /*
         다음 코드는 CASCADE 설정으로 User 엔티티를 fk값으로 가지고 있는 DB들을 자동으로 삭제해주는 설정이다.
         회원탈퇴 등의로 유저 정보가 삭제될 때, 밑의 정보들도 함께 전부 삭제된다.
@@ -133,6 +139,9 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
     @OneToMany(mappedBy = "user", cascade = REMOVE, fetch = FetchType.LAZY)
     private List<PostPictureTemporary> postPictureTemporaries;
 
+    @OneToOne(mappedBy = "user", cascade = REMOVE)
+    private RefreshToken refreshToken;
+
     @Builder
     public User(String email, String password, Role role, String nickname) {
         this.email = email;
@@ -163,6 +172,21 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
      */
     public void userToSuspend() {
         this.userStatus = UserStatus.SUSPENDED;
+    }
+
+    /*
+        유저를 탈퇴 상태로 변경하고 시각을 기록한다..
+     */
+    public void userToDelete(LocalDateTime deletedAt) {
+        this.userStatus = UserStatus.DELETE;
+        this.deletedAt = deletedAt;
+    }
+
+    /*
+        유저가 로그인하여 회원탈퇴를 취소한 경우, 삭제 날짜를 초기화 하는 함수이다.
+     */
+    public void clearDeletedAt() {
+        this.deletedAt = null;
     }
 
     /*

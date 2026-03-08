@@ -122,9 +122,9 @@ public interface PostRepository extends JpaRepository<Article, Long> {
     @Query("""
         update Article p
         set p.user = null
-        where p.user = :user
+        where p.user.id in :userIds
     """)
-    void detachUser(@Param("user") User user);
+    void detachUser(@Param("userIds") List<Long> userIds);
 
     // 유저 id, 챌린지 id로 날짜 2개 사이의 인증글의 id, 날짜, 사진을 검색해준다. 캘린더를 조회할때 사용한다.
     @Query("""

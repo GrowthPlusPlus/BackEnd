@@ -41,8 +41,8 @@ public class PostLikeService {
         회원 탈퇴 시에 사용한다.
      */
     @Transactional
-    public void detachLikeToUser(User user) {
-        postLikeRepository.detachUser(user);
+    public void detachLikeToUser(List<Long> userIds) {
+        postLikeRepository.detachUser(userIds);
     }
 
     /*

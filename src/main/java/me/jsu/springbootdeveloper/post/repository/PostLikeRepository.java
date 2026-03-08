@@ -40,9 +40,9 @@ public interface PostLikeRepository extends JpaRepository<PostLike, Long> {
     @Query("""
         update PostLike pl
         set pl.user = null
-        where pl.user = :user
+        where pl.user.id in :userIds
     """)
-    void detachUser(@Param("user") User user);
+    void detachUser(@Param("userIds") List<Long> userIds);
 
     // 인증글 id와 유저 id로 좋아요를 검색한다.
     Optional<PostLike> findByArticle_IdAndUser_Id(Long articleId, Long userId);

@@ -59,9 +59,9 @@ public interface ChallengeDailyLogRepository extends JpaRepository<ChallengeDail
     @Query("""
         update ChallengeDailyLog log
         set log.user = null
-        where log.user = :user
+        where log.user.id in :userIds
     """)
-    void detachUser(@Param("user") User user);
+    void detachUser(@Param("userIds") List<Long> userIds);
 
     /*
         챌린지 데일리 로그 테이블에서 특정 article인 행의 article_id 칼럼을 null로 바꾸는 쿼리문이다.

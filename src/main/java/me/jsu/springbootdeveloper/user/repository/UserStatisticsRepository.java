@@ -2,7 +2,6 @@
 
 package me.jsu.springbootdeveloper.user.repository;
 
-import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.user.domain.UserStatistics;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -39,9 +38,9 @@ public interface UserStatisticsRepository extends JpaRepository<UserStatistics, 
     @Query("""
         update UserStatistics us
         set us.user = null
-        where us.user = :user
+        where us.user.id in :userIds
     """)
-    void detachUser(@Param("user") User user);
+    void detachUser(@Param("userIds") List<Long> userIds);
 
     // 유저 id로 통계를 리스트로 통째로 조회하는 쿼리문이다. 탈퇴한 유저는 검색에서 제외한다.
     @Query("""

@@ -24,9 +24,9 @@ public class TempImageScheduler {
     private final ImageTemporaryService imageTemporaryService;
 
     /*
-        1시간 주기로 사용되지 않는 임시 파일들을 삭제한다.
+        6시간 주기로 사용되지 않는 임시 파일들을 삭제한다.
      */
-    @Scheduled(fixedRate = 3600000)  // 1시간마다 실행된다.
+    @Scheduled(fixedRate = 6 * 60 * 60 * 1000)  // 6시간마다 실행된다.
     @RequireTempImageSchema
     @Transactional
     public void cleanupTempImages() {

@@ -423,7 +423,7 @@ public class PostService {
         회원 탈퇴 시에 사용한다.
      */
     @Transactional
-    public void detachPostToUser(User user) {
-        postRepository.detachUser(user);
+    public void detachPostToUser(List<Long> userIds) {
+        postRepository.detachUser(userIds);
     }
 }
