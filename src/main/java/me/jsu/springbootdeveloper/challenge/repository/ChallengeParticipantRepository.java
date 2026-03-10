@@ -2,10 +2,12 @@
 
 package me.jsu.springbootdeveloper.challenge.repository;
 
+import jakarta.persistence.LockModeType;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
 import me.jsu.springbootdeveloper.challenge.dto.ranking.RankingResponse;
 import me.jsu.springbootdeveloper.challenge.enumType.Status;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.domain.Page;
@@ -237,4 +239,7 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
             @Param("userIds") List<Long> userIds
     );
 
+    // 챌린지 참여자 중 본인을 제외한 스코어가 가장 높은 유저를 한 명 찾는 쿼리문이다. 방장 위임 중 해당 유저가 챌린지를 나가는 것을 Lock을 통해 방지한다.
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<ChallengeParticipant> findTopByChallenge_IdAndUser_IdNotOrderByRankingScoreDesc(Long challengeId, Long userId);
 }

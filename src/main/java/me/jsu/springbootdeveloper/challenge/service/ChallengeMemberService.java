@@ -30,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ChallengeMemberService {
     private final ChallengeQueryService challengeQueryService;
+    private final ChallengeDeleteService challengeDeleteService;
     private final ChallengeRepository challengeRepository;
     private final ChallengeInviteLinkRepository challengeInviteLinkRepository;
     private final ChallengeParticipantRepository challengeParticipantRepository;
@@ -71,7 +72,8 @@ public class ChallengeMemberService {
     }
 
     /*
-        챌린지의 방장을 위임하기 위한 함수이다.
+        챌린지의 방장을 타켓 유저 아이디로 위임하고 챌린지에서 나가기 위한 함수이다.
+        현재는 사용하지 않고 임시로 남겨둔다.
      */
     @Transactional
     public void delegateOwner(String email, Long challengeId, Long targetUserId) {
@@ -88,6 +90,35 @@ public class ChallengeMemberService {
 
         // 방장을 변경한다.
         challenge.updateUser(targetParticipant.getUser());
+
+        // 챌린지에서 나간다.
+        leaveChallengeInternal(user.getId(), challengeId);
+    }
+
+    /*
+        챌린지의 방장을 챌린지 내에서 가장 스코어가 높은 유저에게 위임하고 챌린지에서 나가기 위한 함수이다.
+     */
+    @Transactional
+    public void delegateOwnerByScore(String email, Long challengeId) {
+        User user = userService.findByEmail(email);
+
+        // 챌린지를 조회한다.
+        Challenge challenge = challengeQueryService.findById(challengeId);
+
+        // 방장 권한을 검증한다.
+        validateOwner(isOwner(user.getId(), challengeId));
+
+        // 방장을 제외하고 가장 랭킹 스코어가 높은 유저를 찾는다.
+        ChallengeParticipant topUser = challengeParticipantRepository.findTopByChallenge_IdAndUser_IdNotOrderByRankingScoreDesc(challengeId, user.getId())
+                        .orElse(null);
+
+        if (topUser == null) {  // 챌린지에 존재하는 유저가 방장 혼자라면 챌린지를 삭제한다.
+            challengeDeleteService.deleteChallengeInternal(challengeId);
+            return;
+        }
+
+        // 방장을 변경한다.
+        challenge.updateUser(topUser.getUser());
 
         // 챌린지에서 나간다.
         leaveChallengeInternal(user.getId(), challengeId);
