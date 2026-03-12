@@ -364,6 +364,34 @@ public class ChallengeApiController {
     }
 
     /*
+        방장이 챌린지에서 나갈때 챌린지 방장을 자동으로 스코어가 가장 높은 유저에게 위임하는 컨트롤러이다.
+        ex) /api/challenges/1/owner/delegate
+     */
+    @Operation(
+            summary = "챌린지 방장 스코어 점수에 따라 자동 위임",
+            description = """
+        방장이 챌린지에서 나갈때 챌린지 방장을 자동으로 스코어가 가장 높은 유저에게 위임하는 컨트롤러이다.
+        ex) POST /api/challenges/1/owner/delegateAuto
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "방장 위임 성공"),
+            @ApiResponse(responseCode = "401", description = "토큰 인증 실패"),
+            @ApiResponse(responseCode = "404", description = "유저 또는 챌린지를 찾을 수 없음"),
+            @ApiResponse(responseCode = "403", description = "방장 권한 없음")
+    })
+    @PostMapping("/api/challenges/{challengeId}/owner/delegateAuto")
+    public ResponseEntity<Void> delegateOwnerAuto(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Parameter(description = "챌린지 ID", required = true, example = "1")
+            @PathVariable Long challengeId
+    ) {
+        challengeMemberService.delegateOwnerByScore(userDetails.getUsername(), challengeId);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    /*
         챌린지에서 유저를 추방할 때 사용하는 컨트롤러이다.
         ex) /api/challenges/1/members/kick
      */

@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.domain.Challenge;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeDailyLog;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
+import me.jsu.springbootdeveloper.challenge.exception.NotAllowedChallengeActionException;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeDailyLogRepository;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeParticipantRepository;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeRepository;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -27,7 +29,6 @@ import java.util.stream.Collectors;
 @Service
 public class ChallengeDeleteService {
     private final ChallengeQueryService challengeQueryService;
-    private final ChallengeMemberService challengeMemberService;
     private final ChallengeRepository challengeRepository;
     private final ChallengeDailyLogRepository challengeDailyLogRepository;
     private final ChallengeParticipantRepository challengeParticipantRepository;
@@ -64,8 +65,12 @@ public class ChallengeDeleteService {
 
             if (participants.isEmpty()) {  // 위임할 참가자가 없다면 챌린지를 삭제 목록에 추가한다.
                 toDelete.add(challenge.getId());
-            } else {  // 가장 먼저 참여한 사람에게 위임한다.
-                User newMaster = participants.get(0).getUser();
+            } else {  // 스코어가 가장 높은 사람에게 위임한다.
+                User newMaster = participants.stream()
+                        .max(Comparator.comparing(ChallengeParticipant::getRankingScore))
+                        .map(ChallengeParticipant::getUser)
+                        .orElseThrow();  // stream을 위한 방어코드이다.
+
                 challenge.updateUser(newMaster);
             }
         }
@@ -100,8 +105,9 @@ public class ChallengeDeleteService {
         User user = userService.findByEmail(email);
 
         // 방장 권한을 검증한다.
-        boolean owner = challengeMemberService.isOwner(user.getId(), challengeId);
-        challengeMemberService.validateOwner(owner);
+        if(!challengeRepository.existsByIdAndUser_Id(challengeId, user.getId())) {
+            throw new NotAllowedChallengeActionException("NOT_CHALLENGE_OWNER");
+        }
 
         // 챌린지를 삭제한다.
         deleteChallengeInternal(challengeId);

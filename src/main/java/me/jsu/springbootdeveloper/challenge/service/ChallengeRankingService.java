@@ -2,6 +2,8 @@
 
 package me.jsu.springbootdeveloper.challenge.service;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
 import me.jsu.springbootdeveloper.challenge.dto.ranking.RankingResponse;
@@ -9,7 +11,6 @@ import me.jsu.springbootdeveloper.challenge.dto.ranking.RankingResultResponse;
 import me.jsu.springbootdeveloper.challenge.exception.ChallengeNotFoundException;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeParticipantRepository;
 import me.jsu.springbootdeveloper.user.domain.User;
-import me.jsu.springbootdeveloper.user.domain.UserProfilePicture;
 import me.jsu.springbootdeveloper.user.domain.UserStatistics;
 import me.jsu.springbootdeveloper.user.repository.UserStatisticsRepository;
 import me.jsu.springbootdeveloper.user.service.UserService;
@@ -28,6 +29,9 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ChallengeRankingService {
+    @PersistenceContext
+    private EntityManager entityManager;
+
     private static final int BATCH_SIZE = 200;  // 배치 사이즈 단위로 처리한다.
 
     private final UserService userService;
@@ -115,6 +119,10 @@ public class ChallengeRankingService {
                 cp.updateRankingScore(score);  // DB에 반영한다.
                 lastId = cp.getId();  // 커서를 이동한다.
             }
+
+            entityManager.flush();  // 속도를 향상시키기 위해 DB에 미리 반영한다.
+            entityManager.clear();
+
         } while (!batch.isEmpty());
     }
 }

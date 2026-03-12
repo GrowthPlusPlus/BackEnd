@@ -192,6 +192,7 @@ public class ChallengeMaintenanceService {
                 weeklyStatus.markFail();  // 주간 상태를 실패로 바꾼다.
             }
             cp.markFail(today);  // 챌린지 상태를 실패로 바꾼다.
+            cp.getChallenge().updateLeave();  // 실패한 참여자는 챌린지 참여 DB값은 가지고 있지만 챌린지에서 나간 것으로 간주한다.
             userStatisticsService.updateFailedChallengeCount(cp.getUser().getId());  // 실패한 챌린지 개수를 늘린다.
 
             //챌린지 실패 알림을 보낸다
