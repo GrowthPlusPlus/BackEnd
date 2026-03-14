@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /*
@@ -32,4 +33,27 @@ public interface PostPictureRepository extends JpaRepository<PostPicture, Long> 
         where pi.article.id in :postIds
     """)
     List<Object[]> findImagesByPostIds(@Param("postIds") List<Long> postIds);
+
+    // 일정 기간 내의 인증글들의 대표 사진 1장을 조회하는 쿼리문이다.
+    @Query("""
+        select pp
+        from PostPicture pp
+        join fetch pp.article a
+        where pp.id in (
+            select min(pp2.id)
+            from PostPicture pp2
+            join pp2.article a2
+            where a2.challenge.id = :challengeId
+              and a2.user.id = :userId
+              and a2.postDate >= :start
+              and a2.postDate < :end
+            group by a2.postDate
+        )
+    """)
+    List<PostPicture> findMonthlyProofPictures(
+            @Param("userId") Long userId,
+            @Param("challengeId") Long challengeId,
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end
+    );
 }

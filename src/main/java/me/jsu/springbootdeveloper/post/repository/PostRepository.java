@@ -16,6 +16,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -253,4 +254,18 @@ public interface PostRepository extends JpaRepository<Article, Long> {
         where a.id = :articleId
     """)
     Optional<Challenge> findChallengeByArticleId(@Param("articleId") Long articleId);
+
+    // 기존에 캘린더 공유 이미지를 생성한 이후에 새로운 추가 인증이나 수정이 존재하는지 검사하는 쿼리문이다.
+    @Query("""
+        select case when count(a) > 0 then true else false end
+        from Article a
+        where a.challenge.id = :challengeId
+          and a.user.id = :userId
+          and a.updateAt > :time
+    """)
+    boolean existsNewProof(
+            @Param("userId") Long userId,
+            @Param("challengeId") Long challengeId,
+            @Param("time") LocalDateTime time
+    );
 }

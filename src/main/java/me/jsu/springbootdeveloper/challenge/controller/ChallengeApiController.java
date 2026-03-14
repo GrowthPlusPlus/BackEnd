@@ -501,6 +501,4 @@ public class ChallengeApiController {
 
         return ResponseEntity.noContent().build();
     }
-
-    
 }

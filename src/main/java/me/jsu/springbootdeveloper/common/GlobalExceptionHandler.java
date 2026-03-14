@@ -513,6 +513,36 @@ public class GlobalExceptionHandler {
     }
 
     /*
+        올바르지 않은 연, 월, 날짜가 들어온 경우의 예외를 처리하는 핸들러이다.
+     */
+    @ExceptionHandler(InvalidDateException.class)
+    public ResponseEntity<ErrorResponse> handleChallengeNotInProgress(
+            InvalidDateException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(
+                        "DATE_INVALID",
+                        e.getMessage()
+                ));
+    }
+
+    /*
+        공유 이미지를 조회하지 못한 경우의 예외를 처리하는 핸들러이다.
+     */
+    @ExceptionHandler(ShareImageNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleChallengeNotInProgress(
+            ShareImageNotFoundException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(
+                        "NOT_FOUND_IMAGE",
+                        e.getMessage()
+                ));
+    }
+
+    /*
         위에서 정의하지 않은 모든 기타 서버 오류들을 처리해준다.
         spring 기본 처리에 예외를 맡기는 것이 좋다. 따라서 비활성화 한다.
 
