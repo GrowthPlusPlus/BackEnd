@@ -4,6 +4,7 @@ package me.jsu.springbootdeveloper.scheduler;
 
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeShareImageService;
+import me.jsu.springbootdeveloper.scheduler.schema.RequireChallengeShareImageSchema;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -18,12 +19,14 @@ public class ChallengeShareImageCleanupScheduler {
     // 주기적으로 오래된 공유 이미지를 삭제한다.
     //@Scheduled(cron = "*/20 * * * * *", zone = "Asia/Seoul")
     @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
+    @RequireChallengeShareImageSchema
     public void cleanupExpiredShareImages() {
         shareImageService.deleteExpiredImages();
     }
 
     // processing 상태로 오랫동안 멈춘 작업을 찾아서 재시도한다.
     @Scheduled(cron = "0 */10 * * * *", zone = "Asia/Seoul")
+    @RequireChallengeShareImageSchema
     public void markStuckProcessingAsFailed() {
         shareImageService.retryStuckProcessingImages();
     }
