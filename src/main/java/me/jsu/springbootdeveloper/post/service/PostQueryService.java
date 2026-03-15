@@ -4,6 +4,7 @@ package me.jsu.springbootdeveloper.post.service;
 
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.post.domain.Article;
+import me.jsu.springbootdeveloper.post.domain.PostPicture;
 import me.jsu.springbootdeveloper.post.exception.ArticleNotFoundException;
 import me.jsu.springbootdeveloper.post.repository.PostPictureRepository;
 import me.jsu.springbootdeveloper.post.repository.PostRepository;
@@ -14,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /*
@@ -78,5 +80,19 @@ public class PostQueryService {
      */
     public Page<ChallengeCalendarPostResponse> findCalendarPosts(Long userId, Long challengeId, LocalDate start, LocalDate end, Pageable pageable) {
         return postRepository.findCalendarPosts(userId, challengeId, start, end, pageable);
+    }
+
+    /*
+        캘린더 공유 이미지를 생성한 이후에 추가적인 인증이나 수정사항이 존재하는지 검사하는 함수이다.
+     */
+    public boolean existsNewProof(Long userId, Long challengeId, LocalDateTime time) {
+        return postRepository.existsNewProof(userId, challengeId, time);
+    }
+
+    /*
+        캘린더 공유 이미지 생성을 위해, 일정 기간동안의 인증글의 대표 사진 1장을 가져오는 함수이다.
+     */
+    public List<PostPicture> findMonthlyProofPictures(Long userId, Long challengeId, LocalDate start, LocalDate end) {
+        return postPictureRepository.findMonthlyProofPictures(userId, challengeId, start, end);
     }
 }

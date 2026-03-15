@@ -58,4 +58,15 @@ public class SchedulerSchemaGuardAspect {
 
         return pjp.proceed();
     }
+
+    // 캘린더 공유의 테이블 존재 여부를 검증한다.
+    @Around("@annotation(RequireChallengeShareImageSchema)")
+    public Object guardChallengeShareImage(ProceedingJoinPoint pjp) throws Throwable {
+
+        if (!schemaGuardService.isChallengeShareImageSchemaReady()) {
+            return null;
+        }
+
+        return pjp.proceed();
+    }
 }

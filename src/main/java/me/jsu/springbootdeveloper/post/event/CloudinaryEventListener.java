@@ -19,6 +19,10 @@ public class CloudinaryEventListener {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleDelete(CloudinaryDeleteEvent event) {
+        if (event.publicId() == null) {  // 사진 주소가 없는 경우 그냥 반환한다.
+            return;
+        }
+
         cloudinaryService.deleteImage(event.publicId());
     }
 }

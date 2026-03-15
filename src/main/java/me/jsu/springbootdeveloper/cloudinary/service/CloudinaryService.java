@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 /*
@@ -25,6 +26,7 @@ public class CloudinaryService {
 
     /*
         사진을 받아서 비어있으면 아무런 일을 하지 않고, 업로드에 실패하면 예외처리를 한다.
+        MultipartFile 파일을 받아서 업데이트한다.
      */
     public ImageUploadResult uploadImage(MultipartFile file) {
         try {
@@ -42,7 +44,39 @@ public class CloudinaryService {
             }
 
             return new ImageUploadResult(secureUrl.toString(), publicId.toString());  // 사진 정보를 반환한다.
-        } catch (IOException e) {  // 전체 과정의 오류이다.
+        }
+        catch (IOException e) {  // 전체 과정의 오류이다.
+            throw new CloudinaryUploadException("CLOUDINARY_UPLOAD_ERROR");
+        }
+    }
+
+    /*
+        클라우디너리에 사진을 업데이트하는 함수로 byte 파일을 받아서 업데이트 할 수 있게 해준다.
+     */
+    public ImageUploadResult uploadBytes(byte[] bytes, String publicId) {
+        try {
+            // 사진이 없으면 예외처리한다.
+            if (bytes == null || bytes.length == 0) {
+                throw new CloudinaryUploadException("EMPTY_IMAGE_BYTES");
+            }
+
+            Map<String, Object> options = new HashMap<>();
+            options.put("public_id", publicId);  // 이전에 사용하던 클라우디너리 id를 그대로 사용한다.
+            options.put("overwrite", true);  // 사진을 덮어쓴다.
+            options.put("invalidate", true);  // cdn 캐시 삭제를 요청한다.
+            options.put("resource_type", "image");  // 파일 형태이다.
+
+            Map uploadResult = cloudinary.uploader().upload(bytes, options);
+
+            Object secureUrl = uploadResult.get("secure_url");  // 사진의 주소를 추출한다.
+            Object uploadedPublicId = uploadResult.get("public_id");  // 사진을 관리하기 위한 id를 추출한다.
+            if (secureUrl == null || uploadedPublicId == null) {  // 클라우디너리에 업로드하지 못한 경우이다.
+                throw new CloudinaryUploadException("PICTURE_IS_NOT_UPLOADED");
+            }
+
+            return new ImageUploadResult(secureUrl.toString(), uploadedPublicId.toString());
+        }
+        catch (IOException e) {  // 전체 과정의 오류이다.
             throw new CloudinaryUploadException("CLOUDINARY_UPLOAD_ERROR");
         }
     }

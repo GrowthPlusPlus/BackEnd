@@ -109,4 +109,25 @@ public class SchemaGuardService {
 
         }
     }
+
+    /*
+        캘린더 공유 테이블의 존재 여부를 확인한다.
+     */
+    public boolean isChallengeShareImageSchemaReady() {
+        String sql = """
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_name = 'challenge_share_image'
+    """;
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            return rs.next();
+
+        } catch (SQLException e) {
+            return false;
+        }
+    }
 }
