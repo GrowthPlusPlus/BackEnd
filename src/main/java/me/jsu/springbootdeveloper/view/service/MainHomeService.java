@@ -152,19 +152,20 @@ public class MainHomeService {
                 isWarning = (successCount + remainingDays + 1) == adjustedRequiredWeeklyCount;
             }
 
-            // 유저가 챌린지를 시작한 경과일을 계산한다.
-            LocalDate joinedDate = challengeParticipant.getCreatedAt().toLocalDate();  // 참여일에서 시간을 제거한다.
-            long elapsedDaysRaw = ChronoUnit.DAYS.between(joinedDate, targetDate) + 1;  // 시작일로부터 며칠 지났는지 일수로 계산한다.
+            // 남은 챌린지 수행 일수를 계산한다.
+            LocalDate endDate = challengeParticipant.getChallenge().getEndDate();  // 종료일을 구한다.
+            long elapsedDaysRaw = ChronoUnit.DAYS.between(targetDate, endDate) + 1;  // 종료일로부터 며칠 남았는지 일수로 계산한다.
             long elapsedDays = Math.max(0, elapsedDaysRaw);  // 경과일이 음수가 나오는 것을 방지한다.
 
             // 챌린지에 관한 정보를 종합하여 List에 넣는다.
             myChallenges.add(MyChallenge.builder()
                     .challengeId(challengeId)
                     .title(challenge.getTitle())
-                    .content(challenge.getContent())
+                    .requiredWeeklyCount(challenge.getRequiredWeeklyCount())
+                    .dueToDate(elapsedDays)
+                    .currentStreak(challengeParticipant.getCurrentStreakDays())
                     .todaySuccessCount(challenge.getTodaySuccessCount())
                     .participantNumber(challenge.getParticipantNumber())
-                    .duringDate(elapsedDays)
                     .doIt(isDoIt)
                     .warning(isWarning)
                     .build()

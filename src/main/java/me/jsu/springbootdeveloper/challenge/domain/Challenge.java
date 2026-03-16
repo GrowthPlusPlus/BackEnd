@@ -125,6 +125,9 @@ public class Challenge {
     @OneToMany(mappedBy = "challenge", cascade = CascadeType.REMOVE)
     private List<PostPictureTemporary> postPictureTemporaries;
 
+    @OneToMany(mappedBy = "challenge", cascade = CascadeType.REMOVE)
+    private List<ChallengeCalenderShare> challengeCalenderShares;
+
     @Builder
     public Challenge(String title, String content, User user, int maxParticipantNumber, ChallengeVisibility challengeVisibility,
                      LocalDate startDate, LocalDate endDate, int requiredWeeklyCount, boolean photoRequired, LocalDate todayDate) {

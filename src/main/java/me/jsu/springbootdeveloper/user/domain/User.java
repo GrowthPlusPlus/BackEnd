@@ -7,12 +7,9 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import me.jsu.springbootdeveloper.challenge.domain.ChallengeInvite;
+import me.jsu.springbootdeveloper.challenge.domain.*;
 import me.jsu.springbootdeveloper.post.domain.PostPictureTemporary;
 import me.jsu.springbootdeveloper.token.domain.RefreshToken;
-import me.jsu.springbootdeveloper.challenge.domain.ChallengeInviteLink;
-import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
-import me.jsu.springbootdeveloper.challenge.domain.ChallengeWeeklyStatus;
 import me.jsu.springbootdeveloper.notification.domain.Notification;
 import me.jsu.springbootdeveloper.tag.domain.TagToUser;
 import me.jsu.springbootdeveloper.user.enumType.Role;
@@ -141,6 +138,9 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
 
     @OneToOne(mappedBy = "user", cascade = REMOVE)
     private RefreshToken refreshToken;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE)
+    private List<ChallengeCalenderShare> challengeCalenderShares;
 
     @Builder
     public User(String email, String password, Role role, String nickname) {
