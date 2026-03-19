@@ -124,7 +124,7 @@ public class NotificationService {
         // DTO로 변환한다. 이 시점의 isRead 상태(읽음 처리 전 원래 상태)를 DTO에 담는다.
         Page<MyNotificationResponse> response = notifications.map(notification ->
                         MyNotificationResponse.builder()
-                                .imageUrl(notification.getImageUrl())
+                                .profileImageUrl(notification.getImageUrl())
                                 .targetId(notification.getTargetId())
                                 .message(notification.getMessage())
                                 .type(notification.getType())
