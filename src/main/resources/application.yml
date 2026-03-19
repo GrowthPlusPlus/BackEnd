@@ -70,7 +70,7 @@ spring:
 
     kakao:
       client-id: kakao1399325
-      redirect-uri: https://hanaem.onrender.com/api/oauth/kakao/token
+      redirect-uri: https://developers.kakao.com/auth/oauth
 
     naver:  # 네이버 개발자센터의 제공 정보 선택에서 이메일을 필수로 받아야 함
       client-id: NAVER_CLIENT_ID
