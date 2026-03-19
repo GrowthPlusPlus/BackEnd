@@ -12,6 +12,7 @@ import java.util.List;
  */
 @Getter
 public class ChallengeInviteListResponse {
+    private final Long inviterId;
     private final String inviterNickname;  // 초대자 닉네임
     private final String profileUrl;
     private final long challengeId;
@@ -21,6 +22,7 @@ public class ChallengeInviteListResponse {
     private final List<String> tags;  // 해당 챌린지의 태그들
 
     public ChallengeInviteListResponse(
+            Long inviterId,
             String inviterNickname,
             String profileUrl,
             long challengeId,
@@ -29,6 +31,7 @@ public class ChallengeInviteListResponse {
             long remainingDays,
             List<String> tags
     ) {
+        this.inviterId = inviterId;
         this.inviterNickname = inviterNickname;
         this.profileUrl = profileUrl;
         this.challengeId = challengeId;

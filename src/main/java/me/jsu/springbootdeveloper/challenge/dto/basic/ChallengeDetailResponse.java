@@ -31,6 +31,7 @@ public class ChallengeDetailResponse {
     @Getter
     @AllArgsConstructor
     public static class HostInfo {  // 방장 정보이다.
+        private Long id;
         private String name;
         private String profileImageUrl;
     }
@@ -38,6 +39,7 @@ public class ChallengeDetailResponse {
     @Getter
     @AllArgsConstructor
     public static class UserSummary {  // 오늘 인증한 사람들의 정보이다.
+        private Long id;
         private String name;
         private String profileImageUrl;
     }

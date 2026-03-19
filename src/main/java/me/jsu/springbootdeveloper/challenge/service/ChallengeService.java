@@ -95,12 +95,14 @@ public class ChallengeService {
                 tagNames,
                 challenge.getContent(),
                 new ChallengeDetailResponse.HostInfo(
+                        challenge.getUser().getId(),
                         challenge.getUser().getNickname(),
                         challenge.getUser().getProfileImageUrl()
                 ),
                 challenge.getParticipantNumber(),  // 참여자 수
                 successUsers.stream()
                         .map(u -> new ChallengeDetailResponse.UserSummary(
+                                u.getId(),
                                 u.getNickname(),
                                 u.getProfileImageUrl()
                         ))
