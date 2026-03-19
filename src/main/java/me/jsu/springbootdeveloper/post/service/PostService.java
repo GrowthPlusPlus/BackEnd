@@ -65,6 +65,7 @@ public class PostService {
         User author = article.getUser();
         Challenge challenge = article.getChallenge();
 
+        Long userId = null;
         String userNickname;
         String userImageUrl = null;  // 작성자의 프로필 사진이 없는 경우를 대비한다.
         int totalSuccessDays = 0;
@@ -74,6 +75,7 @@ public class PostService {
         if (author == null) {  // 작성자가 null인 경우를 방어한다.
             userNickname = "탈퇴한 사용자";
         } else {
+            userId = author.getId();
             userNickname = author.getNickname();
 
             UserProfilePicture userProfilePicture = author.getUserProfilePicture();
@@ -123,6 +125,7 @@ public class PostService {
                 .title(article.getTitle())
                 .content(article.getContent())
                 .images(images)  // 게시글의 사진, id이다.
+                .userId(userId)
                 .userNickname(userNickname)
                 .userImageUrl(userImageUrl)  // 게시글 작성자의 사진이다.
                 .updatedAt(article.getUpdateAt())

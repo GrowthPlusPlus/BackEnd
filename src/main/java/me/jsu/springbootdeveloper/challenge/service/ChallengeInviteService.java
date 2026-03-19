@@ -129,6 +129,7 @@ public class ChallengeInviteService {
                     
                     // DTO 생성 및 반환
                     return new ChallengeInviteListResponse(
+                            inviterId,
                             inviterNickname,
                             imageUrl,
                             challengeId,

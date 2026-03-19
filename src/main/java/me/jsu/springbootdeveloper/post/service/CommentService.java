@@ -72,6 +72,7 @@ public class CommentService {
         // 댓글을 CommentResponse에 매핑하여 반환한다.
         return comments.map(comment -> CommentResponse.builder()
                 .commentId(comment.getId())
+                .userId(comment.getUser().getId())
                 .userNickname(comment.getUser().getNickname())
                 // 유저 사진이 없으면 null, 있으면 사진의 주소를 넣는다.
                 .userPicture(comment.getUser().getUserProfilePicture() != null ? comment.getUser().getUserProfilePicture().getImageUrl() : null)

@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 @Builder
 public class CommentResponse {
     private Long commentId;  // 댓글 수정, 삭제 등을 처리하기 위해 미리 id 정보까지 보낸다.
+    private Long userId;
     private String userNickname;
     private String userPicture;
     private String contents;

@@ -21,6 +21,7 @@ public class ArticleDetailResponse {
     private String title;
     private String content;
     private List<ArticleImageResponse> images;
+    private Long userId;
     private String userNickname;
     private String userImageUrl;
     private LocalDateTime updatedAt;

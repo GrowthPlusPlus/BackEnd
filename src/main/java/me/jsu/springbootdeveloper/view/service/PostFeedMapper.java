@@ -120,6 +120,7 @@ public class PostFeedMapper {
                     .images(
                             imageMap.getOrDefault(article.getId(), List.of())
                     )
+                    .userId(authorId)
                     .userNickname(nickname)
                     .userImageUrl(profileUrl)
                     .updatedAt(article.getUpdateAt())
