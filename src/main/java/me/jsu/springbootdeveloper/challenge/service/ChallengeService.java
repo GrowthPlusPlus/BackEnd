@@ -38,10 +38,12 @@ import me.jsu.springbootdeveloper.user.service.FriendService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -209,8 +211,14 @@ public class ChallengeService {
              case 2. 참여하는 사람이 챌린지 시작일 후에 들어오면 -> joinDate는 들어온 날짜
             * */
             LocalDate joinDate = today.isBefore(challenge.getStartDate()) ? challenge.getStartDate() : today;
-            // totalWeeks 값:  6일 챌린지 -> 0, 7일 챌린지 -> 1,  8일 챌린지 -> 1
-            int totalWeeks = (int) ChronoUnit.WEEKS.between(joinDate, challenge.getEndDate());
+
+            // totalWeeks 값의 주차 개수는 해당 주차의 월요일을 기준으로하여 수행했는지 여부로 계산한다.
+            LocalDate startMonday = joinDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));  // 챌린지에 참여한 주차의 월요일을 구한다.
+            LocalDate endMonday = challenge.getEndDate().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));  // 챌린지가 종료되는 주차의 월요일을 구한다.
+
+            // 챌린지 종료일과 참가일의 차이만큼 총 유저가 수행해야 하는 주차 수를 구한다.
+            int totalWeeks = (int) ChronoUnit.WEEKS.between(startMonday, endMonday) + 1;
+
             // 챌린지 참여자 객체 생성
             ChallengeParticipant challengeParticipant = new ChallengeParticipant(challenge, user, joinDate, totalWeeks);
             challengeParticipantRepository.save(challengeParticipant);
