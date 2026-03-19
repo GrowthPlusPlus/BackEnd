@@ -5,6 +5,7 @@ package me.jsu.springbootdeveloper.oauth.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.oauth.dto.GoogleCodeExchangeRequest;
 import me.jsu.springbootdeveloper.oauth.dto.KakaoCodeExchangeRequest;
@@ -15,6 +16,8 @@ import me.jsu.springbootdeveloper.oauth.service.OAuthKakaoService;
 import me.jsu.springbootdeveloper.oauth.service.OAuthNaverService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
 
 /*
     해당 클래스는 모바일 앱에서 들어오는 Google OAuth 로그인 요청의 진입점(Controller) 역할을 한다.
@@ -104,6 +107,14 @@ public class OAuthController {
         );
 
         return ResponseEntity.ok(response);
+    }
+
+    /*
+        리다이렉트를 위한 컨트롤러이다.
+     */
+    @GetMapping("/oauth/kakao/callback")
+    public void kakaoCallback(@RequestParam String code, @RequestParam(required = false) String state, HttpServletResponse response) throws IOException {
+        response.sendRedirect("kakao://oauth?code=" + code + "&state=" + state);
     }
 
     @Operation(
