@@ -16,7 +16,7 @@ import java.util.List;
 @Getter
 @Builder
 public class MyNotificationResponse {
-    private String imageUrl;
+    private String profileImageUrl; //ImageUrl-> profileImageUrl로 수정
     private Long targetId;
     private String message;  // 알림 내용이다.
     private NotificationType type;  // 알림 유형이다.
