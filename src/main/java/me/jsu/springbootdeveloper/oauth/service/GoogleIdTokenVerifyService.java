@@ -31,7 +31,10 @@ public class GoogleIdTokenVerifyService {
                 com.google.api.client.json.gson.GsonFactory.getDefaultInstance()
         )
                 // id 토큰의 aud 클레임을 검증하는 부분으로, 이 토큰이 내 서버용으로 발급된 것인지 확인한다.
-                .setAudience(props.clientIds())  // 허용 목록으로 안드로이드, ios를 포함한다.
+                .setAudience(List.of(
+                        props.androidClientId(),  // 허용 목록으로 안드로이드, ios를 포함한다.
+                        props.iosClientId()
+                ))
                 .build();  // 설정이 완료된 GoogleIdTokenVerifier를 생성한다.
     }
 
