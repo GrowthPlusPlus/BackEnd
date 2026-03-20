@@ -4,6 +4,7 @@ package me.jsu.springbootdeveloper.oauth.service;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import lombok.RequiredArgsConstructor;
+import me.jsu.springbootdeveloper.config.oauth.GoogleOAuthProperties;
 import me.jsu.springbootdeveloper.oauth.dto.GoogleTokenResponse;
 import me.jsu.springbootdeveloper.oauth.dto.LoginResponse;
 import me.jsu.springbootdeveloper.oauth.exception.OAuthLoginException;
@@ -18,6 +19,7 @@ public class OAuthGoogleService {
     private final OAuthLoginService oauthLoginService;
     private final GoogleOAuthTokenService tokenService;
     private final GoogleIdTokenVerifyService idTokenVerifyService;  // 구글 id 토큰 검증을 위한 라이브러리
+    private final GoogleOAuthProperties props;
 
     /*
         Google OAuth (Authorization Code + PKCE) 로그인의 유스케이스를 한 번에 수행하는 함수이다.
@@ -42,6 +44,16 @@ public class OAuthGoogleService {
         } else {
             throw new OAuthLoginException("INVALID_CLIENT_ID");
         }
+
+//        if (clientId.equals(props.androidClientId())) {
+//            redirectUri = props.androidRedirectUri();
+//        }
+//        else if (clientId.equals(props.iosClientId())) {
+//            redirectUri = props.iosRedirectUri();
+//        }
+//        else {
+//            throw new OAuthLoginException("INVALID_CLIENT_ID");
+//        }
 
         /*
             Google Token(Authorization Code + PKCE)을 교환하여 구글이 PKCE(codeVerifier)를 검증한다.

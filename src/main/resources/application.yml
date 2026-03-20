@@ -64,13 +64,15 @@ spring:
 # 앱 PKCE 기반 설정
   oauth:
     google:
-      client-ids:
-        - 433865217738-m3uqqdv9lumpf1ne8e3bkpsbtsa6919i.apps.googleusercontent.com  # 안드로이드
-        - 433865217738-gu6vtmh4d7dpephj0mb152vm4s3vcap9.apps.googleusercontent.com  # IOS
+      android-client-id: 433865217738-m3uqqdv9lumpf1ne8e3bkpsbtsa6919i.apps.googleusercontent.com
+      android-redirect-uri: com.googleusercontent.apps.433865217738-m3uqqdv9lumpf1ne8e3bkpsbtsa6919i:/oauth2redirect
+      ios-client-id: 433865217738-gu6vtmh4d7dpephj0mb152vm4s3vcap9.apps.googleusercontent.com
+      ios-redirect-uri: com.googleusercontent.apps.433865217738-gu6vtmh4d7dpephj0mb152vm4s3vcap9:/oauth2redirect
 
     kakao:
-      client-id: kakao1399325
-      redirect-uri: https://hanaem.onrender.com/oauth/kakao/callback
+      client_id: 9fdd13c0777c415d8fa4055b5b26a6c5
+      redirect_uri: https://hanaem.onrender.com/oauth/kakao/callback  #https://ungenially-undebatable-sindy.ngrok-free.dev/oauth/kakao/callback
+      client_secret: wvoMRh9Z2UHXlBxWDPyz3hpnWiwjTRcP
 
     naver:  # 네이버 개발자센터의 제공 정보 선택에서 이메일을 필수로 받아야 함
       client-id: NAVER_CLIENT_ID

@@ -25,12 +25,6 @@ public class GoogleOAuthTokenService {
     // Google Token Endpoint인 밑의 uri를 호출하기 위한 객체이다.
     private final WebClient webClient = WebClient.builder().build();
     // application.yml에 정의된 Google OAuth 설정값으로 client_id, client_secret, redirect_uri를 제공한다.
-    private final GoogleOAuthProperties props;
-
-    // GoogleOAuthProperties 클래스의 내용을 주입받는다.
-    public GoogleOAuthTokenService(GoogleOAuthProperties props) {
-        this.props = props;
-    }
 
     /*
         해당 함수는 PKCE를 이용한 OAuth 인증 과정에서 사용되는 함수이다.
