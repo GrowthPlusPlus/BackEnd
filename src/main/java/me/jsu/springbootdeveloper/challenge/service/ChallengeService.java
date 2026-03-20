@@ -119,8 +119,8 @@ public class ChallengeService {
         User user = userService.findByEmail(email);
 
         //챌린지 저장하기
-        // 종료일 계산 로직 (시작일 + 인증 기간), 화면에서 '30일'을 선택했다면 startDate로부터 30일 뒤를 계산합니다.
-        LocalDate endDate = dto.getStartDate().plusDays(dto.getDuration());
+        // 종료일 계산 로직 (시작일 + 인증 기간), 화면에서 '30일'을 선택했다면 startDate를 포함한 30일 뒤를 계산합니다.
+        LocalDate endDate = dto.getStartDate().plusDays(dto.getDuration() - 1);
 
         //Challenge 객체 생성 (Builder 패턴 사용)
         Challenge challenge = Challenge.builder()
