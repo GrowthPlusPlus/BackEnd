@@ -102,4 +102,16 @@ public interface ChallengeDailyLogRepository extends JpaRepository<ChallengeDail
             @Param("challengeId") Long challengeId,
             @Param("today") LocalDate today
     );
+    /*
+        유저가 챌린지와 연결된 데일리 로그를 남긴 날짜를 중복 없이 오름차순으로 반환한다.
+        과거 인증글 삭제 후 UserStatistics를 로그 기준으로 재동기화할 때 사용한다.
+     */
+    @Query("""
+        select distinct cdl.postDate
+        from ChallengeDailyLog cdl
+        where cdl.user.id = :userId
+          and cdl.challenge is not null
+        order by cdl.postDate
+        """)
+    List<LocalDate> findDistinctPostDatesByUserIdForChallenges(@Param("userId") Long userId);
 }

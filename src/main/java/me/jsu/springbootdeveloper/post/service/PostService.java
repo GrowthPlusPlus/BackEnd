@@ -429,8 +429,10 @@ public class PostService {
     }
 
     /*
-        관리자가 당일 여부와 관계없이 인증글을 삭제할 때 사용한다.
-        통계·로그 롤백은 인증글 작성자 기준으로 수행한다.
+        관리자가 인증글을 삭제한다.
+        서울 기준 당일 글이면 일반 삭제와 동일한 롤백(decreaseTodaySuccess, onTodayPostCancelled)을 적용한다.
+        과거 글이면 챌린지·주간·참가자 롤백은 유지하되, 오늘 성공 카운트와 당일 전용 UserStatistics API는 쓰지 않고 삭제 후 남은 ChallengeDailyLog로 유저 전역 통계를 재동기화한다.
+
         @param postId 삭제할 인증글 id
      */
     @Transactional
@@ -438,29 +440,47 @@ public class PostService {
         Article article = postQueryService.findWithChallengeById(postId);
         Long authorId = article.getUser().getId();  // 인증글 작성자의 id를 저장한다.
 
+        LocalDate postDate = article.getPostDate();  // 인증글의 생성 날짜를 검색한다.
+        LocalDate todaySeoul = LocalDate.now(ZoneId.of("Asia/Seoul"));  // 삭제 당일 시간을 검색한다.
+        boolean isTodayPost = todaySeoul.isEqual(postDate);  // 두 날짜가 같은지 확인한다.
+
+        // 인증글의 사진 정보를 검색한다.
         List<PostPicture> postPictures = postPictureRepository.findAllByArticle_Id(postId);
 
         // 챌린지 데일리 로그 정보는 게시글이 삭제되면 삭제한다.
-        ChallengeDailyLog challengeDailyLog = challengeQueryService.findLogByUser_IdAndArticle_IdAndPostDate(authorId, postId, article.getPostDate());
+        ChallengeDailyLog challengeDailyLog = challengeQueryService.findLogByUser_IdAndArticle_IdAndPostDate(authorId, postId, postDate);
         challengeDeleteService.deleteLog(challengeDailyLog);
 
         deleteImages(postPictures);  // 인증글에 저장된 사진들을 클라우디너리에서 삭제한다.
 
-        // 챌린지의 오늘 성공 횟수를 감소시킨다.
-        Challenge challenge = article.getChallenge();
-        challenge.decreaseTodaySuccess();
+        Challenge challenge = article.getChallenge();  // 인증글의 챌린지 정보를 가져온다.
+
+        // 당일 글일 때만 챌린지 "오늘 성공" 카운터를 줄인다.
+        if (isTodayPost) {
+            challenge.decreaseTodaySuccess();
+        }
 
         // 해당 유저의 총 챌린지 성공 일수를 감소시킨다.
         ChallengeParticipant challengeParticipant = challengeQueryService.findByUser_IdAndChallenge_IdForParticipant(authorId, challenge.getId());
-        challengeParticipant.removeDailySuccess(article.getPostDate());
+        challengeParticipant.removeDailySuccess(postDate);
 
         // 이번주 챌린지 총 성공 횟수를 감소시킨다.
-        LocalDate thisWeekMonday = article.getPostDate().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate thisWeekMonday = postDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         ChallengeWeeklyStatus challengeWeeklyStatus = challengeQueryService.findWeeklyStatus(authorId, challenge.getId(), thisWeekMonday);
         challengeWeeklyStatus.decreaseSuccessCount(challenge.getRequiredWeeklyCount());
 
-        // 유저 통계의 내용을 롤백한다.
-        userStatisticsService.onTodayPostCancelled(authorId, challenge.getId(), article.getPostDate());
+        if (isTodayPost) {  // 삭제 날짜가 생성 날짜와 같다면 기존과 동일하게 유저 통계의 내용을 롤백한다.
+            userStatisticsService.onTodayPostCancelled(authorId, challenge.getId(), postDate);
+        }
+        else {
+            /*
+                과거 글: unmarkActiveToday는 슬라이딩 윈도우가 과거 날짜를 가정하지 않으므로 쓰지 않는다.
+                로그 삭제·참가자 롤백 반영 후 남은 데일리 로그로 UserStatistics를 다시 맞춘 뒤 인증글을 삭제한다.
+             */
+            userStatisticsService.resyncUserStatisticsAfterPastPostDeletion(authorId);
+            postRepository.delete(article);
+            return;
+        }
 
         postRepository.delete(article);  // DB에서 게시글을 삭제한다. 댓글이나 좋아요 등의 정보도 함께 삭제된다.
     }

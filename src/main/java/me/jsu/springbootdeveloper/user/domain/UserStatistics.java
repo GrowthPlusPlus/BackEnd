@@ -13,7 +13,11 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /*
     유저의 전체 챌린지에 관한 통계를 관리하는 클래스이다.
@@ -352,6 +356,81 @@ public class UserStatistics {
     public void setDominantChallenge(Long challengeId, int score) {
         this.dominantChallengeId = challengeId;
         this.dominantChallengeScore = score;
+    }
+
+    /*
+        ChallengeDailyLog에 남아 있는 활동 날짜 목록으로, 유저 전역 연속·최대 연속·활동 비트·총 활동일을 다시 맞춘다.
+        관리자가 과거 인증글을 삭제한 뒤 onTodayPostCancelled 대신 호출한다.
+
+        @param sortedDistinctPostDates 오름차순 정렬된, 챌린지 연동 데일리 로그 기준 활동일 목록
+        @param today 오늘(활동 비트 윈도우 기준일)
+     */
+    public void rebuildGlobalStreakAndActivityFromDistinctDates(List<LocalDate> sortedDistinctPostDates, LocalDate today) {
+        if (sortedDistinctPostDates == null || sortedDistinctPostDates.isEmpty()) {  // 로그가 비어있는 경우 통계를 모두 초기화 한다.
+            this.currentStreakStartDate = null;  // 연속 일수 초기화
+            this.currentStreakEndDate = null;
+            this.maxStreakStartDate = null;  // 최대 연속 일수 초기화
+            this.maxStreakEndDate = null;
+            this.totalActiveDays = 0;  // 총 수행 일수 초기화
+            this.activityWindowStart = today != null ? today : LocalDate.now(ZoneId.of("Asia/Seoul"));  // 윈도우 시작일을 오늘로 초기화
+            this.activityBits = 0L;
+            this.lastActiveDate = null;  // 마지막 수행일 초기화
+
+            return;
+        }
+
+        today = today != null ? today : LocalDate.now(ZoneId.of("Asia/Seoul"));  // today가 null일 경우를 대비한다.
+
+        this.totalActiveDays = sortedDistinctPostDates.size();  // 총 챌린지 수행 일수는 로그 사이즈로 초기화 한다.
+        this.lastActiveDate = sortedDistinctPostDates.get(sortedDistinctPostDates.size() - 1);  // 마지막 수행일을 로그의 맨 마지막 인덱스의 값으로 한다.
+
+        // 현재 연속 수행일수를 구한다. 마지막 활동일을 끝으로 하는 가장 긴 연속 구간이다.
+        LocalDate last = sortedDistinctPostDates.get(sortedDistinctPostDates.size() - 1);  // 현재 연속 수행일수의 마지막 날은 로그 마지막 기록일로 한다.
+        LocalDate curStart = last;  // 연속 수행 일수의 시작일은 처음은 마지막 날로 한다.
+        for (int i = sortedDistinctPostDates.size() - 2; i >= 0; i--) {
+            if (sortedDistinctPostDates.get(i).plusDays(1).equals(sortedDistinctPostDates.get(i + 1))) {
+                curStart = sortedDistinctPostDates.get(i);  // 맨 위부터 로그가 끊기지 않는 시점까지 현재 연속 수행 일수의 시작일을 찾는다.
+            }
+            else {
+                break;  // 끊기면 탈출한다.
+            }
+        }
+        this.currentStreakStartDate = curStart;  // 초기화
+        this.currentStreakEndDate = last;
+
+        // 최대 연속 수행일수를 구한다. 각 구간 길이를 비교하여 가장 긴 구간을 저장한다.
+        int maxLen = 0;
+        LocalDate bestStart = null;
+        LocalDate bestEnd = null;
+        int seg = 0;
+        while (seg < sortedDistinctPostDates.size()) {
+            int end = seg;
+            while (end + 1 < sortedDistinctPostDates.size()
+                    && sortedDistinctPostDates.get(end).plusDays(1).equals(sortedDistinctPostDates.get(end + 1))) {
+                end++;
+            }
+            int len = end - seg + 1;
+            if (len > maxLen) {
+                maxLen = len;
+                bestStart = sortedDistinctPostDates.get(seg);
+                bestEnd = sortedDistinctPostDates.get(end);
+            }
+            seg = end + 1;
+        }
+        this.maxStreakStartDate = bestStart;
+        this.maxStreakEndDate = bestEnd;
+
+        // 최근 30일 비트를 계산한다. LSB가 today이고, i일 전에 활동이 있으면 i번째 비트를 켠다.
+        Set<LocalDate> activeSet = new HashSet<>(sortedDistinctPostDates);
+        this.activityWindowStart = today;  // 윈도우의 첫 날을 오늘로 설정한다.
+        long bits = 0L;
+        for (int i = 0; i < 30; i++) {
+            LocalDate d = today.minusDays(i);
+            if (activeSet.contains(d)) {  // 해당 날짜에 활동이 있다면 비트를 1로 바꾼다.
+                bits |= (1L << i);
+            }
+        }
+        this.activityBits = bits;  // 계산한 비트를 할당한다.
     }
 
     /* =========================
