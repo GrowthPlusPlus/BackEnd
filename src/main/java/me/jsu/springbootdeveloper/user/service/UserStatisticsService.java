@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 
 /*
@@ -118,5 +119,20 @@ public class UserStatisticsService {
     public UserStatistics findByUser_IdStatistics(Long userId) {
         return userStatisticsRepository.findByUser_Id(userId)
                 .orElseThrow(() -> new UserStatisticsNotFoundException("UserStatistics가 없습니다."));
+    }
+
+    /*
+        onTodayPostCancelled는 당일 전용이므로 쓰지 않고, 로그를 삭제한 뒤 남아 있는 ChallengeDailyLog 기준으로 유저 전역 통계를 다시 맞춘 뒤 대표 챌린지를 재선정한다.
+
+        @param userId 통계를 갱신할 유저 id
+     */
+    @Transactional
+    public void resyncUserStatisticsAfterPastPostDeletion(Long userId) {
+        UserStatistics userStats = findByUser_IdStatistics(userId);  // 유저 통계를 검색한다.
+        List<LocalDate> dates = challengeQueryService.findDistinctPostDatesByUserIdForChallenges(userId);  // 삭제된 로그 이후를 기준으로 유저의 모든 로그를 조회한다.
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
+
+        userStats.rebuildGlobalStreakAndActivityFromDistinctDates(dates, today);
+        recomputeDominant(userStats, userId);  // 대표 챌린지를 재선정한다.
     }
 }

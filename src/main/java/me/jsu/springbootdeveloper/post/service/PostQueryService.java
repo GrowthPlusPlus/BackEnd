@@ -36,6 +36,14 @@ public class PostQueryService {
     }
 
     /*
+        게시글 단일 정보를 게시글 id로 조회하면서 챌린지 정보도 함께 조회하는 함수이다.
+     */
+    public Article findWithChallengeById(Long postId) {
+        return postRepository.findWithChallengeById(postId)
+                .orElseThrow(() -> new ArticleNotFoundException("ARTICLE_NOT_FOUND_FOR_ID"));
+    }
+
+    /*
         공개 인증글 목록을 조회한다. 오늘 날짜, 페이지 정보를 넘겨준다.
         피드 생성에 사용된다.
      */

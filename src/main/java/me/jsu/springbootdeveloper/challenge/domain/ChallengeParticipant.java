@@ -176,7 +176,7 @@ public class ChallengeParticipant {
 
         // 최대 연속 기록을 처리한다.
         if (maxStreakEndDate != null && maxStreakEndDate.equals(today)) {  // 오늘 삭제한 연속일수가 최대기록의 마지막 날인지 확인한다.
-            if (maxStreakDays == 1) {  // 최대 연속 일수가 하루였다면 초기화 한다.ㅊ
+            if (maxStreakDays == 1) {  // 최대 연속 일수가 하루였다면 초기화 한다.
                 maxStreakStartDate = null;
                 maxStreakEndDate = null;
                 maxStreakDays = 0;

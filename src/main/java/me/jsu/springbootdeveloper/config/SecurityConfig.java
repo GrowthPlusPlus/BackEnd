@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.config.jwt.TokenProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -27,6 +28,7 @@ import static org.springframework.boot.autoconfigure.security.servlet.PathReques
  */
 @RequiredArgsConstructor
 @Configuration  // 해당 클래스가 스프링 설정 클래스임을 의미한다. 즉 @Bean 등록 가능한다.
+@EnableMethodSecurity  // preauthorize 기능을 사용할 수 있게 해준다.
 public class SecurityConfig {
     private final TokenProvider tokenProvider;  // JWT 검증, Authentication 생성을 위해 의존성을 추가한다.
 

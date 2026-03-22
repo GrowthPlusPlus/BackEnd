@@ -146,4 +146,13 @@ public class ChallengeDeleteService {
     public void detachLogToUser(List<Long> userIds) {
         challengeDailyLogRepository.detachUser(userIds);
     }
+
+    /*
+        관리자가 방장 여부와 관계없이 챌린지를 삭제할 때 사용한다.
+        @param challengeId 삭제할 챌린지 id
+     */
+    @Transactional
+    public void deleteChallengeAsAdmin(Long challengeId) {
+        deleteChallengeInternal(challengeId);
+    }
 }

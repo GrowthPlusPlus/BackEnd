@@ -182,4 +182,20 @@ public class CommentService {
     public void detachCommentToUser(List<Long> userIds) {
         commentRepository.detachUser(userIds);
     }
+
+    /*
+        관리자가 댓글 작성자와 관계없이 댓글을 삭제할 때 사용한다.
+        @param commentId 삭제할 댓글 id
+     */
+    @Transactional
+    public void deleteCommentAsAdmin(Long commentId) {
+        Comment comment = findById(commentId);
+        Article article = comment.getArticle();  // 댓글 아이디로 게시글을 검색한다.
+
+        // 인증글의 총 댓글 수를 감소시킨다.
+        postService.minusCommentNumber(article);
+
+        // 댓글을 삭제한다.
+        commentRepository.delete(comment);
+    }
 }

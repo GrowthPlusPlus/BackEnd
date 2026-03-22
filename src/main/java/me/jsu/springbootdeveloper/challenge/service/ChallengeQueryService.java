@@ -160,4 +160,12 @@ public class ChallengeQueryService {
                         userId, challengeId, weekStartDate)
                 .orElse(null);
     }
+
+    /*
+        유저가 챌린지와 연결된 데일리 로그를 남긴 날짜를 중복 없이 오름차순으로 반환한다.
+        과거 인증글 삭제 후 UserStatistics 재동기화에 사용한다.
+     */
+    public List<LocalDate> findDistinctPostDatesByUserIdForChallenges(Long userId) {
+        return challengeDailyLogRepository.findDistinctPostDatesByUserIdForChallenges(userId);
+    }
 }
