@@ -6,6 +6,7 @@ import me.jsu.springbootdeveloper.challenge.service.ChallengeDeleteService;
 import me.jsu.springbootdeveloper.post.service.ReportService;
 import me.jsu.springbootdeveloper.token.service.RefreshTokenService;
 import me.jsu.springbootdeveloper.user.enumType.UserStatus;
+import me.jsu.springbootdeveloper.user.exception.NotAllowedAdminException;
 import me.jsu.springbootdeveloper.user.repository.UserProfilePictureRepository;
 import me.jsu.springbootdeveloper.user.repository.UserRepository;
 import me.jsu.springbootdeveloper.user.repository.UserStatisticsRepository;
@@ -96,5 +97,36 @@ public class UserWithdrawalService {
 
         // 유저를 삭제한다. 유저가 사라짐에 따라 필요 없는 정보들은 CASCADE로 자동으로 삭제된다.
         userRepository.deleteAllByIdInBatch(userIds);
+    }
+
+    /*
+        관리자가 특정 유저를 유예 없이 즉시 삭제할 때 사용한다.
+        스케줄러를 통한 유저 삭제와 동일한 함수를 사용하므로, 현재는 특정 유저 삭제 시 회원 탈퇴 후 유예일이 지난 유저도 함께 삭제된다.
+
+        @param userId 삭제 대상 유저 id
+        @param adminEmail 요청 관리자 이메일(JWT sub)
+     */
+    @Transactional
+    public void adminHardDeleteUser(Long userId, String adminEmail) {
+        User admin = userService.findByEmail(adminEmail);
+        User target = userService.findById(userId);
+
+        if (admin.getId().equals(target.getId())) {  // 어드민은 스스로 삭제할 수 없다.
+            throw new NotAllowedAdminException("ADMIN_CANNOT_DELETE_SELF");
+        }
+
+        // 유저가 챌린지 오너인 경우, 다른 사용자에게 위임한다.
+        challengeDeleteService.handleOwnerWithdrawal(target.getId());
+
+        LocalDateTime today = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+
+        // 유저의 상태를 탈퇴 상태로 변경한다. 즉시 삭제를 위해 50일 이전으로 설정한다.
+        LocalDateTime deleteAt = today.minusDays(50);
+        target.userToDelete(deleteAt);
+
+        // 유저의 리프레시 토큰을 직접 삭제한다.
+        refreshTokenService.deleteByUser_Id(target.getId());
+
+        withdraw(today);  // 유저를 삭제한다.
     }
 }

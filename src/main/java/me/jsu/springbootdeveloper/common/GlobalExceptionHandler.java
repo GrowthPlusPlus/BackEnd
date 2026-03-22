@@ -12,6 +12,7 @@ import me.jsu.springbootdeveloper.tag.exception.TagNotFoundException;
 import me.jsu.springbootdeveloper.token.exception.InvalidTokenException;
 import me.jsu.springbootdeveloper.token.exception.TokenNotFoundException;
 import me.jsu.springbootdeveloper.user.exception.DuplicateNicknameException;
+import me.jsu.springbootdeveloper.user.exception.NotAllowedAdminException;
 import me.jsu.springbootdeveloper.user.exception.UserNotFoundException;
 import me.jsu.springbootdeveloper.user.exception.UserStatisticsNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -538,6 +539,21 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse(
                         "NOT_FOUND_IMAGE",
+                        e.getMessage()
+                ));
+    }
+
+    /*
+        어드민으로써 수행하면 안되는 행위를 한 경우의 예외를 처리하는 핸들러이다.
+     */
+    @ExceptionHandler(NotAllowedAdminException.class)
+    public ResponseEntity<ErrorResponse> handleChallengeNotInProgress(
+            NotAllowedAdminException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(
+                        "ADMIN_ERROR",
                         e.getMessage()
                 ));
     }

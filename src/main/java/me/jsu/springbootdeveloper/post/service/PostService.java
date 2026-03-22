@@ -294,9 +294,7 @@ public class PostService {
     @Transactional
     public void delete(String email, Long postId) {
         User user = userService.findByEmail(email);
-
-        Article article = postRepository.findWithChallengeById(postId)  // 삭제할 글을 찾는다.
-                .orElseThrow(() -> new ArticleNotFoundException("ARTICLE_NOT_FOUND_FOR_ID"));
+        Article article = postQueryService.findWithChallengeById(postId);  // 삭제할 글을 찾는다.
 
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
         if (!today.isEqual(article.getPostDate())) {  // 과거의 글을 삭제하려는 경우이다.
@@ -428,5 +426,42 @@ public class PostService {
     @Transactional
     public void detachPostToUser(List<Long> userIds) {
         postRepository.detachUser(userIds);
+    }
+
+    /*
+        관리자가 당일 여부와 관계없이 인증글을 삭제할 때 사용한다.
+        통계·로그 롤백은 인증글 작성자 기준으로 수행한다.
+        @param postId 삭제할 인증글 id
+     */
+    @Transactional
+    public void deletePostAsAdmin(Long postId) {
+        Article article = postQueryService.findWithChallengeById(postId);
+        Long authorId = article.getUser().getId();  // 인증글 작성자의 id를 저장한다.
+
+        List<PostPicture> postPictures = postPictureRepository.findAllByArticle_Id(postId);
+
+        // 챌린지 데일리 로그 정보는 게시글이 삭제되면 삭제한다.
+        ChallengeDailyLog challengeDailyLog = challengeQueryService.findLogByUser_IdAndArticle_IdAndPostDate(authorId, postId, article.getPostDate());
+        challengeDeleteService.deleteLog(challengeDailyLog);
+
+        deleteImages(postPictures);  // 인증글에 저장된 사진들을 클라우디너리에서 삭제한다.
+
+        // 챌린지의 오늘 성공 횟수를 감소시킨다.
+        Challenge challenge = article.getChallenge();
+        challenge.decreaseTodaySuccess();
+
+        // 해당 유저의 총 챌린지 성공 일수를 감소시킨다.
+        ChallengeParticipant challengeParticipant = challengeQueryService.findByUser_IdAndChallenge_IdForParticipant(authorId, challenge.getId());
+        challengeParticipant.removeDailySuccess(article.getPostDate());
+
+        // 이번주 챌린지 총 성공 횟수를 감소시킨다.
+        LocalDate thisWeekMonday = article.getPostDate().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        ChallengeWeeklyStatus challengeWeeklyStatus = challengeQueryService.findWeeklyStatus(authorId, challenge.getId(), thisWeekMonday);
+        challengeWeeklyStatus.decreaseSuccessCount(challenge.getRequiredWeeklyCount());
+
+        // 유저 통계의 내용을 롤백한다.
+        userStatisticsService.onTodayPostCancelled(authorId, challenge.getId(), article.getPostDate());
+
+        postRepository.delete(article);  // DB에서 게시글을 삭제한다. 댓글이나 좋아요 등의 정보도 함께 삭제된다.
     }
 }
