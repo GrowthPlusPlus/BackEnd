@@ -14,7 +14,7 @@ import java.util.List;
 public class ChallengeInviteListResponse {
     private final Long inviterId;
     private final String inviterNickname;  // 초대자 닉네임
-    private final String profileUrl;
+    private final String profileImageUrl;
     private final long challengeId;
     private final String challengeTitle;  // 챌린지 이름
     private final int participantCount;  // 현재 챌린지에 참여중인 ChallengeParticipant 명수
@@ -33,7 +33,7 @@ public class ChallengeInviteListResponse {
     ) {
         this.inviterId = inviterId;
         this.inviterNickname = inviterNickname;
-        this.profileUrl = profileUrl;
+        this.profileImageUrl = profileUrl;
         this.challengeId = challengeId;
         this.challengeTitle = challengeTitle;
         this.participantCount = participantCount;
