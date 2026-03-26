@@ -11,10 +11,14 @@ import lombok.extern.slf4j.Slf4j;
 import me.jsu.springbootdeveloper.fcm.dto.FcmMessageDto;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeParticipantRepository;
+import me.jsu.springbootdeveloper.notification.domain.UserNotificationSchedule;
+import me.jsu.springbootdeveloper.notification.repository.UserNotificationScheduleRepository;
 import me.jsu.springbootdeveloper.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.concurrent.TimeUnit;
 
 /*
@@ -29,6 +33,7 @@ public class FcmService {
     
     private final UserRepository userRepository;  // FCM 토큰 등록/업데이트/삭제 및 만료된 토큰 삭제를 위해 사용
     private final ChallengeParticipantRepository challengeParticipantRepository;  // 개별 챌린지 알림 토글 연쇄 변경에 사용한다.
+    private final UserNotificationScheduleRepository userNotificationScheduleRepository;  // 스케줄러 기반 알림 설정(동기부여/리마인더 전역 토글)을 관리한다.
     /*
         특정 사용자의 FCM 토큰으로 푸시 알림을 발송한다.
         푸시 알림 발송 실패 시에도 예외를 던지지 않고 로그만 남긴다.
@@ -322,7 +327,24 @@ public class FcmService {
         userRepository.findByEmail(email)
                 .ifPresentOrElse(
                         user -> {
-                            user.setMotivationMessagePushNotificationEnabled(enabled);
+                            UserNotificationSchedule schedule = userNotificationScheduleRepository
+                                    .findByUser_Id(user.getId())
+                                    .orElseGet(() -> {
+                                        LocalTime defaultTime = LocalTime.now(ZoneId.of("Asia/Seoul"))
+                                                .withMinute(0)
+                                                .withSecond(0)
+                                                .withNano(0);
+
+                                        UserNotificationSchedule newSchedule = UserNotificationSchedule.builder()
+                                                .user(user)
+                                                .notificationTime(defaultTime)
+                                                .enabled(false)
+                                                .dailyReminderPushNotificationEnabled(true)
+                                                .build();
+                                        return userNotificationScheduleRepository.save(newSchedule);
+                                    });
+
+                            schedule.setEnabled(enabled);
                             log.info("동기부여 메시지 푸시 알림 설정을 변경했습니다. 사용자: {}, 활성화: {}", email, enabled);
                         },
                         () -> {
@@ -344,7 +366,24 @@ public class FcmService {
         userRepository.findByEmail(email)
                 .ifPresentOrElse(
                         user -> {
-                            user.setDailyReminderPushNotificationEnabled(enabled);
+                            UserNotificationSchedule schedule = userNotificationScheduleRepository
+                                    .findByUser_Id(user.getId())
+                                    .orElseGet(() -> {
+                                        LocalTime defaultTime = LocalTime.now(ZoneId.of("Asia/Seoul"))
+                                                .withMinute(0)
+                                                .withSecond(0)
+                                                .withNano(0);
+
+                                        UserNotificationSchedule newSchedule = UserNotificationSchedule.builder()
+                                                .user(user)
+                                                .notificationTime(defaultTime)
+                                                .enabled(false)
+                                                .dailyReminderPushNotificationEnabled(true)
+                                                .build();
+                                        return userNotificationScheduleRepository.save(newSchedule);
+                                    });
+
+                            schedule.setDailyReminderPushNotificationEnabled(enabled);
 
                             if (user.getChallengeParticipants() != null) {
                                 for (ChallengeParticipant participant : user.getChallengeParticipants()) {
@@ -493,8 +532,26 @@ public class FcmService {
                             user.setAllMemberCertificationPushNotificationEnabled(enabled);
                             user.setAllMemberReactionPushNotificationEnabled(enabled);
                             user.setChallengeInvitePushNotificationEnabled(enabled);
-                            user.setMotivationMessagePushNotificationEnabled(enabled);
-                            user.setDailyReminderPushNotificationEnabled(enabled);
+
+                            UserNotificationSchedule schedule = userNotificationScheduleRepository
+                                    .findByUser_Id(user.getId())
+                                    .orElseGet(() -> {
+                                        LocalTime defaultTime = LocalTime.now(ZoneId.of("Asia/Seoul"))
+                                                .withMinute(0)
+                                                .withSecond(0)
+                                                .withNano(0);
+
+                                        UserNotificationSchedule newSchedule = UserNotificationSchedule.builder()
+                                                .user(user)
+                                                .notificationTime(defaultTime)
+                                                .enabled(false)
+                                                .dailyReminderPushNotificationEnabled(true)
+                                                .build();
+                                        return userNotificationScheduleRepository.save(newSchedule);
+                                    });
+
+                            schedule.setEnabled(enabled);
+                            schedule.setDailyReminderPushNotificationEnabled(enabled);
 
                             // 유저가 참여 중인 모든 챌린지에서도 공통 게이트 및 개별 푸시 토글을 연쇄 변경한다.
                             if (user.getChallengeParticipants() != null) {

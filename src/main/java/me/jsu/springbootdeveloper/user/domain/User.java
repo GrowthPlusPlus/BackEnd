@@ -97,13 +97,6 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
     private boolean challengeInvitePushNotificationEnabled = true;
 
     //동기부여 메시지 푸시 알림 활성화 여부
-    @Column(name = "motivation_message_push_notification_enabled", nullable = false)
-    private boolean motivationMessagePushNotificationEnabled = true;
-
-    //전체 일일 리마인더 푸시 알림 활성화 여부
-    @Column(name = "daily_reminder_push_notification_enabled", nullable = false)
-    private boolean dailyReminderPushNotificationEnabled = true;
-
     @CreatedDate  // 유저가 생성된 시간이다.
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -263,20 +256,6 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
      */
     public void setChallengeInvitePushNotificationEnabled(boolean enabled) {
         this.challengeInvitePushNotificationEnabled = enabled;
-    }
-
-    /*
-        동기부여 메시지 푸시 알림 활성화 여부를 설정하는 함수이다.
-     */
-    public void setMotivationMessagePushNotificationEnabled(boolean enabled) {
-        this.motivationMessagePushNotificationEnabled = enabled;
-    }
-
-    /*
-        전체 일일 리마인더 푸시 알림 활성화 여부를 설정하는 함수이다.
-     */
-    public void setDailyReminderPushNotificationEnabled(boolean enabled) {
-        this.dailyReminderPushNotificationEnabled = enabled;
     }
 
     /*

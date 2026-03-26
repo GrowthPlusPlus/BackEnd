@@ -142,13 +142,7 @@ public class MotivationNotificationService {
      */
     @Transactional
     public void sendMotivationNotificationToUser(User user) {
-        // 1. 전체 알림이 아니라 "동기부여 메시지 푸시 알림" 활성화 여부만 확인한다.
-        if (!user.isMotivationMessagePushNotificationEnabled()) {
-            log.debug("사용자 {}의 동기부여 메시지 푸시 알림이 비활성화되어 있어 발송하지 않습니다.", user.getEmail());
-            return;
-        }
-
-        // 2. 랜덤하게 동기부여 메시지를 선택한다.
+        // 1. 랜덤하게 동기부여 메시지를 선택한다.
         String message = MOTIVATION_MESSAGES.get(random.nextInt(MOTIVATION_MESSAGES.size()));
 
         /*3. 인앱 알림을 DB에 저장한다. -> 현재 동기부여 메세지는 푸시알림만 가도록 구현
@@ -159,7 +153,7 @@ public class MotivationNotificationService {
                 .build();
         notificationRepository.save(notification);
         */
-        // 4. FCM 토큰이 있으면 푸시 알림을 발송한다.
+        // 2. FCM 토큰이 있으면 푸시 알림을 발송한다.
         if (user.getFcmToken() != null && !user.getFcmToken().isBlank()) {
             String title = "오늘의 동기부여 메시지";
             FcmMessageDto messageDto = new FcmMessageDto(title, message);

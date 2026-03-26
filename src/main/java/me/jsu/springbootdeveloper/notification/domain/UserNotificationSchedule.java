@@ -54,6 +54,9 @@ public class UserNotificationSchedule {
     @Column(name = "enabled", nullable = false)
     private boolean enabled;  // 동기부여 알림 활성화 여부이다. 기본값은 true이다.
 
+    @Column(name = "daily_reminder_push_notification_enabled", nullable = false)
+    private boolean dailyReminderPushNotificationEnabled = true;  // 전체 일일(주간) 리마인더 푸시 알림 활성화 여부이다.
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;  // 설정이 생성된 시간이다.
@@ -63,10 +66,16 @@ public class UserNotificationSchedule {
     private LocalDateTime updatedAt;  // 설정이 마지막으로 수정된 시간이다.
 
     @Builder
-    public UserNotificationSchedule(User user, LocalTime notificationTime, boolean enabled) {
+    public UserNotificationSchedule(
+            User user,
+            LocalTime notificationTime,
+            boolean enabled,
+            boolean dailyReminderPushNotificationEnabled) {
+
         this.user = user;
         this.notificationTime = notificationTime;
         this.enabled = enabled;
+        this.dailyReminderPushNotificationEnabled = dailyReminderPushNotificationEnabled;
     }
 
     /*
@@ -83,5 +92,13 @@ public class UserNotificationSchedule {
      */
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    /*
+        전체 일일(주간) 리마인더 푸시 알림 활성화 여부를 변경하는 함수이다.
+        @param enabled 활성화 여부
+     */
+    public void setDailyReminderPushNotificationEnabled(boolean enabled) {
+        this.dailyReminderPushNotificationEnabled = enabled;
     }
 }
