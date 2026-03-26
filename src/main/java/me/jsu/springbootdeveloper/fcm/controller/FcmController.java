@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.fcm.dto.FcmNotificationSettingDto;
 import me.jsu.springbootdeveloper.fcm.dto.FcmTokenRequestDto;
+import me.jsu.springbootdeveloper.fcm.dto.PushNotificationSettingsResponse;
 import me.jsu.springbootdeveloper.fcm.service.FcmService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -24,6 +25,33 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/fcm")
 public class FcmController {
     private final FcmService fcmService;
+
+    /*
+        로그인한 사용자의 푸시 알림 설정을 조회하는 API이다.
+        앱의 "푸시 알림" 설정 페이지 초기 진입 시 사용한다.
+     */
+    @Operation(
+            summary = "푸시 알림 설정 조회",
+            description = """
+        로그인한 사용자의 푸시 알림 설정 값을 조회한다.
+        - 전체 알림, 친구 알림, 전체 멤버 반응/인증, 챌린지 초대
+        - 동기부여 알림, 전체 리마인더 알림(스케줄러 기반)
+
+        ex) GET /api/fcm/notification/settings
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "푸시 알림 설정 조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패")
+    })
+    @GetMapping("/notification/settings")
+    public ResponseEntity<PushNotificationSettingsResponse> getPushNotificationSettings(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        return ResponseEntity.ok(
+                fcmService.getPushNotificationSettings(userDetails.getUsername())
+        );
+    }
 
     /*
         FCM 토큰을 등록하거나 업데이트하는 API이다.
