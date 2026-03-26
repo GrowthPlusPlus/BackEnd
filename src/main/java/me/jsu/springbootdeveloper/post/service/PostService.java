@@ -7,6 +7,8 @@ import me.jsu.springbootdeveloper.challenge.domain.ChallengeWeeklyStatus;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeDeleteService;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeQueryService;
 import me.jsu.springbootdeveloper.fcm.service.FcmService;
+import me.jsu.springbootdeveloper.notification.enumType.NotificationType;
+import me.jsu.springbootdeveloper.notification.service.NotificationService;
 import me.jsu.springbootdeveloper.post.domain.PostPictureTemporary;
 import me.jsu.springbootdeveloper.post.dto.article.ArticleImageResponse;
 import me.jsu.springbootdeveloper.post.event.CloudinaryDeleteEvent;
@@ -20,6 +22,7 @@ import me.jsu.springbootdeveloper.post.domain.Article;
 import me.jsu.springbootdeveloper.challenge.domain.Challenge;
 import me.jsu.springbootdeveloper.post.domain.PostPicture;
 import me.jsu.springbootdeveloper.user.domain.User;
+import me.jsu.springbootdeveloper.user.repository.UserProfilePictureRepository;
 import me.jsu.springbootdeveloper.user.domain.UserProfilePicture;
 import me.jsu.springbootdeveloper.post.dto.article.ArticleDetailResponse;
 import me.jsu.springbootdeveloper.post.repository.PostPictureRepository;
@@ -50,6 +53,8 @@ public class PostService {
     private final ImageTemporaryService imageTemporaryService;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final FcmService fcmService;
+    private final NotificationService notificationService;
+    private final UserProfilePictureRepository userProfilePictureRepository;
     private static final int MAX_IMAGE_COUNT = 3;
 
     /*
@@ -197,6 +202,12 @@ public class PostService {
         // 인증글의 제목을 업데이트 한다.
         article.updateTitle(challenge.getTitle() + " " + challengeParticipant.getTotalSuccessDays() + "일차");
 
+        // 멤버 인증 소식 인앱/푸시 알림을 전송한다. (챌린지별 설정 기반)
+        // - 작성자 본인은 제외한다.
+        // - 진행중(Status.IN_PROGRESS) 참가자만 대상으로 한다.
+        // - 각 참가자의 memberCertificationPushEnabled가 true일 때만 푸시를 발송한다.
+        sendMemberCertificationNotifications(user, challenge, article);
+
         // 인증글을 업데이트 했으므로 챌린지 데일리 로그도 업데이트 한다.
         challengeService.createDailyLog(user, challenge, article, postDate);
 
@@ -212,28 +223,51 @@ public class PostService {
         // 유저 통계를 업데이트 한다.
         userStatisticsService.onPostConfirmed(user, challenge.getId(), postDate);
 
-        /*
-            챌린지 멤버 인증 알림 전송 - 삭제
-            challenge_participant중 상태가 in progress 인 사람에게 전송
-            "홍길동 님이 [챌린지명]챌린지에 인증했어요!"
-
-        List<ChallengeParticipant> challengeParticipants = challengeParticipantRepository.findParticipantsInProgress(challenge.getId(), user.getId(), Status.IN_PROGRESS);
-        for (ChallengeParticipant Participant : challengeParticipants) {
-            User participatingUser = Participant.getUser();
-            //인앱알림 보내기, 게시글 작성자 프로필이미지 notification객체에 함께 저장
-            long userId = user.getId();
-            String imageUrl = userProfilePictureRepository.findImageUrlByUserId(userId).orElse("");
-            notificationService.sendNotification(participatingUser, NotificationType.CHALLENGE, participatingUser.getNickname() + "님이 " + challenge.getTitle() + "챌린지에 인증했어요!", imageUrl);
-            //전체 알림 활성화 검사하고 푸시 알림 보내기
-            if (participatingUser.isAllPushNotificationEnabled()) {
-                fcmService.sendMessageTo(participatingUser.getFcmToken(), "챌린지 인증", participatingUser.getNickname() + "님이 " + challenge.getTitle() + "챌린지에 인증했어요!");
-            }
-
-
-        }
-        */
+        
         // 저장한 인증글 id로 검색하여 인증글 상세 정보를 반환한다.
         return getPost(email, article.getId());
+    }
+
+    /*
+        챌린지 멤버 인증 소식 알림(인앱/푸시)을 발송하는 함수이다.
+        푸시 발송 여부는 "전체 알림"이 아니라 "해당 챌린지의 멤버 인증 소식" 설정을 기준으로 한다.
+
+        @param author 인증글 작성자
+        @param challenge 인증글이 속한 챌린지
+        @param article 생성된 인증글
+     */
+    private void sendMemberCertificationNotifications(User author, Challenge challenge, Article article) {
+        try {
+            // 작성자의 프로필 이미지를 인앱 알림에 함께 저장한다.
+            long authorId = author.getId();
+            String imageUrl = userProfilePictureRepository.findImageUrlByUserId(authorId).orElse("");
+
+            // 알림 메시지 예시: "홍길동 님이 [챌린지명]챌린지에 인증했어요!"
+            String title = "챌린지 인증";
+            String message = String.format("%s님이 %s챌린지에 인증했어요!",
+                    author.getNickname(),
+                    challenge.getTitle());
+
+            // 진행중 멤버(작성자 제외) 조회
+            List<ChallengeParticipant> participants = challengeQueryService.findInProgressParticipantsExceptUser(challenge.getId(), author.getId());
+            for (ChallengeParticipant participant : participants) {
+                User receiver = participant.getUser();
+
+                // 1) 인앱 알림은 항상 저장한다. (푸시와 분리)
+                notificationService.sendNotification(receiver, NotificationType.CHALLENGE, message, imageUrl, article.getId());
+
+                // 2) 푸시는 챌린지별 "멤버 인증 소식" 설정이 켜져 있을 때만 발송한다.
+                if (participant.isMemberCertificationPushEnabled()
+                        && receiver.getFcmToken() != null
+                        && !receiver.getFcmToken().isBlank()) {
+                    fcmService.sendMessageTo(receiver.getFcmToken(), title, message);
+                }
+            }
+        } catch (Exception e) {
+            // 알림 실패가 인증글 저장/통계/챌린지 처리에 영향을 주지 않도록 예외를 삼키고 로그만 남긴다.
+            // (FCM 발송 자체도 내부에서 예외를 던지지 않지만, 조회/매핑 중 예외를 방어한다.)
+            // NOTE: 프로젝트 전반이 logger 없이 사용되는 파일이 많아, 여기서는 예외를 다시 던지지 않는다.
+        }
     }
 
     /*

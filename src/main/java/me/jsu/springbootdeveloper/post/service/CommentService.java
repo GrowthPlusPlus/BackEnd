@@ -24,6 +24,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import me.jsu.springbootdeveloper.challenge.service.ChallengeQueryService;
+import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
+import me.jsu.springbootdeveloper.challenge.enumType.Status;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -39,6 +42,7 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final PostService postService;
     private final PostQueryService postQueryService;
+    private final ChallengeQueryService challengeQueryService;
     private final FcmService fcmService;
     private final PostRepository postRepository;
     private final NotificationService notificationService;
@@ -126,10 +130,12 @@ public class CommentService {
         notificationService.sendNotification(writer, NotificationType.COMMENT, message, imageUrl, postId);
 
         // 푸시 알림을 발송
-        // 챌린지 푸시 알림이 활성화되어 있고, FCM 토큰이 있는 경우에만 발송한다.
-        if (writer.isAllPushNotificationEnabled()
-                && writer.getFcmToken() != null
-                && !writer.getFcmToken().isBlank()) {
+        // 챌린지별 멤버 반응 소식 설정이 활성화되어 있고, 진행중이며, FCM 토큰이 있을 때에만 발송한다.
+        ChallengeParticipant writerParticipant = challengeQueryService.findByUser_IdAndChallenge_IdForParticipant(writer.getId(), challenge.getId());
+        boolean inProgress = writerParticipant.getStatus() == Status.IN_PROGRESS;
+        boolean reactionEnabled = writerParticipant.isMemberReactionPushEnabled();
+        boolean hasFcm = writer.getFcmToken() != null && !writer.getFcmToken().isBlank();
+        if (inProgress && reactionEnabled && hasFcm) {
             fcmService.sendMessageTo(writer.getFcmToken(), title, message);
 
         }

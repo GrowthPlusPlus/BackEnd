@@ -113,6 +113,14 @@ public class ChallengeParticipant {
     @Column(name = "ranking_score")
     private Double rankingScore = 0.0;
 
+    // 챌린지별 푸시 알림 설정: 멤버 인증 소식
+    @Column(name = "member_certification_push_enabled", nullable = false)
+    private boolean memberCertificationPushEnabled = true;
+
+    // 챌린지별 푸시 알림 설정: 멤버 반응 소식(댓글/좋아요)
+    @Column(name = "member_reaction_push_enabled", nullable = false)
+    private boolean memberReactionPushEnabled = true;
+
     @Builder
     public ChallengeParticipant(Challenge challenge, User user, LocalDate joinDate, int totalWeeks) {
         this.challenge = challenge;
@@ -124,6 +132,8 @@ public class ChallengeParticipant {
         this.maxStreakDays = 0;
         this.successWeeks = 0;
         this.totalWeeks = totalWeeks;
+        this.memberCertificationPushEnabled = true;
+        this.memberReactionPushEnabled = true;
     }
 
     /*

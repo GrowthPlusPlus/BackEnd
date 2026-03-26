@@ -21,6 +21,7 @@ class VectorStoreConfig {
 
     @Bean
     open fun vectorStore(jdbcTemplate: JdbcTemplate, embeddingModel: EmbeddingModel): PgVectorStore {
+        //vectorStore 객체의 재료로 이미 embeddingModel 을 빈으로 주입받고 있음.
         return PgVectorStore.builder(jdbcTemplate, embeddingModel)  // 텍스트를 벡터 임베딩으로 변환해주는 서비스이다.
             .build()
     }
