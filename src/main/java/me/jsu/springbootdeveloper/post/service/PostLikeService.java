@@ -110,9 +110,10 @@ public class PostLikeService {
         // 챌린지별 멤버 반응 소식 설정이 활성화되어 있고, 진행중이며, FCM 토큰이 있을 때에만 발송한다.
         ChallengeParticipant writerParticipant = challengeQueryService.findByUser_IdAndChallenge_IdForParticipant(writer.getId(), challenge.getId());
         boolean inProgress = writerParticipant.getStatus() == Status.IN_PROGRESS;
+        boolean challengeAllEnabled = writerParticipant.isChallengeAllPushEnabled();
         boolean reactionEnabled = writerParticipant.isMemberReactionPushEnabled();
         boolean hasFcm = writer.getFcmToken() != null && !writer.getFcmToken().isBlank();
-        if (inProgress && reactionEnabled && hasFcm) {
+        if (inProgress && challengeAllEnabled && reactionEnabled && hasFcm) {
             fcmService.sendMessageTo(writer.getFcmToken(), title, message);
         }
     }

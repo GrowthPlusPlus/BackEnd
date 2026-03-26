@@ -137,7 +137,7 @@ public class FcmController {
             @ApiResponse(responseCode = "401", description = "인증 실패")
     })
     @PutMapping("/notification/all")
-    public ResponseEntity<Void> setAllFriendPushNotificationEnabled(
+    public ResponseEntity<Void> setAllPushNotificationEnabled(
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody FcmNotificationSettingDto request
     ) {

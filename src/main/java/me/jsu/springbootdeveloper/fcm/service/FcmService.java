@@ -9,7 +9,7 @@ import com.google.firebase.messaging.Notification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.jsu.springbootdeveloper.fcm.dto.FcmMessageDto;
-import me.jsu.springbootdeveloper.user.domain.User;
+import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
 import me.jsu.springbootdeveloper.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -295,6 +295,23 @@ public class FcmService {
                 .ifPresentOrElse(
                         user -> {
                             user.setAllPushNotificationEnabled(enabled);
+                            user.setFriendPushNotificationEnabled(enabled);
+                            user.setAllMemberCertificationPushNotificationEnabled(enabled);
+                            user.setAllMemberReactionPushNotificationEnabled(enabled);
+                            user.setChallengeInvitePushNotificationEnabled(enabled);
+                            user.setMotivationMessagePushNotificationEnabled(enabled);
+                            user.setDailyReminderPushNotificationEnabled(enabled);
+
+                            // 유저가 참여 중인 모든 챌린지에서도 공통 게이트 및 개별 푸시 토글을 연쇄 변경한다.
+                            if (user.getChallengeParticipants() != null) {
+                                for (ChallengeParticipant participant : user.getChallengeParticipants()) {
+                                    participant.setChallengeAllPushEnabled(enabled);
+                                    participant.setDailyReminderPushEnabled(enabled);
+                                    participant.setMemberReactionPushEnabled(enabled);
+                                    participant.setMemberCertificationPushEnabled(enabled);
+                                }
+                            }
+
                             log.info("전체 푸시 알림 설정을 변경했습니다. 사용자: {}, 활성화: {}", email, enabled);
                         },
                         () -> {

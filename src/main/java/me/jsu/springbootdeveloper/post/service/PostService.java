@@ -256,8 +256,9 @@ public class PostService {
                 // 1) 인앱 알림은 항상 저장한다. (푸시와 분리)
                 notificationService.sendNotification(receiver, NotificationType.CHALLENGE, message, imageUrl, article.getId());
 
-                // 2) 푸시는 챌린지별 "멤버 인증 소식" 설정이 켜져 있을 때만 발송한다.
-                if (participant.isMemberCertificationPushEnabled()
+                // 2) 푸시는 챌린지 공통 게이트(challengeAll) + 챌린지별 "멤버 인증 소식" 설정이 켜져 있을 때만 발송한다.
+                if (participant.isChallengeAllPushEnabled()
+                        && participant.isMemberCertificationPushEnabled()
                         && receiver.getFcmToken() != null
                         && !receiver.getFcmToken().isBlank()) {
                     fcmService.sendMessageTo(receiver.getFcmToken(), title, message);
