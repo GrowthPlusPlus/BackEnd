@@ -1,15 +1,12 @@
 package me.jsu.springbootdeveloper.user.service;
 
 import lombok.RequiredArgsConstructor;
-import me.jsu.springbootdeveloper.challenge.repository.ChallengeInviteRepository;
 import me.jsu.springbootdeveloper.fcm.service.FcmService;
 import me.jsu.springbootdeveloper.notification.enumType.NotificationType;
-import me.jsu.springbootdeveloper.notification.repository.NotificationRepository;
 import me.jsu.springbootdeveloper.notification.service.NotificationService;
 import me.jsu.springbootdeveloper.user.dto.FriendListResponse;
 import me.jsu.springbootdeveloper.user.dto.FriendRequestResponse_Received;
 import me.jsu.springbootdeveloper.user.dto.FriendRequestResponse_Sent;
-import me.jsu.springbootdeveloper.challenge.repository.ChallengeParticipantRepository;
 import me.jsu.springbootdeveloper.user.repository.FriendRequestRepository;
 import me.jsu.springbootdeveloper.user.repository.FriendshipRepository;
 import me.jsu.springbootdeveloper.user.repository.UserProfilePictureRepository;
@@ -32,8 +29,7 @@ public class FriendService {
     private final FriendshipRepository friendshipRepository;
     private final UserRepository userRepository;
     private final UserProfilePictureRepository userProfilePictureRepository;
-    private final ChallengeInviteRepository challengeInviteRepository;
-    private final ChallengeParticipantRepository challengeParticipantRepository;
+    // ChallengeInviteRepository / ChallengeParticipantRepository는 현재 FriendService에서 사용하지 않는다.
     private final FcmService fcmService;  // FCM 푸시 알림 발송을 위한 서비스
     private final UserService userService;
     private final NotificationService notificationService;
@@ -83,7 +79,10 @@ public class FriendService {
         String imageUrl = userProfilePictureRepository.findImageUrlByUserId(fromUserId).orElse("");
         notificationService.sendNotification(toUser, NotificationType.FRIEND_REQUEST, message, imageUrl);
         // 친구 요청을 받은 사용자(toUser)에게 푸시 알림을 발송한다.
-        if (toUser.isAllPushNotificationEnabled() && toUser.getFcmToken() != null && !toUser.getFcmToken().isBlank()) {
+        // 전체 알림이 아니라 "친구 기능 푸시 알림" 활성화 여부만 확인한다.
+        if (toUser.isFriendPushNotificationEnabled()
+                && toUser.getFcmToken() != null
+                && !toUser.getFcmToken().isBlank()) {
             String title = "친구 요청";
             fcmService.sendMessageTo(toUser.getFcmToken(), title, message);
         }
@@ -176,7 +175,8 @@ public class FriendService {
 
         // 친구 신청을 보낸 사용자(fromUser)에게 푸시 알림을 발송한다.
         // 푸시 알림이 활성화되어 있고, FCM 토큰이 있는 경우에만 발송한다.
-        if (fromUser.isAllPushNotificationEnabled()
+        // 전체 알림이 아니라 "친구 기능 푸시 알림" 활성화 여부만 확인한다.
+        if (fromUser.isFriendPushNotificationEnabled()
                 && fromUser.getFcmToken() != null 
                 && !fromUser.getFcmToken().isBlank()) {
 

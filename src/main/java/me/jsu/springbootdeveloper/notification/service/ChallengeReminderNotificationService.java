@@ -11,7 +11,6 @@ import me.jsu.springbootdeveloper.challenge.repository.ChallengeParticipantRepos
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeWeeklyStatusRepository;
 import me.jsu.springbootdeveloper.fcm.dto.FcmMessageDto;
 import me.jsu.springbootdeveloper.fcm.service.FcmService;
-import me.jsu.springbootdeveloper.notification.enumType.NotificationType;
 import me.jsu.springbootdeveloper.user.domain.User;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -29,8 +28,8 @@ import java.util.Optional;
     챌린지 주간 인증 마감 60분 전에, 아직 주간 인증 조건(주당 최소 인증 횟수)을
     모두 채우지 못한 사용자에게 푸시 알림(리마인더)을 보내는 서비스이다.
     - 사용자가 참여 중(IN_PROGRESS)인 챌린지만 대상으로 한다.
-    - 이번 주의 인증 횟수는 ChallengeWeeklyStatus 테이블의 successCount를 기준으로 판단한다.
-    - 전체 푸시 알림이 비활성화된 사용자(all_push_notification_enabled=false)는 제외한다.
+	 - 이번 주의 인증 횟수는 ChallengeWeeklyStatus 테이블의 successCount를 기준으로 판단한다.
+	 - 푸시 발송 여부는 User의 "전체 푸시 알림"이 아니라, 챌린지별 ChallengeParticipant의 토글 값을 기준으로 판단한다.
  */
 @Slf4j
 @Service
@@ -39,7 +38,6 @@ public class ChallengeReminderNotificationService {
 
     private final ChallengeParticipantRepository challengeParticipantRepository;
     private final ChallengeWeeklyStatusRepository challengeWeeklyStatusRepository;
-    private final NotificationService notificationService;
     private final FcmService fcmService;
     
     /*
@@ -117,11 +115,10 @@ public class ChallengeReminderNotificationService {
         Challenge challenge = participant.getChallenge();
         User user = participant.getUser();
 
-        // 2. 전체 푸시 알림이 비활성화된 유저는 리마인더 대상에서 제외한다.
-        if (!user.isAllPushNotificationEnabled()) {
+        // 2. 챌린지 참여 유저의 (개별) 일일 리마인더 푸시 알림 활성화 여부를 확인한다.
+        if (!participant.isDailyReminderPushEnabled()) {
             return false;
-        }
-
+        } 
         // 3. 현재 날짜(today)가 챌린지 기간 안에 있는지 확인한다.
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
         if (today.isBefore(challenge.getStartDate()) || today.isAfter(challenge.getEndDate())) {

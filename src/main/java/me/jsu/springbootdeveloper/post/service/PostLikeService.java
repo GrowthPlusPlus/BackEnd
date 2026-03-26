@@ -20,6 +20,9 @@ import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.post.repository.PostLikeRepository;
 import org.springframework.stereotype.Service;
+import me.jsu.springbootdeveloper.challenge.service.ChallengeQueryService;
+import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
+import me.jsu.springbootdeveloper.challenge.enumType.Status;
 
 import java.util.List;
 
@@ -33,6 +36,7 @@ public class PostLikeService {
     private final UserService userService;
     private final PostRepository postRepository;
     private final NotificationService notificationService;
+    private final ChallengeQueryService challengeQueryService;
     private final FcmService fcmService;
     private final UserProfilePictureRepository userProfilePictureRepository;
 
@@ -102,9 +106,14 @@ public class PostLikeService {
         long userId = user.getId();
         String imageUrl = userProfilePictureRepository.findImageUrlByUserId(userId).orElse("");
         notificationService.sendNotification(writer, NotificationType.LIKE, message, imageUrl, postId);
-        if (writer.isFriendPushNotificationEnabled()
-                && writer.getFcmToken() != null
-                && !writer.getFcmToken().isBlank()) {
+
+        // 챌린지별 멤버 반응 소식 설정이 활성화되어 있고, 진행중이며, FCM 토큰이 있을 때에만 발송한다.
+        ChallengeParticipant writerParticipant = challengeQueryService.findByUser_IdAndChallenge_IdForParticipant(writer.getId(), challenge.getId());
+        boolean inProgress = writerParticipant.getStatus() == Status.IN_PROGRESS;
+        boolean challengeAllEnabled = writerParticipant.isChallengeAllPushEnabled();
+        boolean reactionEnabled = writerParticipant.isMemberReactionPushEnabled();
+        boolean hasFcm = writer.getFcmToken() != null && !writer.getFcmToken().isBlank();
+        if (inProgress && challengeAllEnabled && reactionEnabled && hasFcm) {
             fcmService.sendMessageTo(writer.getFcmToken(), title, message);
         }
     }

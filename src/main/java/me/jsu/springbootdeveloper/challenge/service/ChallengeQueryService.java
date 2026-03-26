@@ -152,6 +152,19 @@ public class ChallengeQueryService {
     }
 
     /*
+        특정 챌린지에서 진행중인 참가자 중, 특정 유저(보통 작성자)를 제외한 참가자 목록을 반환하는 함수이다.
+        멤버 인증/반응 푸시 알림 발송 대상을 고를 때 사용한다.
+
+        @param challengeId 챌린지 id
+        @param excludedUserId 제외할 유저 id (작성자 본인 등)
+        @return 진행중인 참가자 목록 (유저 포함 fetch)
+     */
+    public List<ChallengeParticipant> findInProgressParticipantsExceptUser(Long challengeId, Long excludedUserId) {
+        // repository 쿼리가 join fetch cp.user 를 포함하므로 N+1을 줄일 수 있다.
+        return challengeParticipantRepository.findParticipantsInProgress(challengeId, excludedUserId, Status.IN_PROGRESS);
+    }
+
+    /*
         유저 id, 챌린지 id, 이번주 날짜로 챌린지 주간 상태 값을 리턴하는 함수이다.
         주간 상태 업데이트에 사용된다.
      */
