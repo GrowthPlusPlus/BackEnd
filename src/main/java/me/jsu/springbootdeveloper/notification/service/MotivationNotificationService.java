@@ -104,16 +104,23 @@ public class MotivationNotificationService {
      */
     @Transactional
     public void sendMotivationNotifications(LocalTime notificationTime) {
-        // 1. 해당 시간에 알림을 받도록 설정된 활성화된 사용자들을 조회한다.
-        List<UserNotificationSchedule> schedules = scheduleRepository
-                .findEnabledSchedulesByNotificationTime(notificationTime);
+        // 1. 스케줄러는 '정각(분=0)' 기준으로 호출하지만, 사용자가 설정한 시간은 '시(hour)'만 비교한다.
+        int notificationHour = notificationTime.getHour();
+
+        // 2. 활성화된 모든 알림 설정을 조회한 뒤 '시(hour)'만 필터링한다.
+        //    - 분(minute)은 무시하므로 설정이 09:15여도 09시에 발송된다.
+        List<UserNotificationSchedule> schedules = scheduleRepository.findByEnabledTrue();
+        schedules = schedules.stream()
+                .filter(schedule -> schedule.getNotificationTime() != null)
+                .filter(schedule -> schedule.getNotificationTime().getHour() == notificationHour)
+                .toList();
 
         if (schedules.isEmpty()) {
-            log.debug("{} 시간에 알림을 받을 사용자가 없습니다.", notificationTime);
+            log.debug("정각 시(hour) {}에 알림을 받을 사용자가 없습니다.", notificationHour);
             return;
         }
 
-        log.info("{} 시간에 {}명의 사용자에게 동기부여 메시지를 발송합니다.", notificationTime, schedules.size());
+        log.info("정각 시(hour) {}에 {}명의 사용자에게 동기부여 메시지를 발송합니다.", notificationHour, schedules.size());
 
         // 2. 각 사용자에게 동기부여 메시지를 발송한다.
         for (UserNotificationSchedule schedule : schedules) {

@@ -156,7 +156,7 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
     @OneToMany(mappedBy = "user", cascade = REMOVE, fetch = FetchType.LAZY)
     private List<PostPictureTemporary> postPictureTemporaries;
 
-    @OneToOne(mappedBy = "user", cascade = REMOVE)
+    @OneToOne(mappedBy = "user", cascade = REMOVE, fetch = FetchType.LAZY)
     private RefreshToken refreshToken;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE)
