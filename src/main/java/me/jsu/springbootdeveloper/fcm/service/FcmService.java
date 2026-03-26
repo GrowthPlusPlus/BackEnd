@@ -288,6 +288,79 @@ public class FcmService {
                 );
     }
 
+    /*
+        챌린지 초대 푸시 알림 활성화 여부를 설정한다.
+
+        @param email 사용자 이메일
+        @param enabled 활성화 여부
+     */
+    @Transactional
+    public void setChallengeInvitePushNotificationEnabled(String email, boolean enabled) {
+        userRepository.findByEmail(email)
+                .ifPresentOrElse(
+                        user -> {
+                            user.setChallengeInvitePushNotificationEnabled(enabled);
+                            log.info("챌린지 초대 푸시 알림 설정을 변경했습니다. 사용자: {}, 활성화: {}", email, enabled);
+                        },
+                        () -> {
+                            log.warn("챌린지 초대 푸시 알림 설정 변경 실패: 사용자를 찾을 수 없습니다. 이메일: {}", email);
+                            throw new IllegalArgumentException("사용자를 찾을 수 없습니다: " + email);
+                        }
+                );
+    }
+
+    /*
+        동기부여 메시지 푸시 알림 활성화 여부를 설정한다.
+
+        @param email 사용자 이메일
+        @param enabled 활성화 여부
+     */
+    @Transactional
+    public void setMotivationMessagePushNotificationEnabled(String email, boolean enabled) {
+        userRepository.findByEmail(email)
+                .ifPresentOrElse(
+                        user -> {
+                            user.setMotivationMessagePushNotificationEnabled(enabled);
+                            log.info("동기부여 메시지 푸시 알림 설정을 변경했습니다. 사용자: {}, 활성화: {}", email, enabled);
+                        },
+                        () -> {
+                            log.warn("동기부여 메시지 푸시 알림 설정 변경 실패: 사용자를 찾을 수 없습니다. 이메일: {}", email);
+                            throw new IllegalArgumentException("사용자를 찾을 수 없습니다: " + email);
+                        }
+                );
+    }
+
+    /*
+        전체 일일 리마인더(주간 리마인더) 푸시 알림 활성화 여부를 설정하고,
+        사용자가 참여 중인 모든 챌린지의 ChallengeParticipant.dailyReminderPushEnabled 값도 함께 연쇄적으로 변경한다.
+
+        @param email 사용자 이메일
+        @param enabled 활성화 여부
+     */
+    @Transactional
+    public void setDailyReminderPushNotificationEnabled(String email, boolean enabled) {
+        userRepository.findByEmail(email)
+                .ifPresentOrElse(
+                        user -> {
+                            user.setDailyReminderPushNotificationEnabled(enabled);
+
+                            if (user.getChallengeParticipants() != null) {
+                                for (ChallengeParticipant participant : user.getChallengeParticipants()) {
+                                    participant.setDailyReminderPushEnabled(enabled);
+                                }
+                            }
+
+                            log.info("전체 일일 리마인더 푸시 알림 설정을 변경했습니다. 사용자: {}, 활성화: {}",
+                                    email, enabled);
+                        },
+                        () -> {
+                            log.warn("전체 일일 리마인더 푸시 알림 설정 변경 실패: 사용자를 찾을 수 없습니다. 이메일: {}",
+                                    email);
+                            throw new IllegalArgumentException("사용자를 찾을 수 없습니다: " + email);
+                        }
+                );
+    }
+
     //전체 푸시 알림 on/off
     @Transactional
     public void setAllPushNotificationEnabled(String email, boolean enabled) {
@@ -316,6 +389,68 @@ public class FcmService {
                         },
                         () -> {
                             log.warn("푸시 알림 설정 변경 실패: 사용자를 찾을 수 없습니다. 이메일: {}", email);
+                            throw new IllegalArgumentException("사용자를 찾을 수 없습니다: " + email);
+                        }
+                );
+    }
+
+    /*
+        전체 멤버 인증 소식 푸시 알림 활성화 여부를 설정하고,
+        사용자가 참여 중인 모든 챌린지의 ChallengeParticipant '멤버 인증 소식' 값도 함께 연쇄적으로 변경한다.
+
+        @param email 사용자 이메일
+        @param enabled 활성화 여부
+     */
+    @Transactional
+    public void setAllMemberCertificationPushNotificationEnabled(String email, boolean enabled) {
+        userRepository.findByEmail(email)
+                .ifPresentOrElse(
+                        user -> {
+                            user.setAllMemberCertificationPushNotificationEnabled(enabled);
+
+                            if (user.getChallengeParticipants() != null) {
+                                for (ChallengeParticipant participant : user.getChallengeParticipants()) {
+                                    participant.setMemberCertificationPushEnabled(enabled);
+                                }
+                            }
+
+                            log.info("전체 멤버 인증 소식 푸시 알림 설정을 변경했습니다. 사용자: {}, 활성화: {}",
+                                    email, enabled);
+                        },
+                        () -> {
+                            log.warn("전체 멤버 인증 소식 푸시 알림 설정 변경 실패: 사용자를 찾을 수 없습니다. 이메일: {}",
+                                    email);
+                            throw new IllegalArgumentException("사용자를 찾을 수 없습니다: " + email);
+                        }
+                );
+    }
+
+    /*
+        전체 멤버 반응 소식 푸시 알림 활성화 여부를 설정하고,
+        사용자가 참여 중인 모든 챌린지의 ChallengeParticipant '멤버 반응 소식' 값도 함께 연쇄적으로 변경한다.
+
+        @param email 사용자 이메일
+        @param enabled 활성화 여부
+     */
+    @Transactional
+    public void setAllMemberReactionPushNotificationEnabled(String email, boolean enabled) {
+        userRepository.findByEmail(email)
+                .ifPresentOrElse(
+                        user -> {
+                            user.setAllMemberReactionPushNotificationEnabled(enabled);
+
+                            if (user.getChallengeParticipants() != null) {
+                                for (ChallengeParticipant participant : user.getChallengeParticipants()) {
+                                    participant.setMemberReactionPushEnabled(enabled);
+                                }
+                            }
+
+                            log.info("전체 멤버 반응 소식 푸시 알림 설정을 변경했습니다. 사용자: {}, 활성화: {}",
+                                    email, enabled);
+                        },
+                        () -> {
+                            log.warn("전체 멤버 반응 소식 푸시 알림 설정 변경 실패: 사용자를 찾을 수 없습니다. 이메일: {}",
+                                    email);
                             throw new IllegalArgumentException("사용자를 찾을 수 없습니다: " + email);
                         }
                 );
