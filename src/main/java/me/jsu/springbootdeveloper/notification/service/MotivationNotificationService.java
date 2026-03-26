@@ -104,16 +104,23 @@ public class MotivationNotificationService {
      */
     @Transactional
     public void sendMotivationNotifications(LocalTime notificationTime) {
-        // 1. 해당 시간에 알림을 받도록 설정된 활성화된 사용자들을 조회한다.
-        List<UserNotificationSchedule> schedules = scheduleRepository
-                .findEnabledSchedulesByNotificationTime(notificationTime);
+        // 1. 스케줄러는 '정각(분=0)' 기준으로 호출하지만, 사용자가 설정한 시간은 '시(hour)'만 비교한다.
+        int notificationHour = notificationTime.getHour();
+
+        // 2. 활성화된 모든 알림 설정을 조회한 뒤 '시(hour)'만 필터링한다.
+        //    - 분(minute)은 무시하므로 설정이 09:15여도 09시에 발송된다.
+        List<UserNotificationSchedule> schedules = scheduleRepository.findByEnabledTrue();
+        schedules = schedules.stream()
+                .filter(schedule -> schedule.getNotificationTime() != null)
+                .filter(schedule -> schedule.getNotificationTime().getHour() == notificationHour)
+                .toList();
 
         if (schedules.isEmpty()) {
-            log.debug("{} 시간에 알림을 받을 사용자가 없습니다.", notificationTime);
+            log.debug("정각 시(hour) {}에 알림을 받을 사용자가 없습니다.", notificationHour);
             return;
         }
 
-        log.info("{} 시간에 {}명의 사용자에게 동기부여 메시지를 발송합니다.", notificationTime, schedules.size());
+        log.info("정각 시(hour) {}에 {}명의 사용자에게 동기부여 메시지를 발송합니다.", notificationHour, schedules.size());
 
         // 2. 각 사용자에게 동기부여 메시지를 발송한다.
         for (UserNotificationSchedule schedule : schedules) {
@@ -135,13 +142,7 @@ public class MotivationNotificationService {
      */
     @Transactional
     public void sendMotivationNotificationToUser(User user) {
-        // 1. 전체 알림이 아니라 "동기부여 메시지 푸시 알림" 활성화 여부만 확인한다.
-        if (!user.isMotivationMessagePushNotificationEnabled()) {
-            log.debug("사용자 {}의 동기부여 메시지 푸시 알림이 비활성화되어 있어 발송하지 않습니다.", user.getEmail());
-            return;
-        }
-
-        // 2. 랜덤하게 동기부여 메시지를 선택한다.
+        // 1. 랜덤하게 동기부여 메시지를 선택한다.
         String message = MOTIVATION_MESSAGES.get(random.nextInt(MOTIVATION_MESSAGES.size()));
 
         /*3. 인앱 알림을 DB에 저장한다. -> 현재 동기부여 메세지는 푸시알림만 가도록 구현
@@ -152,7 +153,7 @@ public class MotivationNotificationService {
                 .build();
         notificationRepository.save(notification);
         */
-        // 4. FCM 토큰이 있으면 푸시 알림을 발송한다.
+        // 2. FCM 토큰이 있으면 푸시 알림을 발송한다.
         if (user.getFcmToken() != null && !user.getFcmToken().isBlank()) {
             String title = "오늘의 동기부여 메시지";
             FcmMessageDto messageDto = new FcmMessageDto(title, message);
