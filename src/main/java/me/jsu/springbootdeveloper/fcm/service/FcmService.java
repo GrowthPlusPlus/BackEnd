@@ -9,6 +9,8 @@ import com.google.firebase.messaging.Notification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.jsu.springbootdeveloper.fcm.dto.FcmMessageDto;
+import me.jsu.springbootdeveloper.fcm.dto.ChallengeNotificationSettingsResponse;
+import me.jsu.springbootdeveloper.fcm.dto.PushNotificationSettingsResponse;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeParticipantRepository;
 import me.jsu.springbootdeveloper.notification.domain.UserNotificationSchedule;
@@ -34,6 +36,115 @@ public class FcmService {
     private final UserRepository userRepository;  // FCM 토큰 등록/업데이트/삭제 및 만료된 토큰 삭제를 위해 사용
     private final ChallengeParticipantRepository challengeParticipantRepository;  // 개별 챌린지 알림 토글 연쇄 변경에 사용한다.
     private final UserNotificationScheduleRepository userNotificationScheduleRepository;  // 스케줄러 기반 알림 설정(동기부여/리마인더 전역 토글)을 관리한다.
+
+    /*
+        로그인한 사용자의 "푸시 알림 설정 페이지"에 필요한 값을 조회한다.
+
+        - User 테이블에 있는 토글(전체/친구/멤버 반응/멤버 인증/챌린지 초대)을 포함한다.
+        - 스케줄러 기반 토글(동기부여/전체 리마인더)은 UserNotificationSchedule에서 조회한다.
+        - UserNotificationSchedule이 없으면, 정책에 따라 기본값으로 생성한다.
+
+        @param email 사용자 이메일
+        @return 푸시 알림 설정 조회 DTO
+     */
+    @Transactional
+    public PushNotificationSettingsResponse getPushNotificationSettings(String email) {
+        return userRepository.findByEmail(email)
+                .map(user -> {
+                    UserNotificationSchedule schedule = userNotificationScheduleRepository
+                            .findByUser_Id(user.getId())
+                            .orElseGet(() -> {
+                                LocalTime defaultTime = LocalTime.now(ZoneId.of("Asia/Seoul"))
+                                        .withMinute(0)
+                                        .withSecond(0)
+                                        .withNano(0);
+
+                                UserNotificationSchedule newSchedule = UserNotificationSchedule.builder()
+                                        .user(user)
+                                        .notificationTime(defaultTime)
+                                        .enabled(false)
+                                        .dailyReminderPushNotificationEnabled(true)
+                                        .build();
+                                return userNotificationScheduleRepository.save(newSchedule);
+                            });
+
+                    return PushNotificationSettingsResponse.builder()
+                            //전체 알림 활성화 여부 
+                            .allPushNotificationEnabled(user.isAllPushNotificationEnabled())
+                            //친구 관련 푸시 알림 활성화 여부
+                            .friendPushNotificationEnabled(user.isFriendPushNotificationEnabled())
+                            //전체 멤버 반응 푸시 알림 활성화 여부
+                            .allMemberReactionPushNotificationEnabled(user.isAllMemberReactionPushNotificationEnabled())
+                            //전체 멤버 인증 푸시 알림 활성화 여부
+                            .allMemberCertificationPushNotificationEnabled(user.isAllMemberCertificationPushNotificationEnabled())
+                            //챌린지 초대 푸시 알림 활성화 여부
+                            .challengeInvitePushNotificationEnabled(user.isChallengeInvitePushNotificationEnabled())
+                            //동기부여 메시지 푸시 알림 활성화 여부
+                            .motivationPushNotificationEnabled(schedule.isEnabled())
+                            //(전체) 일일 리마인더 푸시 알림 활성화 여부
+                            .dailyReminderPushNotificationEnabled(schedule.isDailyReminderPushNotificationEnabled())
+                            .build();
+                })
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + email));
+    }
+
+    /*
+        로그인한 사용자의 특정 챌린지 푸시 알림 설정을 조회한다.
+        대부분 ChallengeParticipant 도메인 안의 토글 값을 그대로 반환한다.
+
+        추가로 2/3/4 항목에 대해, 전체(전역) 푸시 설정에서 대응 토글이 꺼져 있는지 여부도 함께 반환한다.
+        - 리마인더 전역 토글: UserNotificationSchedule.dailyReminderPushNotificationEnabled
+        - 멤버 반응 전역 토글: User.allMemberReactionPushNotificationEnabled
+        - 멤버 인증 전역 토글: User.allMemberCertificationPushNotificationEnabled
+
+        @param email 사용자 이메일
+        @param challengeId 챌린지 id
+        @return 챌린지 알림 설정 조회 DTO
+     */
+    @Transactional
+    public ChallengeNotificationSettingsResponse getChallengeNotificationSettings(String email, Long challengeId) {
+        return userRepository.findByEmail(email)
+                .map(user -> {
+                    UserNotificationSchedule schedule = userNotificationScheduleRepository
+                            .findByUser_Id(user.getId())
+                            .orElseGet(() -> {
+                                LocalTime defaultTime = LocalTime.now(ZoneId.of("Asia/Seoul"))
+                                        .withMinute(0)
+                                        .withSecond(0)
+                                        .withNano(0);
+
+                                UserNotificationSchedule newSchedule = UserNotificationSchedule.builder()
+                                        .user(user)
+                                        .notificationTime(defaultTime)
+                                        .enabled(false)
+                                        .dailyReminderPushNotificationEnabled(true)
+                                        .build();
+                                return userNotificationScheduleRepository.save(newSchedule);
+                            });
+
+                    ChallengeParticipant participant = challengeParticipantRepository
+                            .findByUser_IdAndChallenge_Id(user.getId(), challengeId)
+                            .orElseThrow(() -> new IllegalArgumentException("해당 챌린지에 참여 중인 사용자가 아닙니다."));
+
+                    // 현재 챌린지 리마인더 발송 시간은 스케줄러가 고정으로 가지고 있다. (매주 일요일 23:00)
+                    LocalTime reminderTime = LocalTime.of(23, 0);
+
+                    return ChallengeNotificationSettingsResponse.builder()
+                            .challengeAllPushEnabled(participant.isChallengeAllPushEnabled())
+
+                            .dailyReminderPushEnabled(participant.isDailyReminderPushEnabled())
+                            .dailyReminderTime(reminderTime)
+                            .dailyReminderDisabledByGlobalSetting(!schedule.isDailyReminderPushNotificationEnabled())
+
+                            .memberReactionPushEnabled(participant.isMemberReactionPushEnabled())
+                            .memberReactionDisabledByGlobalSetting(!user.isAllMemberReactionPushNotificationEnabled())
+
+                            .memberCertificationPushEnabled(participant.isMemberCertificationPushEnabled())
+                            .memberCertificationDisabledByGlobalSetting(!user.isAllMemberCertificationPushNotificationEnabled())
+                            .build();
+                })
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + email));
+    }
     /*
         특정 사용자의 FCM 토큰으로 푸시 알림을 발송한다.
         푸시 알림 발송 실패 시에도 예외를 던지지 않고 로그만 남긴다.
@@ -329,7 +440,7 @@ public class FcmService {
                         user -> {
                             UserNotificationSchedule schedule = userNotificationScheduleRepository
                                     .findByUser_Id(user.getId())
-                                    .orElseGet(() -> {
+                                    .orElseGet(() -> {//행이 없을 경우 생성
                                         LocalTime defaultTime = LocalTime.now(ZoneId.of("Asia/Seoul"))
                                                 .withMinute(0)
                                                 .withSecond(0)
@@ -338,7 +449,7 @@ public class FcmService {
                                         UserNotificationSchedule newSchedule = UserNotificationSchedule.builder()
                                                 .user(user)
                                                 .notificationTime(defaultTime)
-                                                .enabled(false)
+                                                .enabled(false) // 기본값 false, 만약 enabled = true라면 밑에서 갱신
                                                 .dailyReminderPushNotificationEnabled(true)
                                                 .build();
                                         return userNotificationScheduleRepository.save(newSchedule);
@@ -384,7 +495,7 @@ public class FcmService {
                                     });
 
                             schedule.setDailyReminderPushNotificationEnabled(enabled);
-
+                            //유저가 참여 중인 모든 챌린지의 ChallengeParticipant.dailyReminderPushEnabled 값도 함께 연쇄적으로 변경한다.
                             if (user.getChallengeParticipants() != null) {
                                 for (ChallengeParticipant participant : user.getChallengeParticipants()) {
                                     participant.setDailyReminderPushEnabled(enabled);
