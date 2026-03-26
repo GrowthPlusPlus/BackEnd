@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import me.jsu.springbootdeveloper.fcm.dto.ChallengeNotificationSettingsResponse;
 import me.jsu.springbootdeveloper.fcm.dto.FcmNotificationSettingDto;
 import me.jsu.springbootdeveloper.fcm.dto.FcmTokenRequestDto;
 import me.jsu.springbootdeveloper.fcm.dto.PushNotificationSettingsResponse;
@@ -50,6 +51,39 @@ public class FcmController {
     ) {
         return ResponseEntity.ok(
                 fcmService.getPushNotificationSettings(userDetails.getUsername())
+        );
+    }
+
+    /*
+        로그인한 사용자의 특정 챌린지 푸시 알림 설정을 조회하는 API이다.
+        앱의 "챌린지 알림 설정" 페이지 초기 진입 시 사용한다.
+     */
+    @Operation(
+            summary = "챌린지 알림 설정 조회",
+            description = """
+        로그인한 사용자의 특정 챌린지에 대한 푸시 알림 설정 값을 조회한다.
+        - 챌린지 전체 알림
+        - 챌린지 리마인더(주간) 알림 + 시간(현재 스케줄러 고정값)
+        - 멤버 반응/인증 소식 알림
+        또한 2/3/4 항목에 대해, 전체(전역) 푸시 설정에서 대응 토글이 꺼져 있는지 여부도 같이 반환한다.
+
+        ex) GET /api/fcm/notification/challenge/{challengeId}/settings
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "챌린지 알림 설정 조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패")
+    })
+    @GetMapping("/notification/challenge/{challengeId}/settings")
+    public ResponseEntity<ChallengeNotificationSettingsResponse> getChallengeNotificationSettings(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long challengeId
+    ) {
+        return ResponseEntity.ok(
+                fcmService.getChallengeNotificationSettings(
+                        userDetails.getUsername(),
+                        challengeId
+                )
         );
     }
 

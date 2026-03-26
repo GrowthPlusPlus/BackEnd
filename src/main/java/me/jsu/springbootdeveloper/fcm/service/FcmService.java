@@ -9,6 +9,7 @@ import com.google.firebase.messaging.Notification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.jsu.springbootdeveloper.fcm.dto.FcmMessageDto;
+import me.jsu.springbootdeveloper.fcm.dto.ChallengeNotificationSettingsResponse;
 import me.jsu.springbootdeveloper.fcm.dto.PushNotificationSettingsResponse;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeParticipantRepository;
@@ -82,6 +83,64 @@ public class FcmService {
                             .motivationPushNotificationEnabled(schedule.isEnabled())
                             //(전체) 일일 리마인더 푸시 알림 활성화 여부
                             .dailyReminderPushNotificationEnabled(schedule.isDailyReminderPushNotificationEnabled())
+                            .build();
+                })
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + email));
+    }
+
+    /*
+        로그인한 사용자의 특정 챌린지 푸시 알림 설정을 조회한다.
+        대부분 ChallengeParticipant 도메인 안의 토글 값을 그대로 반환한다.
+
+        추가로 2/3/4 항목에 대해, 전체(전역) 푸시 설정에서 대응 토글이 꺼져 있는지 여부도 함께 반환한다.
+        - 리마인더 전역 토글: UserNotificationSchedule.dailyReminderPushNotificationEnabled
+        - 멤버 반응 전역 토글: User.allMemberReactionPushNotificationEnabled
+        - 멤버 인증 전역 토글: User.allMemberCertificationPushNotificationEnabled
+
+        @param email 사용자 이메일
+        @param challengeId 챌린지 id
+        @return 챌린지 알림 설정 조회 DTO
+     */
+    @Transactional
+    public ChallengeNotificationSettingsResponse getChallengeNotificationSettings(String email, Long challengeId) {
+        return userRepository.findByEmail(email)
+                .map(user -> {
+                    UserNotificationSchedule schedule = userNotificationScheduleRepository
+                            .findByUser_Id(user.getId())
+                            .orElseGet(() -> {
+                                LocalTime defaultTime = LocalTime.now(ZoneId.of("Asia/Seoul"))
+                                        .withMinute(0)
+                                        .withSecond(0)
+                                        .withNano(0);
+
+                                UserNotificationSchedule newSchedule = UserNotificationSchedule.builder()
+                                        .user(user)
+                                        .notificationTime(defaultTime)
+                                        .enabled(false)
+                                        .dailyReminderPushNotificationEnabled(true)
+                                        .build();
+                                return userNotificationScheduleRepository.save(newSchedule);
+                            });
+
+                    ChallengeParticipant participant = challengeParticipantRepository
+                            .findByUser_IdAndChallenge_Id(user.getId(), challengeId)
+                            .orElseThrow(() -> new IllegalArgumentException("해당 챌린지에 참여 중인 사용자가 아닙니다."));
+
+                    // 현재 챌린지 리마인더 발송 시간은 스케줄러가 고정으로 가지고 있다. (매주 일요일 23:00)
+                    LocalTime reminderTime = LocalTime.of(23, 0);
+
+                    return ChallengeNotificationSettingsResponse.builder()
+                            .challengeAllPushEnabled(participant.isChallengeAllPushEnabled())
+
+                            .dailyReminderPushEnabled(participant.isDailyReminderPushEnabled())
+                            .dailyReminderTime(reminderTime)
+                            .dailyReminderDisabledByGlobalSetting(!schedule.isDailyReminderPushNotificationEnabled())
+
+                            .memberReactionPushEnabled(participant.isMemberReactionPushEnabled())
+                            .memberReactionDisabledByGlobalSetting(!user.isAllMemberReactionPushNotificationEnabled())
+
+                            .memberCertificationPushEnabled(participant.isMemberCertificationPushEnabled())
+                            .memberCertificationDisabledByGlobalSetting(!user.isAllMemberCertificationPushNotificationEnabled())
                             .build();
                 })
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + email));
