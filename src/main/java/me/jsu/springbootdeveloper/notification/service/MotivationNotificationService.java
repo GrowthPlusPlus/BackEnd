@@ -6,10 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.jsu.springbootdeveloper.fcm.dto.FcmMessageDto;
 import me.jsu.springbootdeveloper.fcm.service.FcmService;
-import me.jsu.springbootdeveloper.notification.domain.Notification;
 import me.jsu.springbootdeveloper.notification.domain.UserNotificationSchedule;
-import me.jsu.springbootdeveloper.notification.enumType.NotificationType;
-import me.jsu.springbootdeveloper.notification.repository.NotificationRepository;
 import me.jsu.springbootdeveloper.notification.repository.UserNotificationScheduleRepository;
 import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.user.service.UserService;
@@ -29,7 +26,6 @@ import java.util.Random;
 @RequiredArgsConstructor
 public class MotivationNotificationService {
     private final UserNotificationScheduleRepository scheduleRepository;
-    private final NotificationRepository notificationRepository;
     private final UserService userService;
     private final FcmService fcmService;
     private final Random random = new Random();
@@ -139,9 +135,9 @@ public class MotivationNotificationService {
      */
     @Transactional
     public void sendMotivationNotificationToUser(User user) {
-        // 1. 전체 푸시 알림이 비활성화되어 있으면 발송하지 않는다.
-        if (!user.isAllPushNotificationEnabled()) {
-            log.debug("사용자 {}의 전체 푸시 알림이 비활성화되어 있어 발송하지 않습니다.", user.getEmail());
+        // 1. 전체 알림이 아니라 "동기부여 메시지 푸시 알림" 활성화 여부만 확인한다.
+        if (!user.isMotivationMessagePushNotificationEnabled()) {
+            log.debug("사용자 {}의 동기부여 메시지 푸시 알림이 비활성화되어 있어 발송하지 않습니다.", user.getEmail());
             return;
         }
 
