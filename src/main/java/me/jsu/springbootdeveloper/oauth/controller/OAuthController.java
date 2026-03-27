@@ -121,15 +121,14 @@ public class OAuthController {
     @Operation(
             summary = "Naver OAuth 로그인",
             description = """
-        모바일 앱에서 전달된 Naver OAuth authorization code와 State를 이용하여 로그인 처리한다.
-        구글, 카카오와는 다르게 code_verifier를 네이버는 사용하지 않고 State값만 사용한다.
-        위 값은 모바일 -> 네이버 서버로 거치면서서 만든 값이다.
+        모바일 앱에서 전달된 Naver OAuth authorization code와 state를 이용하여 로그인 처리한다.
+        구글, 카카오와는 다르게 code_verifier를 네이버는 사용하지 않는다.
         해당 값을 우리 서버에서 받아 값을 만들어준 네이버 서버와 다시 비교하는 작업을 거친다.
         따라서 클라이언트는 NaverCodeExchangeRequest dto를 보내야 한다.
         
         로그인 성공 시 Access Token과 Refresh Token, 최초 로그인 사용자 인지에 대한 여부를 반환한다.
         최초 사용자라면 회원 초기 설정으로 화면을 띄우는데 도움을 준다.
-        ex) POST /api/oauth/Naver/token
+        ex) POST /api/oauth/naver/token
         """
     )
     @ApiResponses({
@@ -147,5 +146,13 @@ public class OAuthController {
         );
 
         return ResponseEntity.ok(response);
+    }
+
+    /*
+        네이버 리다이렉트를 위한 컨트롤러이다.
+     */
+    @GetMapping("/oauth/naver/callback")
+    public void naverCallback(@RequestParam String code, @RequestParam(required = false) String state, HttpServletResponse response) throws IOException {
+        response.sendRedirect("naver://oauth?code=" + code + "&state=" + state);
     }
 }
