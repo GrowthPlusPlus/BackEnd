@@ -20,7 +20,7 @@ spring:
       # 커넥션의 전체 수명을 10분으로 단축 (기존 30분에서 단축)
       max-lifetime: 600000
       #2초 이상 걸리는 쿼리는 로그 남기기 (2초마다 찍히는 것이 아닌 2초가 넘어간 연결에 대해 한번 찍힘)
-      leak-detection-threshold: 2000
+      leak-detection-threshold: 0
 
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect

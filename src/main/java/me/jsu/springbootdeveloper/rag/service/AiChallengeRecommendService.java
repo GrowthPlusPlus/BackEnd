@@ -103,7 +103,7 @@ public class AiChallengeRecommendService {
 
         // 참여한 챌린지 정보를 추가한다.
         sb.append("지금까지 참여한 챌린지 목록:\n");
-        if (challengeParticipants.isEmpty()) {
+        if (challengeParticipants.isEmpty()) { //
             sb.append("- 참여한 챌린지가 없습니다.\n");
         } else {
             // 챌린지 이름만 추출하여 중복 제거한다.
