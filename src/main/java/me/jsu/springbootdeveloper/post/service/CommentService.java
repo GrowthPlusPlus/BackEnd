@@ -134,7 +134,7 @@ public class CommentService {
         ChallengeParticipant writerParticipant = challengeQueryService.findByUser_IdAndChallenge_IdForParticipant(writer.getId(), challenge.getId());
         boolean inProgress = writerParticipant.getStatus() == Status.IN_PROGRESS;
         boolean challengeAllEnabled = writerParticipant.isChallengeAllPushEnabled();
-        boolean reactionEnabled = writerParticipant.isMemberReactionPushEnabled();
+        boolean reactionEnabled = writerParticipant.isCommentsPushEnabled();
         boolean hasFcm = writer.getFcmToken() != null && !writer.getFcmToken().isBlank();
         if (inProgress && challengeAllEnabled && reactionEnabled && hasFcm) {
             fcmService.sendMessageTo(writer.getFcmToken(), title, message);
