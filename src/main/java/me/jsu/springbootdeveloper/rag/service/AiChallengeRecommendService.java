@@ -39,8 +39,8 @@ public class AiChallengeRecommendService {
         @param email: 사용자 이메일
         @return: AI가 생성한 챌린지 추천 답변
      */
-    public QueryResponseDto recommend(String email) {
-        User user = userService.findByEmail(email);
+    public QueryResponseDto recommend(User user) {
+        //User user = userService.findByEmail(email);
 
         // AI에게 보낼 질문이다.
         String query = """
