@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import me.jsu.springbootdeveloper.challenge.domain.*;
 import me.jsu.springbootdeveloper.post.domain.PostPictureTemporary;
+import me.jsu.springbootdeveloper.rag.domain.GptResponse;
 import me.jsu.springbootdeveloper.token.domain.RefreshToken;
 import me.jsu.springbootdeveloper.notification.domain.Notification;
 import me.jsu.springbootdeveloper.tag.domain.TagToUser;
@@ -171,6 +172,9 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE)
     private List<ChallengeCalenderShare> challengeCalenderShares;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE)
+    private List<GptResponse> gptResponses;
 
     @Builder
     public User(String email, String password, Role role, String nickname) {

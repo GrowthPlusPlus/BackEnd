@@ -12,6 +12,7 @@ import me.jsu.springbootdeveloper.rag.dto.QueryResponseDto;
 import me.jsu.springbootdeveloper.rag.service.AiChallengeRecommendService;
 import me.jsu.springbootdeveloper.rag.service.AiCoachService;
 import me.jsu.springbootdeveloper.rag.service.DocumentService;
+import me.jsu.springbootdeveloper.rag.service.GptService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -27,8 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/api/v1/rag")
 public class RagController {
     private final DocumentService documentService;
-    private final AiCoachService aiCoachService;
-    private final AiChallengeRecommendService aiChallengeRecommendService;
+    private final GptService gptService;
     /*
         PDF 문서를 업로드하여 벡터 스토어에 저장하는 컨트롤러이다.
      */
@@ -116,11 +116,11 @@ public class RagController {
             @ApiResponse(responseCode = "500", description = "서버 오류")
     })
     @PostMapping("/coach/query")
-    public ResponseEntity<QueryResponseDto> queryWithRag(
+    public ResponseEntity<String> queryWithRag(
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         // 유저 정보를 통해 코칭 답변을 생성한다.
-        QueryResponseDto response = aiCoachService.coach(userDetails.getUsername());
+        String response = gptService.coach(userDetails.getUsername());
 
         return ResponseEntity.ok(response);
     }
@@ -138,11 +138,11 @@ public class RagController {
             @ApiResponse(responseCode = "500", description = "서버 오류")
     })
     @PostMapping("/recommend/query")
-    public ResponseEntity<QueryResponseDto> recommendChallenge(
+    public ResponseEntity<String> recommendChallenge(
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         // 유저 정보를 통해 코칭 답변을 생성한다.
-        QueryResponseDto response = aiChallengeRecommendService.recommend(userDetails.getUsername());
+        String response = gptService.challengeRecommend(userDetails.getUsername());
 
         return ResponseEntity.ok(response);
     }

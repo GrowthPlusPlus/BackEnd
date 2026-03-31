@@ -28,8 +28,8 @@ public class AiCoachService {
     private final UserStatisticsService userStatisticsService;
     private final ChallengeQueryService challengeQueryService;
 
-    public QueryResponseDto coach(String email) {
-        User user = userService.findByEmail(email);
+    public QueryResponseDto coach(User user) {
+        //User user = userService.findByEmail(email);
 
         UserStatistics stats = userStatisticsService.findByUser_IdStatistics(user.getId());  // 통계를 조회한다.
 
