@@ -11,10 +11,13 @@ import me.jsu.springbootdeveloper.challenge.exception.ChallengeInviteNotFoundExc
 import me.jsu.springbootdeveloper.challenge.exception.ChallengeOwnerCannotLeaveException;
 import me.jsu.springbootdeveloper.challenge.exception.NotAllowedChallengeActionException;
 import me.jsu.springbootdeveloper.challenge.repository.*;
+import me.jsu.springbootdeveloper.notification.enumType.NotificationType;
+import me.jsu.springbootdeveloper.notification.service.NotificationService;
 import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.user.domain.UserProfilePicture;
 import me.jsu.springbootdeveloper.user.domain.UserStatistics;
 import me.jsu.springbootdeveloper.user.service.UserService;
+import me.jsu.springbootdeveloper.user.repository.UserProfilePictureRepository;
 import me.jsu.springbootdeveloper.user.service.UserStatisticsService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -38,6 +41,8 @@ public class ChallengeMemberService {
     private final ChallengeInviteRepository challengeInviteRepository;
     private final UserStatisticsService userStatisticsService;
     private final UserService userService;
+    private final NotificationService notificationService;
+    private final UserProfilePictureRepository userProfilePictureRepository;
 
     /*
         챌린지에 참여한 유저를 검색하는 함수이다.
@@ -89,7 +94,22 @@ public class ChallengeMemberService {
         ChallengeParticipant targetParticipant = challengeQueryService.findByUser_IdAndChallenge_IdForParticipant(targetUserId, challengeId);
 
         // 방장을 변경한다.
-        challenge.updateUser(targetParticipant.getUser());
+        User newOwner = targetParticipant.getUser();
+        challenge.updateUser(newOwner);
+
+        // 방장 위임 인앱 알림을 전송한다. (푸시 알림은 보내지 않는다.)
+        // 예: "홍길동님이 '챌린지명' 챌린지의 방장을 00님에게 위임했어요."
+        String delegateMessage = user.getNickname() + "님이 '" + challenge.getTitle()
+                + "' 챌린지의 방장을" + newOwner.getNickname() + "님에게 위임했어요.";
+        long ownerId = user.getId();
+        String ownerImageUrl = userProfilePictureRepository.findImageUrlByUserId(ownerId).orElse("");
+        notificationService.sendNotification(
+                newOwner,
+                NotificationType.CHALLENGE_LEADER,
+                delegateMessage,
+                ownerImageUrl,
+                challenge.getId()
+        );
 
         // 챌린지에서 나간다.
         leaveChallengeInternal(user.getId(), challengeId);
@@ -109,8 +129,9 @@ public class ChallengeMemberService {
         validateOwner(isOwner(user.getId(), challengeId));
 
         // 방장을 제외하고 가장 랭킹 스코어가 높은 유저를 찾는다.
-        ChallengeParticipant topUser = challengeParticipantRepository.findTopByChallenge_IdAndUser_IdNotOrderByRankingScoreDesc(challengeId, user.getId())
-                        .orElse(null);
+        ChallengeParticipant topUser = challengeParticipantRepository
+                .findTopByChallenge_IdAndUser_IdNotOrderByRankingScoreDesc(challengeId, user.getId())
+                .orElse(null);
 
         if (topUser == null) {  // 챌린지에 존재하는 유저가 방장 혼자라면 챌린지를 삭제한다.
             challengeDeleteService.deleteChallengeInternal(challengeId);
@@ -118,7 +139,22 @@ public class ChallengeMemberService {
         }
 
         // 방장을 변경한다.
-        challenge.updateUser(topUser.getUser());
+        User newOwner = topUser.getUser();
+        challenge.updateUser(newOwner);
+
+        // 방장 자동 위임 인앱 알림을 전송한다. (푸시 알림은 보내지 않는다.)
+        // 예: "연속 인증 스코어가 가장 높아 '챌린지명' 챌린지의 새 방장이 되었어요."
+        String autoDelegateMessage = "연속 인증 스코어가 가장 높아 '" + challenge.getTitle()
+                + "' 챌린지의 새 방장이 되었어요.";
+        long ownerId = user.getId();
+        String ownerImageUrl = userProfilePictureRepository.findImageUrlByUserId(ownerId).orElse("");
+        notificationService.sendNotification(
+                newOwner,
+                NotificationType.CHALLENGE_LEADER,
+                autoDelegateMessage,
+                ownerImageUrl,
+                challenge.getId()
+        );
 
         // 챌린지에서 나간다.
         leaveChallengeInternal(user.getId(), challengeId);
@@ -150,6 +186,10 @@ public class ChallengeMemberService {
             throw new NotAllowedChallengeActionException("CANNOT_KICK_OWNER");
         }
 
+        // 챌린지와 대상 유저 정보를 조회한다.
+        Challenge challenge = challengeQueryService.findById(challengeId);
+        ChallengeParticipant targetParticipant = challengeQueryService.findByUser_IdAndChallenge_IdForParticipant(targetUserId, challengeId);
+
         // 대상 유저를 추방한다.
         leaveChallengeInternal(targetUserId, challengeId);
 
@@ -159,6 +199,20 @@ public class ChallengeMemberService {
 
         // 초대 상태가 됐던 유저의 챌린지 초대 DB를 삭제한다.
         challengeInviteRepository.delete(challengeInvite);
+
+        // 챌린지 멤버 강퇴 인앱 알림을 전송한다. (푸시 알림은 보내지 않는다.)
+        // 예: "'챌린지명' 챌린지에서 방장에 의해 추방되었어요."
+        User kickedUser = targetParticipant.getUser();
+        String kickMessage = "'" + challenge.getTitle() + "' 챌린지에서 방장에 의해 추방되었어요.";
+        // 강퇴 알림을 받는 사용자에게는 방장의 프로필 이미지를 노출하지 않기 위해 이미지 URL은 비운다.
+        String ownerImageUrl = "";
+        notificationService.sendNotification(
+                kickedUser,
+                NotificationType.CHALLENGE_KICK,
+                kickMessage,
+                ownerImageUrl,
+                challenge.getId()
+        );
     }
 
     /*
