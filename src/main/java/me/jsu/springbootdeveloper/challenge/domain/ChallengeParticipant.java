@@ -3,10 +3,7 @@
 package me.jsu.springbootdeveloper.challenge.domain;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import me.jsu.springbootdeveloper.challenge.enumType.Status;
 import me.jsu.springbootdeveloper.user.domain.User;
 import org.springframework.data.annotation.CreatedDate;
@@ -113,21 +110,35 @@ public class ChallengeParticipant {
     @Column(name = "ranking_score")
     private Double rankingScore = 0.0;
 
+    /*
+        챌린지별 푸시 알림 설정을 변경하는 함수이다.
+
+        @param enabled 멤버 인증 소식 활성화 여부
+     */
     // 챌린지별 푸시 알림 설정: 멤버 인증 소식
+    @Setter
     @Column(name = "member_certification_push_enabled", nullable = false, columnDefinition = "boolean default true")
     private boolean memberCertificationPushEnabled = true;
 
     // 챌린지별 푸시 알림 설정: 챌린지 전체 알림 (공통 게이트)
+    @Setter
     @Column(name = "challenge_all_push_enabled", nullable = false, columnDefinition = "boolean default true")
     private boolean challengeAllPushEnabled = true;
 
     // 챌린지별 푸시 알림 설정: 일일 리마인더 알림
+    @Setter
     @Column(name = "daily_reminder_push_enabled", nullable = false, columnDefinition = "boolean default true")
     private boolean dailyReminderPushEnabled = true;
 
-    // 챌린지별 푸시 알림 설정: 멤버 반응 소식(댓글/좋아요)
-    @Column(name = "member_reaction_push_enabled", nullable = false, columnDefinition = "boolean default true")
-    private boolean memberReactionPushEnabled = true;
+    //챌린지별 푸시 알림 설정: 좋아요
+    @Setter
+    @Column(name = "likes_push_enabled", nullable = false, columnDefinition = "boolean default true")
+    private boolean likesPushEnabled = true;
+
+    //챌린지별 푸시 알림 설정: 댓글
+    @Setter
+    @Column(name = "comments_push_enabled", nullable = false, columnDefinition = "boolean default true")
+    private boolean commentsPushEnabled = true;
 
     @Builder
     public ChallengeParticipant(Challenge challenge, User user, LocalDate joinDate, int totalWeeks) {
@@ -140,46 +151,7 @@ public class ChallengeParticipant {
         this.maxStreakDays = 0;
         this.successWeeks = 0;
         this.totalWeeks = totalWeeks;
-        this.memberCertificationPushEnabled = true;
-        this.challengeAllPushEnabled = true;
-        this.dailyReminderPushEnabled = true;
-        this.memberReactionPushEnabled = true;
-    }
 
-    /*
-        챌린지별 푸시 알림 설정을 변경하는 함수이다.
-
-        @param enabled 챌린지 전체 알림 활성화 여부
-     */
-    public void setChallengeAllPushEnabled(boolean enabled) {
-        this.challengeAllPushEnabled = enabled;
-    }
-
-    /*
-        챌린지별 푸시 알림 설정을 변경하는 함수이다.
-
-        @param enabled 일일 리마인더 알림 활성화 여부
-     */
-    public void setDailyReminderPushEnabled(boolean enabled) {
-        this.dailyReminderPushEnabled = enabled;
-    }
-
-    /*
-        챌린지별 푸시 알림 설정을 변경하는 함수이다.
-
-        @param enabled 멤버 인증 소식 활성화 여부
-     */
-    public void setMemberCertificationPushEnabled(boolean enabled) {
-        this.memberCertificationPushEnabled = enabled;
-    }
-
-    /*
-        챌린지별 푸시 알림 설정을 변경하는 함수이다.
-
-        @param enabled 멤버 반응 소식 활성화 여부
-     */
-    public void setMemberReactionPushEnabled(boolean enabled) {
-        this.memberReactionPushEnabled = enabled;
     }
 
     /*

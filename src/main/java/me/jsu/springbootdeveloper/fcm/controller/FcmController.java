@@ -308,14 +308,15 @@ public class FcmController {
         return ResponseEntity.ok().build();
     }
 
+
     /*
-        개별 챌린지에 대한 "멤버 반응 소식" 푸시 알림 활성화/비활성화를 설정하는 API이다.
+        개별 챌린지에 대한 "좋아요" 푸시 알림 활성화/비활성화를 설정하는 API이다.
      */
     @Operation(
-            summary = "개별 챌린지 멤버 반응 소식 푸시 알림 설정",
+            summary = "개별 챌린지 좋아요 푸시 알림 설정",
             description = """
-        로그인한 사용자의 특정 챌린지에 대한 멤버 반응 소식(댓글/좋아요) 푸시 알림을 활성화하거나 비활성화한다.
-        ex) PUT /api/fcm/notification/challenge/{challengeId}/member-reaction
+        로그인한 사용자의 특정 챌린지에 대한 좋아요 푸시 알림을 활성화하거나 비활성화한다.
+        ex) PUT /api/fcm/notification/challenge/{challengeId}/likes
         요청 본문: { "enabled": true } 또는 { "enabled": false }
         """
     )
@@ -323,16 +324,39 @@ public class FcmController {
             @ApiResponse(responseCode = "200", description = "푸시 알림 설정 변경 성공"),
             @ApiResponse(responseCode = "401", description = "인증 실패")
     })
-    @PutMapping("/notification/challenge/{challengeId}/member-reaction")
+    @PutMapping("/notification/challenge/{challengeId}/likes")
     public ResponseEntity<Void> setChallengeMemberReactionPushEnabled(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Long challengeId,
             @Valid @RequestBody FcmNotificationSettingDto request
     ) {
-        fcmService.setChallengeMemberReactionPushEnabled(userDetails.getUsername(), challengeId, request.isEnabled());
+        fcmService.setChallengeLikesPushEnabled(userDetails.getUsername(), challengeId, request.isEnabled());
         return ResponseEntity.ok().build();
     }
-
+    /*
+        개별 챌린지에 대한 "댓글" 푸시 알림 활성화/비활성화를 설정하는 API이다.
+     */
+    @Operation(
+            summary = "개별 챌린지 댓글 푸시 알림 설정",
+            description = """
+        로그인한 사용자의 특정 챌린지에 대한 댓글 푸시 알림을 활성화하거나 비활성화한다.
+        ex) PUT /api/fcm/notification/challenge/{challengeId}/comments
+        요청 본문: { "enabled": true } 또는 { "enabled": false }
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "푸시 알림 설정 변경 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패")
+    })
+    @PutMapping("/notification/challenge/{challengeId}/comments")
+    public ResponseEntity<Void> setChallengeCommentsPushEnabled(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long challengeId,
+            @Valid @RequestBody FcmNotificationSettingDto request
+    ) {
+        fcmService.setChallengeCommentsPushEnabled(userDetails.getUsername(), challengeId, request.isEnabled());
+        return ResponseEntity.ok().build();
+    }
     /*
         개별 챌린지에 대한 "멤버 인증 소식" 푸시 알림 활성화/비활성화를 설정하는 API이다.
      */
@@ -412,15 +436,15 @@ public class FcmController {
     }
 
     /*
-        전체 멤버 반응 소식 푸시 알림 활성화/비활성화를 설정하는 API이다.
+        전체 좋아요 푸시 알림 활성화/비활성화를 설정하는 API이다.
      */
     @Operation(
-            summary = "전체 멤버 반응 소식 설정",
+            summary = "전체 좋아요 설정",
             description = """
-        로그인한 사용자의 전체 멤버 반응 소식 푸시 알림을 활성화하거나 비활성화한다.
-        활성화 시: 사용자가 참여 중인 모든 챌린지의 '멤버 반응 소식' 푸시 설정도 함께 활성화된다.
-        비활성화 시: 사용자가 참여 중인 모든 챌린지의 '멤버 반응 소식' 푸시 설정도 함께 비활성화된다.
-        ex) PUT /api/fcm/notification/all-member-reaction
+        로그인한 사용자의 전체 좋아요 푸시 알림을 활성화하거나 비활성화한다.
+        활성화 시: 사용자가 참여 중인 모든 챌린지의 '좋아요' 푸시 설정도 함께 활성화된다.
+        비활성화 시: 사용자가 참여 중인 모든 챌린지의 '좋아요' 푸시 설정도 함께 비활성화된다.
+        ex) PUT /api/fcm/notification/all-likes
         요청 본문: { "enabled": true } 또는 { "enabled": false }
         """
     )
@@ -428,12 +452,38 @@ public class FcmController {
             @ApiResponse(responseCode = "200", description = "푸시 알림 설정 변경 성공"),
             @ApiResponse(responseCode = "401", description = "인증 실패")
     })
-    @PutMapping("/notification/all-member-reaction")
-    public ResponseEntity<Void> setAllMemberReactionPushNotificationEnabled(
+    @PutMapping("/notification/all-likes")
+    public ResponseEntity<Void> setAllLikesPushNotificationEnabled(
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody FcmNotificationSettingDto request
     ) {
-        fcmService.setAllMemberReactionPushNotificationEnabled(userDetails.getUsername(), request.isEnabled());
+        fcmService.setAllLikesPushNotificationEnabled(userDetails.getUsername(), request.isEnabled());
+        return ResponseEntity.ok().build();
+    }
+
+    /*
+        전체 댓글 푸시 알림 활성화/비활성화를 설정하는 API이다.
+     */
+    @Operation(
+            summary = "전체 댓글 설정",
+            description = """
+        로그인한 사용자의 전체 댓글 푸시 알림을 활성화하거나 비활성화한다.
+        활성화 시: 사용자가 참여 중인 모든 챌린지의 '댓글' 푸시 설정도 함께 활성화된다.
+        비활성화 시: 사용자가 참여 중인 모든 챌린지의 '댓글' 푸시 설정도 함께 비활성화된다.
+        ex) PUT /api/fcm/notification/all-comments
+        요청 본문: { "enabled": true } 또는 { "enabled": false }
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "푸시 알림 설정 변경 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패")
+    })
+    @PutMapping("/notification/all-comments")
+    public ResponseEntity<Void> setAllCommentsPushNotificationEnabled(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody FcmNotificationSettingDto request
+    ) {
+        fcmService.setAllCommentsPushNotificationEnabled(userDetails.getUsername(), request.isEnabled());
         return ResponseEntity.ok().build();
     }
 }

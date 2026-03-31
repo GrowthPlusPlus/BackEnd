@@ -73,8 +73,12 @@ public class FcmService {
                             .allPushNotificationEnabled(user.isAllPushNotificationEnabled())
                             //친구 관련 푸시 알림 활성화 여부
                             .friendPushNotificationEnabled(user.isFriendPushNotificationEnabled())
-                            //전체 멤버 반응 푸시 알림 활성화 여부
-                            .allMemberReactionPushNotificationEnabled(user.isAllMemberReactionPushNotificationEnabled())
+
+                            //전체 좋아요 푸시 알림 활성화 여부
+                            .allLikesPushNotificationEnabled(user.isAllLikesPushNotificationEnabled())
+                            //전체 댓글 푸시 알림 활성화 여부
+                            .allCommentsPushNotificationEnabled(user.isAllCommentsPushNotificationEnabled())
+
                             //전체 멤버 인증 푸시 알림 활성화 여부
                             .allMemberCertificationPushNotificationEnabled(user.isAllMemberCertificationPushNotificationEnabled())
                             //챌린지 초대 푸시 알림 활성화 여부
@@ -94,7 +98,8 @@ public class FcmService {
 
         추가로 2/3/4 항목에 대해, 전체(전역) 푸시 설정에서 대응 토글이 꺼져 있는지 여부도 함께 반환한다.
         - 리마인더 전역 토글: UserNotificationSchedule.dailyReminderPushNotificationEnabled
-        - 멤버 반응 전역 토글: User.allMemberReactionPushNotificationEnabled
+        - 내 인증글 좋아요 전역 토글: User.allLikesPushNotificationEnabled
+        - 내 인증글 댓글 전역 토글: User.allCommentsPushNotificationEnabled
         - 멤버 인증 전역 토글: User.allMemberCertificationPushNotificationEnabled
 
         @param email 사용자 이메일
@@ -136,8 +141,11 @@ public class FcmService {
                             .dailyReminderTime(reminderTime)
                             .dailyReminderDisabledByGlobalSetting(!schedule.isDailyReminderPushNotificationEnabled())
 
-                            .memberReactionPushEnabled(participant.isMemberReactionPushEnabled())
-                            .memberReactionDisabledByGlobalSetting(!user.isAllMemberReactionPushNotificationEnabled())
+                            //멤버 반응 -> 좋아요, 댓글로 변경
+                            .likesPushEnabled(participant.isLikesPushEnabled())
+                            .likesDisabledByGlobalSetting(!user.isAllLikesPushNotificationEnabled())
+                            .commentsPushEnabled(participant.isCommentsPushEnabled())
+                            .commentsDisabledByGlobalSetting(!user.isAllCommentsPushNotificationEnabled())
 
                             .memberCertificationPushEnabled(participant.isMemberCertificationPushEnabled())
                             .memberCertificationDisabledByGlobalSetting(!user.isAllMemberCertificationPushNotificationEnabled())
@@ -531,7 +539,9 @@ public class FcmService {
 
                             participant.setChallengeAllPushEnabled(enabled);
                             participant.setDailyReminderPushEnabled(enabled);
-                            participant.setMemberReactionPushEnabled(enabled);
+                            //멤버반응 -> 좋아요와 댓글 개별 분리
+                            participant.setLikesPushEnabled(enabled);
+                            participant.setCommentsPushEnabled(enabled);
                             participant.setMemberCertificationPushEnabled(enabled);
 
                             log.info("개별 챌린지 전체 푸시 알림 설정을 변경했습니다. 사용자: {}, challengeId: {}, 활성화: {}",
@@ -575,34 +585,61 @@ public class FcmService {
     }
 
     /*
-        특정 챌린지에 대한 "멤버 반응 소식" 푸시 토글을 변경하는 함수이다.
+        특정 챌린지에 대한 "좋아요" 푸시 토글을 변경하는 함수이다.
 
         @param email 사용자 이메일
         @param challengeId 챌린지 id
         @param enabled 활성화 여부
      */
     @Transactional
-    public void setChallengeMemberReactionPushEnabled(String email, Long challengeId, boolean enabled) {
+    public void setChallengeLikesPushEnabled(String email, Long challengeId, boolean enabled) {
         userRepository.findByEmail(email)
                 .ifPresentOrElse(
                         user -> {
                             ChallengeParticipant participant = challengeParticipantRepository.findByUser_IdAndChallenge_Id(user.getId(), challengeId)
                                     .orElseThrow(() -> new IllegalArgumentException("해당 챌린지에 참여 중인 사용자가 아닙니다."));
 
-                            // 멤버 반응 소식 푸시 알림 활성화 여부를 변경한다.
-                            participant.setMemberReactionPushEnabled(enabled);
+                            // 좋아요 푸시 알림 활성화 여부를 변경한다.
+                            participant.setLikesPushEnabled(enabled);
 
-                            log.info("개별 챌린지 멤버 반응 소식 푸시 알림 설정을 변경했습니다. 사용자: {}, challengeId: {}, 활성화: {}",
+                            log.info("개별 챌린지 좋아요 푸시 알림 설정을 변경했습니다. 사용자: {}, challengeId: {}, 활성화: {}",
                                     email, challengeId, enabled);
                         },
                         () -> {
-                            log.warn("개별 챌린지 멤버 반응 소식 푸시 알림 설정 변경 실패: 사용자를 찾을 수 없습니다. 이메일: {}",
+                            log.warn("개별 챌린지 좋아요 푸시 알림 설정 변경 실패: 사용자를 찾을 수 없습니다. 이메일: {}",
                                     email);
                             throw new IllegalArgumentException("사용자를 찾을 수 없습니다: " + email);
                         }
                 );
     }
+    /*
+        특정 챌린지에 대한 "댓글" 푸시 토글을 변경하는 함수이다.
 
+        @param email 사용자 이메일
+        @param challengeId 챌린지 id
+        @param enabled 활성화 여부
+     */
+    @Transactional
+    public void setChallengeCommentsPushEnabled(String email, Long challengeId, boolean enabled) {
+        userRepository.findByEmail(email)
+                .ifPresentOrElse(
+                        user -> {
+                            ChallengeParticipant participant = challengeParticipantRepository.findByUser_IdAndChallenge_Id(user.getId(), challengeId)
+                                    .orElseThrow(() -> new IllegalArgumentException("해당 챌린지에 참여 중인 사용자가 아닙니다."));
+
+                            // 좋아요 푸시 알림 활성화 여부를 변경한다.
+                            participant.setCommentsPushEnabled(enabled);
+
+                            log.info("개별 챌린지 댓글 푸시 알림 설정을 변경했습니다. 사용자: {}, challengeId: {}, 활성화: {}",
+                                    email, challengeId, enabled);
+                        },
+                        () -> {
+                            log.warn("개별 챌린지 댓글 푸시 알림 설정 변경 실패: 사용자를 찾을 수 없습니다. 이메일: {}",
+                                    email);
+                            throw new IllegalArgumentException("사용자를 찾을 수 없습니다: " + email);
+                        }
+                );
+    }
     /*
         특정 챌린지에 대한 "멤버 인증 소식" 푸시 토글을 변경하는 함수이다.
 
@@ -641,9 +678,12 @@ public class FcmService {
                             user.setAllPushNotificationEnabled(enabled);
                             user.setFriendPushNotificationEnabled(enabled);
                             user.setAllMemberCertificationPushNotificationEnabled(enabled);
-                            user.setAllMemberReactionPushNotificationEnabled(enabled);
+                            //멤버반응 -> 좋아요, 댓글로 변경
+                            user.setAllLikesPushNotificationEnabled(enabled);
+                            user.setAllCommentsPushNotificationEnabled(enabled);
                             user.setChallengeInvitePushNotificationEnabled(enabled);
-
+                            //동기부여는 오전 10시로 고정,
+                            //데일리 리마인더 객체 없으면 새로 생성하여 알림 활성화 여부 true로 설정
                             UserNotificationSchedule schedule = userNotificationScheduleRepository
                                     .findByUser_Id(user.getId())
                                     .orElseGet(() -> {
@@ -669,7 +709,9 @@ public class FcmService {
                                 for (ChallengeParticipant participant : user.getChallengeParticipants()) {
                                     participant.setChallengeAllPushEnabled(enabled);
                                     participant.setDailyReminderPushEnabled(enabled);
-                                    participant.setMemberReactionPushEnabled(enabled);
+                                    //멤버반응 -> 좋아요, 댓글로 변경
+                                    participant.setLikesPushEnabled(enabled);
+                                    participant.setCommentsPushEnabled(enabled);
                                     participant.setMemberCertificationPushEnabled(enabled);
                                 }
                             }
@@ -715,33 +757,65 @@ public class FcmService {
     }
 
     /*
-        전체 멤버 반응 소식 푸시 알림 활성화 여부를 설정하고,
-        사용자가 참여 중인 모든 챌린지의 ChallengeParticipant '멤버 반응 소식' 값도 함께 연쇄적으로 변경한다.
+        전체 좋아요 푸시 알림 활성화 여부를 설정하고,
+        사용자가 참여 중인 모든 챌린지의 ChallengeParticipant '좋아요' 값도 함께 연쇄적으로 변경한다.
 
         @param email 사용자 이메일
         @param enabled 활성화 여부
      */
     @Transactional
-    public void setAllMemberReactionPushNotificationEnabled(String email, boolean enabled) {
+    public void setAllLikesPushNotificationEnabled(String email, boolean enabled) {
         userRepository.findByEmail(email)
                 .ifPresentOrElse(
                         user -> {
-                            user.setAllMemberReactionPushNotificationEnabled(enabled);
+                            user.setAllLikesPushNotificationEnabled(enabled);
 
                             if (user.getChallengeParticipants() != null) {
                                 for (ChallengeParticipant participant : user.getChallengeParticipants()) {
-                                    participant.setMemberReactionPushEnabled(enabled);
+                                    participant.setLikesPushEnabled(enabled);
                                 }
                             }
 
-                            log.info("전체 멤버 반응 소식 푸시 알림 설정을 변경했습니다. 사용자: {}, 활성화: {}",
+                            log.info("전체 좋아요 푸시 알림 설정을 변경했습니다. 사용자: {}, 활성화: {}",
                                     email, enabled);
                         },
                         () -> {
-                            log.warn("전체 멤버 반응 소식 푸시 알림 설정 변경 실패: 사용자를 찾을 수 없습니다. 이메일: {}",
+                            log.warn("전체 좋아요 소식 푸시 알림 설정 변경 실패: 사용자를 찾을 수 없습니다. 이메일: {}",
                                     email);
                             throw new IllegalArgumentException("사용자를 찾을 수 없습니다: " + email);
                         }
                 );
     }
+
+    /*
+        전체 댓글 푸시 알림 활성화 여부를 설정하고,
+        사용자가 참여 중인 모든 챌린지의 ChallengeParticipant '댓글' 값도 함께 연쇄적으로 변경한다.
+
+        @param email 사용자 이메일
+        @param enabled 활성화 여부
+     */
+    @Transactional
+    public void setAllCommentsPushNotificationEnabled(String email, boolean enabled) {
+        userRepository.findByEmail(email)
+                .ifPresentOrElse(
+                        user -> {
+                            user.setAllCommentsPushNotificationEnabled(enabled);
+
+                            if (user.getChallengeParticipants() != null) {
+                                for (ChallengeParticipant participant : user.getChallengeParticipants()) {
+                                    participant.setCommentsPushEnabled(enabled);
+                                }
+                            }
+
+                            log.info("전체 댓글 푸시 알림 설정을 변경했습니다. 사용자: {}, 활성화: {}",
+                                    email, enabled);
+                        },
+                        () -> {
+                            log.warn("전체 댓글 소식 푸시 알림 설정 변경 실패: 사용자를 찾을 수 없습니다. 이메일: {}",
+                                    email);
+                            throw new IllegalArgumentException("사용자를 찾을 수 없습니다: " + email);
+                        }
+                );
+    }
+
 }
