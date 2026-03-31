@@ -12,8 +12,8 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 
 /*
-    매일 지정된 시간에 사용자에게 동기부여 메시지를 발송하는 스케줄러이다.
-    매시 정각마다 실행되어 해당 '시(hour)'에 알림을 받도록 설정된 사용자들에게 메시지를 발송한다.
+    매일 오전 10시에 사용자에게 동기부여 메시지를 발송하는 스케줄러이다.
+    더 이상 사용자별 시간 설정은 사용하지 않고, enabled 여부만 사용한다.
  */
 @Slf4j
 @Component
@@ -22,22 +22,20 @@ public class MotivationNotificationScheduler {
     private final MotivationNotificationService motivationNotificationService;
 
     /*
-        매시 정각(예: 09:00, 10:00, 11:00)에 실행되어,
-        사용자가 설정한 알림 시간의 '시(hour)'에 해당하는 사용자들에게 발송한다.
-        
-        cron 표현식: "0 0 * * * *"
+        매일 오전 10:00(Asia/Seoul 기준)에 한 번 실행되어,
+        동기부여 알림이 활성화된 모든 사용자에게 메시지를 발송한다.
+
+        cron 표현식: "0 0 10 * * *"
         - 0: 초 (0초)
         - 0: 분 (정각)
-        - *: 시 (매 시)
+        - 10: 시 (10시)
         - *: 일 (매 일)
         - *: 월 (매 월)
         - *: 요일 (매 요일)
-        
-        Asia/Seoul 시간대를 사용하여 한국 시간 기준으로 실행된다.
      */
-    @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 0 10 * * *", zone = "Asia/Seoul")
     public void sendMotivationNotifications() {
-        // 1. 현재 시간의 '시(hour)'만 사용하므로 분을 0으로 고정한다.
+        // 1. 현재 시간을 로깅용으로만 사용한다.
         LocalTime currentTime = LocalTime.now(ZoneId.of("Asia/Seoul"))
                 .withMinute(0)
                 .withSecond(0)

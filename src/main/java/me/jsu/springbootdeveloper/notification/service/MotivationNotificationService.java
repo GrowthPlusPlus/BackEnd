@@ -97,30 +97,23 @@ public class MotivationNotificationService {
     }
 
     /*
-        특정 시간에 알림을 받도록 설정된 모든 활성화된 사용자에게 동기부여 메시지를 발송한다.
-        스케줄러에서 호출한다.
-        
-        @param notificationTime 알림을 발송할 시간
+        동기부여 알림이 활성화된 모든 사용자에게 메시지를 발송한다.
+        스케줄러에서 호출하며, 발송 시각은 스케줄러(오전 10시 고정)가 책임진다.
+
+        @param notificationTime 알림을 발송할 시간(현재는 로깅용으로만 사용)
      */
     @Transactional
     public void sendMotivationNotifications(LocalTime notificationTime) {
-        // 1. 스케줄러는 '정각(분=0)' 기준으로 호출하지만, 사용자가 설정한 시간은 '시(hour)'만 비교한다.
-        int notificationHour = notificationTime.getHour();
-
-        // 2. 활성화된 모든 알림 설정을 조회한 뒤 '시(hour)'만 필터링한다.
-        //    - 분(minute)은 무시하므로 설정이 09:15여도 09시에 발송된다.
+        // 1. 활성화된 모든 알림 설정을 조회한다. (시각 설정은 더 이상 사용하지 않는다)
         List<UserNotificationSchedule> schedules = scheduleRepository.findByEnabledTrue();
-        schedules = schedules.stream()
-                .filter(schedule -> schedule.getNotificationTime() != null)
-                .filter(schedule -> schedule.getNotificationTime().getHour() == notificationHour)
-                .toList();
 
         if (schedules.isEmpty()) {
-            log.debug("정각 시(hour) {}에 알림을 받을 사용자가 없습니다.", notificationHour);
+            log.debug("동기부여 메시지를 받을 사용자가 없습니다.");
             return;
         }
 
-        log.info("정각 시(hour) {}에 {}명의 사용자에게 동기부여 메시지를 발송합니다.", notificationHour, schedules.size());
+        log.info("동기부여 메시지를 {} 명의 사용자에게 발송합니다. (scheduledTime={})",
+                schedules.size(), notificationTime);
 
         // 2. 각 사용자에게 동기부여 메시지를 발송한다.
         for (UserNotificationSchedule schedule : schedules) {
