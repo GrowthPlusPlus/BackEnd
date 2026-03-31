@@ -20,7 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 /*
     동기부여 메시지 알림 설정을 관리하는 컨트롤러이다.
-    사용자가 매일 받을 동기부여 메시지의 시간을 설정하고 조회할 수 있다.
+    사용자는 "동기부여 알림 활성화 여부"만 설정/조회할 수 있으며,
+    발송 시각은 서버에서 오전 10시로 고정된다.
  */
 @RestController
 @RequiredArgsConstructor
@@ -28,21 +29,21 @@ public class MotivationNotificationController {
     private final MotivationNotificationService motivationNotificationService;
 
     /*
-        사용자의 동기부여 알림 시간을 설정하거나 업데이트하는 API이다.
+        사용자의 동기부여 알림 활성화 여부를 설정하거나 업데이트하는 API이다.
         기존 설정이 있으면 업데이트하고, 없으면 새로 생성한다.
      */
     @Operation(
-            summary = "동기부여 알림 시간 설정",
+            summary = "동기부여 알림 설정",
             description = """
-        로그인한 사용자의 동기부여 메시지 알림 시간을 설정하거나 업데이트한다.
-        매일 지정된 시간에 동기부여 메시지를 받을 수 있다.
+        로그인한 사용자의 동기부여 메시지 알림 활성화 여부를 설정하거나 업데이트한다.
+        동기부여 메시지는 매일 오전 10시에 발송된다.
         ex) PUT /api/notification/motivation/schedule
-        요청 본문: { "notificationTime": "09:00", "enabled": true }
+        요청 본문: { "enabled": true } 또는 { "enabled": false }
         """
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "알림 시간 설정 성공"),
-            @ApiResponse(responseCode = "400", description = "잘못된 요청 (시간 형식 오류 등)"),
+            @ApiResponse(responseCode = "200", description = "알림 설정 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청"),
             @ApiResponse(responseCode = "401", description = "인증 실패")
     })
     @PutMapping("/api/notification/motivation/schedule")
@@ -53,10 +54,9 @@ public class MotivationNotificationController {
         // 1. 현재 로그인한 사용자의 이메일을 가져온다.
         String email = userDetails.getUsername();
 
-        // 2. 서비스에 위임하여 알림 시간을 설정하거나 업데이트한다.
+        // 2. 서비스에 위임하여 동기부여 알림 활성화 여부를 설정하거나 업데이트한다.
         motivationNotificationService.setNotificationSchedule(
                 email,
-                request.getNotificationTime(),
                 request.getEnabled()
         );
 
@@ -65,14 +65,14 @@ public class MotivationNotificationController {
     }
 
     /*
-        사용자의 동기부여 알림 시간 설정을 조회하는 API이다.
-        설정이 없으면 null을 반환한다.
+        사용자의 동기부여 알림 설정을 조회하는 API이다.
+        설정이 없으면 enabled=false로 응답한다.
      */
     @Operation(
-            summary = "동기부여 알림 시간 설정 조회",
+            summary = "동기부여 알림 설정 조회",
             description = """
-        로그인한 사용자의 동기부여 메시지 알림 시간 설정을 조회한다.
-        설정이 없으면 null을 반환한다.
+        로그인한 사용자의 동기부여 메시지 알림 설정을 조회한다.
+        설정이 없거나 비활성화 상태이면 enabled=false로 응답한다.
         ex) GET /api/notification/motivation/schedule
         """
     )

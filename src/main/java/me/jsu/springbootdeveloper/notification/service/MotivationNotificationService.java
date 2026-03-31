@@ -48,38 +48,40 @@ public class MotivationNotificationService {
     );
 
     /*
-        사용자의 동기부여 알림 시간을 설정하거나 업데이트한다.
-        이미 설정이 있으면 업데이트하고, 없으면 새로 생성한다.
+        사용자의 동기부여 알림 활성화 여부를 설정하거나 업데이트한다.
+        발송 시각은 항상 오전 10시로 고정되며, 더 이상 클라이언트에서 시간을 설정하지 않는다.
         
         @param email 사용자 이메일
-        @param notificationTime 알림을 받을 시간 (예: 09:00)
         @param enabled 알림 활성화 여부
      */
     @Transactional
-    public void setNotificationSchedule(String email, LocalTime notificationTime, boolean enabled) {
+    public void setNotificationSchedule(String email, boolean enabled) {
         // 1. 사용자 정보를 조회한다.
         User user = userService.findByEmail(email);
+
+        // 동기부여 메시지는 항상 오전 10시에 발송되므로 시간은 고정값으로 저장한다.
+        LocalTime fixedTime = LocalTime.of(10, 0);
 
         // 2. 기존 설정이 있는지 확인한다.
         scheduleRepository.findByUser_Id(user.getId())
                 .ifPresentOrElse(
                         // 기존 설정이 있으면 업데이트한다.
                         schedule -> {
-                            schedule.updateNotificationTime(notificationTime);
+                            schedule.updateNotificationTime(fixedTime);
                             schedule.setEnabled(enabled);
-                            log.info("동기부여 알림 시간 설정을 업데이트했습니다. 사용자: {}, 시간: {}, 활성화: {}",
-                                    email, notificationTime, enabled);
+                            log.info("동기부여 알림 설정을 업데이트했습니다. 사용자: {}, 활성화: {}",
+                                    email, enabled);
                         },
                         // 기존 설정이 없으면 새로 생성한다.
                         () -> {
                             UserNotificationSchedule newSchedule = UserNotificationSchedule.builder()
                                     .user(user)
-                                    .notificationTime(notificationTime)
+                                    .notificationTime(fixedTime)
                                     .enabled(enabled)
                                     .build();
                             scheduleRepository.save(newSchedule);
-                            log.info("동기부여 알림 시간 설정을 생성했습니다. 사용자: {}, 시간: {}, 활성화: {}",
-                                    email, notificationTime, enabled);
+                            log.info("동기부여 알림 설정을 생성했습니다. 사용자: {}, 활성화: {}",
+                                    email, enabled);
                         }
                 );
     }
