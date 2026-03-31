@@ -3,10 +3,7 @@
 package me.jsu.springbootdeveloper.user.domain;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import me.jsu.springbootdeveloper.challenge.domain.*;
 import me.jsu.springbootdeveloper.post.domain.PostPictureTemporary;
 import me.jsu.springbootdeveloper.token.domain.RefreshToken;
@@ -77,22 +74,42 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
     @Column(name = "fcm_token", columnDefinition = "TEXT")
     private String fcmToken;  // Firebase Cloud Messaging 토큰이다. 푸시 알림 발송 시 사용한다.
 
+    /*
+        친구 관련 푸시 알림 활성화 여부를 설정하는 함수이다.
+     */
+    @Setter
     @Column(name = "friend_push_notification_enabled", nullable = false)
     private boolean friendPushNotificationEnabled = true;  // 친구 관련 푸시 알림 활성화 여부이다. 기본값은 true이다.
 
+    //전체 푸시 알림 활성화 여부 설정 함수
     //전체 푸시 알림 활성화 여부
+    @Setter
     @Column(name = "all_push_notification_enabled", nullable = false)
     private boolean allPushNotificationEnabled = true;
 
+    /*
+        전체 멤버 인증 푸시 알림 활성화 여부를 설정하는 함수이다.
+     */
     //전체 멤버 인증 푸시 알림 활성화 여부
+    @Setter
     @Column(name = "all_member_certification_push_notification_enabled", nullable = false)
     private boolean allMemberCertificationPushNotificationEnabled = true;
 
-    //전체 멤버 반응 푸시 알림 활성화 여부
-    @Column(name = "all_member_reaction_push_notification_enabled", nullable = false)
-    private boolean allMemberReactionPushNotificationEnabled = true;
+    //전체 좋아요 푸시알림 활성화 여부
+    @Setter
+    @Column(name = "all_likes_push_notification_enabled", nullable = false, columnDefinition = "boolean default true")
+    private boolean allLikesPushNotificationEnabled = true;
 
+    //전체 댓글 푸시알림 활성화 여부
+    @Setter
+    @Column(name = "all_comments_push_notification_enabled", nullable = false, columnDefinition = "boolean default true")
+    private boolean allCommentsPushNotificationEnabled = true;
+
+    /*
+        챌린지 초대 푸시 알림 활성화 여부를 설정하는 함수이다.
+     */
     //챌린지 초대 푸시 알림 활성화 여부
+    @Setter
     @Column(name = "challenge_invite_push_notification_enabled", nullable = false)
     private boolean challengeInvitePushNotificationEnabled = true;
 
@@ -225,38 +242,6 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
         this.fcmToken = null;
     }
 
-    /*
-        친구 관련 푸시 알림 활성화 여부를 설정하는 함수이다.
-     */
-    public void setFriendPushNotificationEnabled(boolean enabled) {
-        this.friendPushNotificationEnabled = enabled;
-    }
-
-    //전체 푸시 알림 활성화 여부 설정 함수
-    public void setAllPushNotificationEnabled(boolean enabled) {
-        this.allPushNotificationEnabled = enabled;
-    }
-
-    /*
-        전체 멤버 인증 푸시 알림 활성화 여부를 설정하는 함수이다.
-     */
-    public void setAllMemberCertificationPushNotificationEnabled(boolean enabled) {
-        this.allMemberCertificationPushNotificationEnabled = enabled;
-    }
-
-    /*
-        전체 멤버 반응 푸시 알림 활성화 여부를 설정하는 함수이다.
-     */
-    public void setAllMemberReactionPushNotificationEnabled(boolean enabled) {
-        this.allMemberReactionPushNotificationEnabled = enabled;
-    }
-
-    /*
-        챌린지 초대 푸시 알림 활성화 여부를 설정하는 함수이다.
-     */
-    public void setChallengeInvitePushNotificationEnabled(boolean enabled) {
-        this.challengeInvitePushNotificationEnabled = enabled;
-    }
 
     /*
         별도로 관리되는 UserProfilePicture 객체를 통해 이미지 URL을 가져옵니다.

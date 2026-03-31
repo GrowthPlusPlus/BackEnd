@@ -14,7 +14,9 @@ import lombok.Getter;
 public class PushNotificationSettingsResponse {
     private boolean allPushNotificationEnabled;
     private boolean friendPushNotificationEnabled;
-    private boolean allMemberReactionPushNotificationEnabled;
+    //멤버반응 -> 좋아요, 댓글로 변경
+    private boolean allLikesPushNotificationEnabled;
+    private boolean allCommentsPushNotificationEnabled;
     private boolean allMemberCertificationPushNotificationEnabled;
     private boolean challengeInvitePushNotificationEnabled;
     private boolean motivationPushNotificationEnabled;

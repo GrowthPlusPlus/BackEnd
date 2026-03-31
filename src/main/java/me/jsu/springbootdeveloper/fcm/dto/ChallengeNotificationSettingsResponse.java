@@ -20,8 +20,11 @@ public class ChallengeNotificationSettingsResponse {
     private LocalTime dailyReminderTime;                        // 2. 해당 챌린지 리마인더 발송 시간(현재는 스케줄러 고정값)
     private boolean dailyReminderDisabledByGlobalSetting;       // 2. 전체 리마인더(전역) 설정이 꺼져 있는지
 
-    private boolean memberReactionPushEnabled;                  // 3. 해당 챌린지 멤버 반응 소식 활성화 여부
-    private boolean memberReactionDisabledByGlobalSetting;      // 3. 전체 멤버 반응 소식(전역) 설정이 꺼져 있는지
+    private boolean likesPushEnabled;                           //해당 챌린지 좋아요 푸시알림 활성화여부
+    private boolean likesDisabledByGlobalSetting;               //전체 좋아요 푸시알림 활성화 여부
+
+    private boolean commentsPushEnabled;                        //해당 챌린지 댓글 푸시알림 활성화 여부
+    private boolean commentsDisabledByGlobalSetting;            //전체 댓글 푸시알림 활성화 여부
 
     private boolean memberCertificationPushEnabled;             // 4. 해당 챌린지 멤버 인증 소식 활성화 여부
     private boolean memberCertificationDisabledByGlobalSetting; // 4. 전체 멤버 인증 소식(전역) 설정이 꺼져 있는지
