@@ -130,4 +130,25 @@ public class SchemaGuardService {
             return false;
         }
     }
+
+    /*
+        연간 활동(잔디) 테이블의 존재 여부를 확인한다.
+     */
+    public boolean isUserYearlyActivitySchemaReady() {
+        String sql = """
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_name = 'user_yearly_activity'
+    """;
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            return rs.next();
+
+        } catch (SQLException e) {
+            return false;
+        }
+    }
 }

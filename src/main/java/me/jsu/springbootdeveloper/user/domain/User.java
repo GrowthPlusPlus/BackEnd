@@ -176,6 +176,9 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
     @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE)
     private List<GptResponse> gptResponses;
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE)
+    private List<UserYearlyActivity> userYearlyActivities;
+
     @Builder
     public User(String email, String password, Role role, String nickname) {
         this.email = email;

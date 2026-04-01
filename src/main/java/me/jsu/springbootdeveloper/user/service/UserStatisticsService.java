@@ -8,13 +8,19 @@ import me.jsu.springbootdeveloper.challenge.enumType.Status;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeQueryService;
 import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.user.domain.UserStatistics;
+import me.jsu.springbootdeveloper.user.domain.UserYearlyActivity;
+import me.jsu.springbootdeveloper.user.dto.UserYearlyActivityResponse;
+import me.jsu.springbootdeveloper.user.exception.InvalidYearException;
 import me.jsu.springbootdeveloper.user.exception.UserStatisticsNotFoundException;
 import me.jsu.springbootdeveloper.user.repository.UserStatisticsRepository;
+import me.jsu.springbootdeveloper.user.repository.UserYearlyActivityRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.Year;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.List;
 
 /*
@@ -24,7 +30,9 @@ import java.util.List;
 @Service
 public class UserStatisticsService {
     private final UserStatisticsRepository userStatisticsRepository;
+    private final UserYearlyActivityRepository userYearlyActivityRepository;
     private final ChallengeQueryService challengeQueryService;
+    private final UserService userService;
 
     /*
        챌린지를 인증하여 로그가 확정됐을 때 수행하는 함수이다.
@@ -134,5 +142,89 @@ public class UserStatisticsService {
 
         userStats.rebuildGlobalStreakAndActivityFromDistinctDates(dates, today);
         recomputeDominant(userStats, userId);  // 대표 챌린지를 재선정한다.
+    }
+
+    /*
+        연도를 기준으로 유저의 잔디를 조회한다.
+        기존 잔디 값 + 오늘 데일리 로그 값으로 전체 잔디를 계산한다.
+     */
+    @Transactional(readOnly = true)
+    public UserYearlyActivityResponse searchYearGrass(String email, int year) {
+        User user = userService.findByEmail(email);
+
+        if (year < 2026) {  // 해냄 서비스는 2026년 이후로 시작했으므로 이전의 잔디 값은 존재하지 않으므로 예외처리 한다.
+            throw new InvalidYearException("올바르지 않은 연도입니다.");
+        }
+
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
+        int index = today.getDayOfYear() - 1;  // 오늘이 365일 또는 366일 중 몇 번째 인덱스에 해당하는지 구한다.
+
+        // 오늘 유저가 수행한 총 인증글 개수를 조회한다.
+        int count = challengeQueryService.countByPostDateWithChallenge(user.getId(), today);
+
+        UserYearlyActivity userYearlyActivity = userYearlyActivityRepository.findByUser_IdAndYear(user.getId(), year)
+                .orElse(null);
+
+        if (userYearlyActivity == null) {  // 해당 연도에 인증글을 처음 올리고 하루도 지나지 않은 경우나, 이전에 올린적이 없는 경우이다.
+            // 윤년에 따라 자동으로 365 또는 366길이의 배열을 임시로 생성한다.
+            int length = Year.of(year).length();
+            int[] tempGrass = new int[length];
+
+            if (year == today.getYear()) {  // 조회하는 연도가 오늘과 같다면 오늘 수행한 총 로그 수를 반영한다.
+                tempGrass[index] = count;
+            }
+
+            return UserYearlyActivityResponse.builder()
+                    .activity(tempGrass)
+                    .build();
+        }
+        else {
+            int[] dayBitCount = Arrays.copyOf(userYearlyActivity.getDayBitCount(), userYearlyActivity.getDayBitCount().length);  // 기존 배열값을 카피한다.
+
+            if (year == today.getYear()) {  // 조회하는 연도가 오늘과 같다면 오늘 수행한 총 로그 수를 반영한다.
+                dayBitCount[index] = count;  // 기존 배열에 오늘 값을 추가한다. 단 엔티티의 값은 수정하지 않는다.
+            }
+
+            return UserYearlyActivityResponse.builder()
+                    .activity(dayBitCount)
+                    .build();
+        }
+    }
+
+    /*
+        관리자에 의해 과거 인증글이 삭제되어 로그도 삭제된 경우, 해당 유저의 로그를 모두 재조회하여 반영한다.
+     */
+    @Transactional
+    public void researchLog(Long userId, LocalDate postDate) {
+        List<Long> userIds = List.of(userId);
+        LocalDate startDate = postDate.withDayOfYear(1);  // 검색할 연간의 시작일이다.
+        LocalDate endDate = postDate.withDayOfYear(postDate.lengthOfYear());  // 검색할 연의 마지막날이다.
+
+        // 해당 연도에 해당하는 모든 로그 개수를 수집한다.
+        List<Object[]> yearlyLogs = challengeQueryService.countYearlyLogsByUsers(userIds, startDate, endDate);
+
+        // 기존의 연간 활동(잔디)을 검색한다.
+        UserYearlyActivity userYearlyActivity = userYearlyActivityRepository.findByUser_IdAndYear(userId, postDate.getYear())
+                .orElse(null);
+
+        // 오늘 한 인증 외, 이전에는 인증한 적이 없어서 테이블이 없는 경우 업데이트 할 필요가 없다.
+        if (userYearlyActivity == null) {
+            return;
+        }
+
+        // 삭제된 로그의 연도를 기준으로 배열을 새로 생성한다.
+        int[] grass = new int[postDate.lengthOfYear()];
+
+        // 로그를 배열에 반영한다. row[0]값은 모두 같은 유저이므로 사용하지 않는다.
+        for (Object[] row : yearlyLogs) {
+            LocalDate date = (LocalDate) row[1];  // 날짜를 추출한다.
+            int count = ((Long) row[2]).intValue();  // 해당 날짜의 총 로그 개수를 추출한다.
+
+            int index = date.getDayOfYear() - 1;  // 날짜 정보를 바탕으로 인덱스를 구한다.
+            grass[index] = count;
+        }
+
+        // 기존 배열을 교체한다.
+        userYearlyActivity.replaceDayBitCount(grass);
     }
 }

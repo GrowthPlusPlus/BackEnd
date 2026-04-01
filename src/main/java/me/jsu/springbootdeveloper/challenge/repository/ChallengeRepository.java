@@ -2,14 +2,12 @@
 
 package me.jsu.springbootdeveloper.challenge.repository;
 
-import jakarta.persistence.LockModeType;
 import lombok.NonNull;
 import me.jsu.springbootdeveloper.challenge.domain.Challenge;
 import me.jsu.springbootdeveloper.challenge.enumType.ChallengeVisibility;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 

@@ -11,6 +11,8 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -102,6 +104,7 @@ public interface ChallengeDailyLogRepository extends JpaRepository<ChallengeDail
             @Param("challengeId") Long challengeId,
             @Param("today") LocalDate today
     );
+
     /*
         유저가 챌린지와 연결된 데일리 로그를 남긴 날짜를 중복 없이 오름차순으로 반환한다.
         과거 인증글 삭제 후 UserStatistics를 로그 기준으로 재동기화할 때 사용한다.
@@ -114,4 +117,58 @@ public interface ChallengeDailyLogRepository extends JpaRepository<ChallengeDail
         order by cdl.postDate
         """)
     List<LocalDate> findDistinctPostDatesByUserIdForChallenges(@Param("userId") Long userId);
+
+    /*
+        특정 날짜에 해당 유저가 수행한 총 인증글 개수를 구하는 쿼리문이다.
+     */
+    @Query("""
+        select count(cdl)
+        from ChallengeDailyLog cdl
+        where cdl.user.id = :userId
+          and cdl.postDate = :postDate
+          and cdl.challenge is not null
+    """)
+    int countByPostDateWithChallenge(
+            @Param("userId") Long userId,
+            @Param("postDate") LocalDate postDate
+    );
+
+    /*
+        특정 날짜에 유저가 수행한 총 인증글 개수와 유저 id를 구하는 쿼리문이다.
+        위와 다르게 모든 유저의 로그를 구하기 위해 사용한다.
+        lastId의 값을 유지하기 위해 max(cdl.id)를 사용한다.
+     */
+    @Query("""
+        select cdl.user.id, count(cdl), max(cdl.id)
+        from ChallengeDailyLog cdl
+        where cdl.postDate = :today
+          and cdl.challenge is not null
+          and cdl.id > :lastId
+        group by cdl.user.id
+        order by max(cdl.id)
+    """)
+    List<Object[]> findUserDailyLogCountsBatch(
+            @Param("today") LocalDate today,
+            @Param("lastId") Long lastId,
+            Pageable pageable
+    );
+
+    /*
+        특정 날짜 사이의 모든 로그들의 개수, 유저 id를 구하는 쿼리문이다.
+     */
+    @Query("""
+        select cdl.user.id, cdl.postDate, count(cdl)
+        from ChallengeDailyLog cdl
+        where cdl.user.id in :userIds
+          and cdl.postDate between :startDate and :endDate
+          and cdl.challenge is not null
+          and cdl.user is not null
+        group by cdl.user.id, cdl.postDate
+        order by cdl.user.id, cdl.postDate
+    """)
+    List<Object[]> countYearlyLogsByUsers(
+            @Param("userIds") List<Long> userIds,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
 }

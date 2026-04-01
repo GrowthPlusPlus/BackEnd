@@ -69,4 +69,15 @@ public class SchedulerSchemaGuardAspect {
 
         return pjp.proceed();
     }
+
+    // 연간 활동(잔디) 테이블 존재 여부를 검증한다.
+    @Around("@annotation(RequireUserYearlyActivitySchema)")
+    public Object guardUserYearlyActivitySchema(ProceedingJoinPoint pjp) throws Throwable {
+
+        if (!schemaGuardService.isUserYearlyActivitySchemaReady()) {
+            return null;
+        }
+
+        return pjp.proceed();
+    }
 }

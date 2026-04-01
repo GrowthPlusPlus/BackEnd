@@ -12,6 +12,7 @@ import me.jsu.springbootdeveloper.user.repository.UserFriendshipSearchProjection
 import me.jsu.springbootdeveloper.user.repository.UserRepository;
 import me.jsu.springbootdeveloper.user.service.LogoutService;
 import me.jsu.springbootdeveloper.user.service.UserService;
+import me.jsu.springbootdeveloper.user.service.UserStatisticsService;
 import me.jsu.springbootdeveloper.user.service.UserWithdrawalService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -33,6 +34,7 @@ public class UserApiController {
     private final LogoutService logoutService;
     private final UserWithdrawalService userWithdrawalService;  // 회원탈퇴 서비스이다.
     private final UserRepository userRepository;
+    private final UserStatisticsService userStatisticsService;
 
     //유저 검색-> 나와 해당 유저와의 관계 상태도 같이 반환
     @Operation(
@@ -114,7 +116,8 @@ public class UserApiController {
     @GetMapping("/api/users/email/{email}")
     public ResponseEntity<UserResponse> findUserByEmail(
             @Parameter(description = "검색할 유저의 이메일", required = true, example = "hello@naver.com")
-            @PathVariable String email) {
+            @PathVariable String email
+    ) {
         User user = userService.findByEmail(email);
         return ResponseEntity.ok(user.toResponse());
     }
@@ -306,5 +309,26 @@ public class UserApiController {
         {
             return "닉네임이 존재하지 않습니다.";
         }
+    }
+
+    /*
+        유저의 연간 활동(잔디) 정보를 반환하는 함수이다.
+     */
+    @Operation(
+            summary = "연간 활동(잔디) 조회",
+            description = "로그인한 사용자의 잔디 정보를 조회한다.\nex) GET /api/users/activity?year=2026"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "프로필 조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
+    })
+    @GetMapping("/api/users/activity")
+    public ResponseEntity<UserYearlyActivityResponse> getYearlyActivity(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam int year
+    ) {
+        UserYearlyActivityResponse response = userStatisticsService.searchYearGrass(userDetails.getUsername(), year);
+
+        return ResponseEntity.ok(response);
     }
 }

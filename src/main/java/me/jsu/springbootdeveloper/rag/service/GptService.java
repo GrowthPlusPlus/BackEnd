@@ -5,6 +5,7 @@ package me.jsu.springbootdeveloper.rag.service;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.rag.domain.GptResponse;
 import me.jsu.springbootdeveloper.rag.dto.QueryResponseDto;
+import me.jsu.springbootdeveloper.rag.exception.AiGenerationException;
 import me.jsu.springbootdeveloper.rag.repository.GptResponseRepository;
 import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.user.service.UserService;
@@ -83,7 +84,7 @@ public class GptService {
             return response.getAnswer();
         }
         else {
-            throw new IllegalArgumentException("지원하지 않는 type을 사용했습니다.");
+            throw new AiGenerationException("지원하지 않는 type을 사용했습니다.");
         }
     }
 
