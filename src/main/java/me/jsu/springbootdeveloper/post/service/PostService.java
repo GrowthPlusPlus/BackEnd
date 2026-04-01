@@ -486,6 +486,9 @@ public class PostService {
         ChallengeDailyLog challengeDailyLog = challengeQueryService.findLogByUser_IdAndArticle_IdAndPostDate(authorId, postId, postDate);
         challengeDeleteService.deleteLog(challengeDailyLog);
 
+        // 삭제된 로그를 기반으로 연간 활동(잔디)를 업데이트한다.
+        userStatisticsService.researchLog(authorId, postDate);
+
         deleteImages(postPictures);  // 인증글에 저장된 사진들을 클라우디너리에서 삭제한다.
 
         Challenge challenge = article.getChallenge();  // 인증글의 챌린지 정보를 가져온다.

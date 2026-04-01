@@ -11,10 +11,7 @@ import me.jsu.springbootdeveloper.rag.exception.*;
 import me.jsu.springbootdeveloper.tag.exception.TagNotFoundException;
 import me.jsu.springbootdeveloper.token.exception.InvalidTokenException;
 import me.jsu.springbootdeveloper.token.exception.TokenNotFoundException;
-import me.jsu.springbootdeveloper.user.exception.DuplicateNicknameException;
-import me.jsu.springbootdeveloper.user.exception.NotAllowedAdminException;
-import me.jsu.springbootdeveloper.user.exception.UserNotFoundException;
-import me.jsu.springbootdeveloper.user.exception.UserStatisticsNotFoundException;
+import me.jsu.springbootdeveloper.user.exception.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -556,6 +553,22 @@ public class GlobalExceptionHandler {
                         "ADMIN_ERROR",
                         e.getMessage()
                 ));
+    }
+
+    /*
+        잔디 db 생성중, 올바르지 않은 연도가 들어오는 경우를 처리하는 핸들러이다.
+     */
+    @ExceptionHandler(InvalidYearException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidImage(
+            InvalidYearException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(
+                        "INVALID_YEAR",
+                        e.getErrorCode()
+                ));
+
     }
 
     /*
