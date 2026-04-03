@@ -11,6 +11,7 @@ import me.jsu.springbootdeveloper.challenge.enumType.ChallengeVisibility;
 import me.jsu.springbootdeveloper.challenge.enumType.Status;
 import me.jsu.springbootdeveloper.challenge.dto.invite.ChallengeFriendInviteListResponse;
 import me.jsu.springbootdeveloper.challenge.dto.invite.ChallengeInviteResponse;
+import me.jsu.springbootdeveloper.challenge.exception.ChallengeNotInProgressException;
 import me.jsu.springbootdeveloper.challenge.repository.*;
 import me.jsu.springbootdeveloper.fcm.service.FcmService;
 import me.jsu.springbootdeveloper.post.exception.NotFoundException;
@@ -164,6 +165,7 @@ public class ChallengeService {
         챌린지에 참여하는 컨트롤러와 연결된 함수이다.
         코드를 재사용하기 위해 사용한다.
      */
+    @Transactional
     public void joinChallengeController(String email, Long challengeId) {
         User user = userService.findByEmail(email);
         Challenge challenge = challengeQueryService.findById(challengeId);
@@ -203,8 +205,14 @@ public class ChallengeService {
         {
             throw new IllegalStateException("이미 참여 중인 챌린지입니다.");
         }
-        //이미 종료되지 않은 챌린지 && 인원초과가 되지 않은 챌린지 인 경우
-        if (!challenge.getEndDate().isBefore(today) && !challenge.checkIfOverMaxParticipantNumber()){
+        // 이미 종료된 챌린지 && 인원초과가 된 챌린지인 경우엔 예외처리한다.
+        if (challenge.getEndDate().isBefore(today)) {
+            throw new ChallengeNotInProgressException("진행중인 챌린지가 아닙니다.");
+        }
+        else if (challenge.checkIfOverMaxParticipantNumber()) {
+            throw new IllegalStateException("챌린지의 최대 참가 인원수가 초과되었습니다.");
+        }
+        else {
 
             /* joinDate 설정
              case 1. 참여하는 사람이 챌린지 시작일 전에 들어오면 -> joinDate는 챌린지 시작일
@@ -231,11 +239,9 @@ public class ChallengeService {
                             .user(user)
                             .build()));
             userStatistics.increaseChallengeCount();
-
-            return true;
         }
-        else
-            return false;
+
+        return true;
     }
 
     /**

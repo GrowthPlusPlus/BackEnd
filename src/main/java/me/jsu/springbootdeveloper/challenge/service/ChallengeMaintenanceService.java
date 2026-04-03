@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.domain.Challenge;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeWeeklyStatus;
+import me.jsu.springbootdeveloper.challenge.enumType.Status;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeParticipantRepository;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeRepository;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeWeeklyStatusRepository;
@@ -24,8 +25,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,6 +35,7 @@ public class ChallengeMaintenanceService {
     private final ChallengeRepository challengeRepository;
     private final ChallengeParticipantRepository challengeParticipantRepository;
     private final ChallengeWeeklyStatusRepository challengeWeeklyStatusRepository;
+    private final ChallengeDeleteService challengeDeleteService;
     private final UserStatisticsService userStatisticsService;
     private final NotificationService notificationService;
     private final UserProfilePictureRepository userProfilePictureRepository;
@@ -213,8 +214,90 @@ public class ChallengeMaintenanceService {
                 fcmService.sendMessageTo(user.getFcmToken(), title, message);
 
             }
-
         }
+    }
+
+    /*
+        진행중인 챌린지들을 조회하여 방장이 챌린지를 실패했는지 검사하는 함수이다.
+        실패한경우 진행중인 참가자에게 방장을 위임한다.
+     */
+    @Transactional
+    public void delegateOwnerIfFailed(LocalDate today) {
+        Long lastId = 0L;
+        List<Challenge> batch;
+
+        do {
+            batch = challengeRepository.findActiveChallengesAfterId(today, lastId, PageRequest.of(0, BATCH_SIZE));
+
+            if (batch.isEmpty()) break;
+
+            // batch에서 challengeId를 수집한다.
+            List<Long> challengeIds = batch.stream()
+                    .map(Challenge::getId)
+                    .toList();
+
+            // batch에서 ownerId를 수집한다.
+            List<Long> ownerIds = batch.stream()
+                    .map(c -> c.getUser().getId())
+                    .toList();
+
+            // 방장 정보, 챌린지를 진행중인 참가자들을 한 번에 조회한다.
+            List<ChallengeParticipant> allParticipants = challengeParticipantRepository.findParticipantsWithOwner(challengeIds, ownerIds, Status.IN_PROGRESS);
+
+            // 참가자와 방장을 분리하는 map을 생성한다.
+            Map<Long, ChallengeParticipant> ownerMap = new HashMap<>();
+            Map<Long, List<ChallengeParticipant>> participantMap = new HashMap<>();
+
+            // 방장 id 검색의 효율을 위해 사용한다.
+            Set<Long> ownerIdSet = new HashSet<>(ownerIds);
+
+            // 두 후보군을 분리한다.
+            for (ChallengeParticipant cp : allParticipants) {
+                Long challengeId = cp.getChallenge().getId();
+
+                // owner인지 판별
+                if (ownerIdSet.contains(cp.getUser().getId())) {  // 참가자의 id가 처음 수집한 방장 id와 같다면 map에 추가한다.
+                    ownerMap.putIfAbsent(challengeId, cp);
+                }
+                else {  // 아니라면 참가자로 분리한다.
+                    participantMap
+                            .computeIfAbsent(challengeId, k -> new ArrayList<>())
+                            .add(cp);
+                }
+            }
+
+            List<Long> toDelete = new ArrayList<>();  // 삭제할 챌린지들의 id를 모은 배열이다.
+            for (Challenge challenge : batch) {
+                lastId = challenge.getId();
+
+                ChallengeParticipant ownerParticipant = ownerMap.get(challenge.getId());  // 챌린지 id로 해당 챌린지의 방장 정보를 가져온다.
+
+                // 방장이 실패한 상태가 아니라면 스킵한다.
+                if (ownerParticipant == null || ownerParticipant.getStatus() != Status.FAIL) {
+                    continue;
+                }
+
+                // 방장 후보를 가져온다.
+                List<ChallengeParticipant> participants = participantMap.getOrDefault(challenge.getId(), List.of());
+                if (participants.isEmpty()) {  // 남은 사람이 없는 경우, 챌린지 삭제 리스트에 올린다.
+                    toDelete.add(challenge.getId());
+
+                    continue;
+                }
+
+                // 스코어가 높은 유저를 다음 방장으로 선택한다.
+                User nextOwner = challengeDeleteService.selectNextOwner(participants);
+
+                // 방장을 위임한다.
+                challenge.updateUser(nextOwner);
+            }
+
+            // 반복이 끝난 후 챌린지를 삭제한다.
+            for (Long id : toDelete) {
+                challengeDeleteService.deleteChallengeInternal(id);
+            }
+
+        } while (!batch.isEmpty());
     }
 
     /*

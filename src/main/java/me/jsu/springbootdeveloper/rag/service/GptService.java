@@ -29,7 +29,6 @@ public class GptService {
     /*
         공통 처리 로직이다.
      */
-    @Transactional
     public String handleRequest(String email, String type) {
         User user = userService.findByEmail(email);
 
@@ -91,6 +90,7 @@ public class GptService {
     /*
         맞춤형 코칭을 컨트롤러에서 호출하는 경우이다. type 이름에 대한 책임을 서비스로 옮긴다.
      */
+    @Transactional
     public String coach(String email) {
         return handleRequest(email, "coach");
     }
@@ -98,6 +98,7 @@ public class GptService {
     /*
         챌린지 추천을 컨트롤러에서 호출하는 경우이다. type 이름에 대한 책임을 서비스로 옮긴다.
      */
+    @Transactional
     public String challengeRecommend(String email) {
         return handleRequest(email, "challengeRecommend");
     }

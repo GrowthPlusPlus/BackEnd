@@ -84,6 +84,21 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
             @Param("status") Status status
     );
 
+    // 챌린지 오너의 정보, 진행중인 챌린지 참가자 정보를 함께 가져오는 쿼리문이다.
+        @Query("""
+        select cp
+        from ChallengeParticipant cp
+        join fetch cp.user
+        where cp.challenge.id in :challengeIds
+          and ((cp.user.id not in :ownerIds and cp.status = :status) or (cp.user.id in :ownerIds))
+        order by cp.challenge.id asc, cp.createdAt asc
+    """)
+    List<ChallengeParticipant> findParticipantsWithOwner(
+            @Param("challengeIds") List<Long> challengeIds,
+            @Param("ownerIds") List<Long> ownerIds,
+            @Param("status") Status status
+    );
+
     // 나를 제외한 챌린지에 참여 중인 사람들이 목록을 반환한다. (상태: 진행 중)
     @Query("""
         select cp
