@@ -31,7 +31,7 @@ class ChatService(private val openAiApi: OpenAiApi) {  // config에서 반환한
     fun openAiChat(
         userInput: String,
         systemMessage: String,
-        model: String = "gpt-4o-mini"  // 비용 감소를 위해 경량 모델을 사용한다.
+        model: String = "gpt-4o"  // 여기 모델은 실제로 사용되지 않고 RagService에서 온 모델을 사용한다.
     ): ChatResponse? {
         logger.debug { "OpenAI 챗 호출 시작 - 모델: $model" }
         try {
@@ -52,7 +52,7 @@ class ChatService(private val openAiApi: OpenAiApi) {  // config에서 반환한
                     생성되는 응답의 최대 토큰 수를 제한하여 비용 및 응답 길이를 통제한다.
                     정확한 토큰 사용 수를 알고 싶다면 OpenAI API 사용 또는 Spring AI에서 ChatResponse.getUsage()로 확인이 필요하다.
                  */
-                .maxTokens(300)
+                .maxTokens(1000)
                 .build()
 
             /*

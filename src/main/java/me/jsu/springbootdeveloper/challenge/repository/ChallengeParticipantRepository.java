@@ -75,11 +75,28 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
         join fetch cp.user u
         where cp.challenge.id in :challengeIds
           and cp.user.id <> :ownerId
+          and cp.status = :status
         order by cp.challenge.id asc, cp.createdAt asc
     """)
     List<ChallengeParticipant> findParticipantsExceptOwnerForChallenges(
             @Param("challengeIds") List<Long> challengeIds,
-            @Param("ownerId") Long ownerId
+            @Param("ownerId") Long ownerId,
+            @Param("status") Status status
+    );
+
+    // 챌린지 오너의 정보, 진행중인 챌린지 참가자 정보를 함께 가져오는 쿼리문이다.
+        @Query("""
+        select cp
+        from ChallengeParticipant cp
+        join fetch cp.user
+        where cp.challenge.id in :challengeIds
+          and ((cp.user.id not in :ownerIds and cp.status = :status) or (cp.user.id in :ownerIds))
+        order by cp.challenge.id asc, cp.createdAt asc
+    """)
+    List<ChallengeParticipant> findParticipantsWithOwner(
+            @Param("challengeIds") List<Long> challengeIds,
+            @Param("ownerIds") List<Long> ownerIds,
+            @Param("status") Status status
     );
 
     // 나를 제외한 챌린지에 참여 중인 사람들이 목록을 반환한다. (상태: 진행 중)
@@ -242,4 +259,7 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
     // 챌린지 참여자 중 본인을 제외한 스코어가 가장 높은 유저를 한 명 찾는 쿼리문이다. 방장 위임 중 해당 유저가 챌린지를 나가는 것을 Lock을 통해 방지한다.
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<ChallengeParticipant> findTopByChallenge_IdAndUser_IdNotOrderByRankingScoreDesc(Long challengeId, Long userId);
+
+    // 챌린지 id값에 해당하는 참여자들이 몇 명 있는지 카운트하는 쿼리문이다.
+    long countByChallenge_Id(Long challengeId);
 }

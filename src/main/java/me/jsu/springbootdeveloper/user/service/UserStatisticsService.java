@@ -151,6 +151,7 @@ public class UserStatisticsService {
     @Transactional(readOnly = true)
     public UserYearlyActivityResponse searchYearGrass(String email, int year) {
         User user = userService.findByEmail(email);
+        UserStatistics userStatistics = findByUser_IdStatistics(user.getId());
 
         if (year < 2026) {  // 해냄 서비스는 2026년 이후로 시작했으므로 이전의 잔디 값은 존재하지 않으므로 예외처리 한다.
             throw new InvalidYearException("올바르지 않은 연도입니다.");
@@ -186,6 +187,8 @@ public class UserStatisticsService {
             }
 
             return UserYearlyActivityResponse.builder()
+                    .successDays(userStatistics.getTotalActiveDays())
+                    .currentStreak((int)userStatistics.getCurrentStreakLength())
                     .activity(dayBitCount)
                     .build();
         }

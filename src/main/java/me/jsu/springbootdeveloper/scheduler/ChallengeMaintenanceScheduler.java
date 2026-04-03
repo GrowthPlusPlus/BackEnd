@@ -27,6 +27,7 @@ public class ChallengeMaintenanceScheduler {
 
         challengeMaintenanceService.syncToday(today);  // 진행중인 챌린지 날짜를 동기화 한다.
         challengeMaintenanceService.failWeeklyStatuses(today);  // 이번주 챌린지 성공/실패 여부를 판단한다.
+        challengeMaintenanceService.delegateOwnerIfFailed(today);  // 실패한 방장들의 권한을 위임한다. 위임할 사람이 없다면 삭제한다.
         challengeMaintenanceService.finalizeChallenges(today);  // 챌린지 종료를 판단한다.
         challengeMaintenanceService.resetStreakIfBroken(today);  // 연속 일수가 깨졌는지 판단한다.
     }
