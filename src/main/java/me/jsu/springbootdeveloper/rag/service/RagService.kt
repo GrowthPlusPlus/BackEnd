@@ -93,7 +93,7 @@ class RagService(
     fun generateAnswerWithContexts(
         question: String,
         relevantDocs: List<DocumentSearchResultDto>,  // 벡터 검색의 결과로, 질문과 의미적으로 유사한 문서 조각들이다. (content, metadata 포함)
-        model: String = "gpt-4o-mini"
+        model: String = "gpt-4o"
     ): String {
         logger.debug { "RAG 응답 생성 시작: '$question', 모델: $model" }
 

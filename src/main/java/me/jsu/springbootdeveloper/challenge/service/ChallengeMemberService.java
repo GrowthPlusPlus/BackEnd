@@ -7,6 +7,7 @@ import me.jsu.springbootdeveloper.challenge.domain.Challenge;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeInvite;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
 import me.jsu.springbootdeveloper.challenge.dto.member.ChallengeMemberResponse;
+import me.jsu.springbootdeveloper.challenge.enumType.Status;
 import me.jsu.springbootdeveloper.challenge.exception.ChallengeInviteNotFoundException;
 import me.jsu.springbootdeveloper.challenge.exception.ChallengeOwnerCannotLeaveException;
 import me.jsu.springbootdeveloper.challenge.exception.NotAllowedChallengeActionException;
@@ -25,6 +26,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Comparator;
+import java.util.List;
 
 /*
     챌린지에 참여한 맴버를 관리하는 서비스이다.
@@ -129,18 +133,16 @@ public class ChallengeMemberService {
         validateOwner(isOwner(user.getId(), challengeId));
 
         // 방장을 제외하고 가장 랭킹 스코어가 높은 유저를 찾는다.
-        ChallengeParticipant topUser = challengeParticipantRepository
-                .findTopByChallenge_IdAndUser_IdNotOrderByRankingScoreDesc(challengeId, user.getId())
-                .orElse(null);
+        List<ChallengeParticipant> participants = challengeParticipantRepository.findParticipantsInProgress(challengeId, user.getId(), Status.IN_PROGRESS);
+        User nextOwner = challengeDeleteService.selectNextOwner(participants);
 
-        if (topUser == null) {  // 챌린지에 존재하는 유저가 방장 혼자라면 챌린지를 삭제한다.
+        if (nextOwner == null) {  // 챌린지에 존재하는 유저가 방장 혼자라면 챌린지를 삭제한다.
             challengeDeleteService.deleteChallengeInternal(challengeId);
             return;
         }
 
         // 방장을 변경한다.
-        User newOwner = topUser.getUser();
-        challenge.updateUser(newOwner);
+        challenge.updateUser(nextOwner);
 
         // 방장 자동 위임 인앱 알림을 전송한다. (푸시 알림은 보내지 않는다.)
         // 예: "연속 인증 스코어가 가장 높아 '챌린지명' 챌린지의 새 방장이 되었어요."
@@ -149,7 +151,7 @@ public class ChallengeMemberService {
         long ownerId = user.getId();
         String ownerImageUrl = userProfilePictureRepository.findImageUrlByUserId(ownerId).orElse("");
         notificationService.sendNotification(
-                newOwner,
+                nextOwner,
                 NotificationType.CHALLENGE_LEADER,
                 autoDelegateMessage,
                 ownerImageUrl,
@@ -245,7 +247,7 @@ public class ChallengeMemberService {
         challengeParticipantRepository.delete(challengeParticipant);
 
         // 챌린지의 전체 참여자 수를 감소시킨다.
-        challenge.updateLeave();
+        challengeDeleteService.updateChallengeParticipantCount(challenge);
 
         // 유저가 참여한 총 챌린지 개수를 감소시킨다.
         UserStatistics userStatistics = userStatisticsService.findByUser_IdStatistics(userId);

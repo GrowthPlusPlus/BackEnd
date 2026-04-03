@@ -13,5 +13,7 @@ import java.util.List;
 @Getter
 @Builder
 public class UserYearlyActivityResponse {
+    int successDays;
+    int currentStreak;
     int[] activity;
 }

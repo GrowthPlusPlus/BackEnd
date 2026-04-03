@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.domain.Challenge;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeDailyLog;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
+import me.jsu.springbootdeveloper.challenge.enumType.Status;
 import me.jsu.springbootdeveloper.challenge.exception.NotAllowedChallengeActionException;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeDailyLogRepository;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeParticipantRepository;
@@ -16,10 +17,7 @@ import me.jsu.springbootdeveloper.user.service.UserService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /*
@@ -53,7 +51,7 @@ public class ChallengeDeleteService {
                 .toList();
 
         // 챌린지 오너를 제외한 챌린지 참가자들을 검색한다.
-        List<ChallengeParticipant> allParticipants = challengeParticipantRepository.findParticipantsExceptOwnerForChallenges(challengeIds, userId);
+        List<ChallengeParticipant> allParticipants = challengeParticipantRepository.findParticipantsExceptOwnerForChallenges(challengeIds, userId, Status.IN_PROGRESS);
 
         // 검색한 참가자들의 정보를 challengeId를 기준으로 그룹화한다.
         Map<Long, List<ChallengeParticipant>> grouped = allParticipants.stream()
@@ -61,17 +59,16 @@ public class ChallengeDeleteService {
 
         // 챌린지별로 위임할 참가자들을 선택한다.
         for (Challenge challenge : challenges) {
+            // 위임할 참가자를 검색한다.
             List<ChallengeParticipant> participants = grouped.getOrDefault(challenge.getId(), List.of());
 
             if (participants.isEmpty()) {  // 위임할 참가자가 없다면 챌린지를 삭제 목록에 추가한다.
                 toDelete.add(challenge.getId());
-            } else {  // 스코어가 가장 높은 사람에게 위임한다.
-                User newMaster = participants.stream()
-                        .max(Comparator.comparing(ChallengeParticipant::getRankingScore))
-                        .map(ChallengeParticipant::getUser)
-                        .orElseThrow();  // stream을 위한 방어코드이다.
+            }
+            else {  // 스코어가 가장 높은 사람에게 위임한다.
+                User newOwner = selectNextOwner(participants);
 
-                challenge.updateUser(newMaster);
+                challenge.updateUser(newOwner);
             }
         }
 
@@ -124,11 +121,11 @@ public class ChallengeDeleteService {
             return;
         }
 
-        for (ChallengeParticipant challengeParticipant : participants) {
-            challengeParticipant.getChallenge().updateLeave();  // 챌린지 참여자 수를 감소시킨다.
-        }
-
         challengeParticipantRepository.deleteAllInBatch(participants);  // 챌린지 참여에서 삭제한다.
+
+        for (ChallengeParticipant challengeParticipant : participants) {
+            updateChallengeParticipantCount(challengeParticipant.getChallenge());  // 챌린지 참여자 수를 감소시킨다.
+        }
     }
 
     /*
@@ -154,5 +151,26 @@ public class ChallengeDeleteService {
     @Transactional
     public void deleteChallengeAsAdmin(Long challengeId) {
         deleteChallengeInternal(challengeId);
+    }
+
+    /*
+        정합성을 유지하기 위해 챌린지 참여자 수를 감소시키는 함수이다.
+        만약 챌린지 도메인 내의 참여자 수와 실제 참여자 수가 다른 경우 다시 계산해주는 역할을 한다.
+     */
+    public void updateChallengeParticipantCount(Challenge challenge) {
+        int participantNumber = (int) challengeParticipantRepository.countByChallenge_Id(challenge.getId());  // 전체 참여자 수를 계산한다.
+
+        challenge.synchronizeParticipantNumber(participantNumber);
+    }
+
+    /*
+        기준에 따라 다음 방장이 될 유저를 선택하는 함수이다.
+        현재는 랭킹이 가장 높은 유저를 선택한다.
+     */
+    public User selectNextOwner(List<ChallengeParticipant> participants) {
+        return participants.stream()
+                .max(Comparator.comparing(ChallengeParticipant::getRankingScore))
+                .map(ChallengeParticipant::getUser)
+                .orElse(null);
     }
 }

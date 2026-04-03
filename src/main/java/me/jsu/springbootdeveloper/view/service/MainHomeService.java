@@ -154,15 +154,14 @@ public class MainHomeService {
 
             // 남은 챌린지 수행 일수를 계산한다.
             LocalDate endDate = challengeParticipant.getChallenge().getEndDate();  // 종료일을 구한다.
-            long elapsedDaysRaw = ChronoUnit.DAYS.between(targetDate, endDate) + 1;  // 종료일로부터 며칠 남았는지 일수로 계산한다.
-            long elapsedDays = Math.max(0, elapsedDaysRaw);  // 경과일이 음수가 나오는 것을 방지한다.
+            long dDay = ChallengeUtils.calculateDDay(targetDate, endDate);
 
             // 챌린지에 관한 정보를 종합하여 List에 넣는다.
             myChallenges.add(MyChallenge.builder()
                     .challengeId(challengeId)
                     .title(challenge.getTitle())
                     .requiredWeeklyCount(challenge.getRequiredWeeklyCount())
-                    .dueToDate(elapsedDays)
+                    .dueToDate(dDay)
                     .currentStreak(challengeParticipant.getCurrentStreakDays())
                     .todaySuccessCount(challenge.getTodaySuccessCount())
                     .participantNumber(challenge.getParticipantNumber())

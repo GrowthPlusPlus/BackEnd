@@ -230,6 +230,7 @@ public class UserService {
                 .toList();
 
         return MyProfileResponse.builder()
+                .id(user.getId())
                 .nickname(user.getNickname())
                 .introduction(user.getIntroduction())
                 .profileImageUrl(  // 프로필 사진 객체가 null이면 Url을 반환하지 않는다.

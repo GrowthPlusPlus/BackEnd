@@ -61,4 +61,21 @@ public final class ChallengeUtils {
 
         return weeks;
     }
+
+    /*
+        D-day 날짜를 계산해주는 함수이다.
+
+        기준:
+        targetDate 기준으로 계산
+        종료일 포함 (inclusive, +1)
+        과거일 경우 0으로 보정
+
+        @param targetDate 기준 날짜 (ex. 오늘, 특정 조회 날짜)
+        @param endDate 챌린지 종료일
+        @return 남은 일수 (0 이상)
+     */
+    public static long calculateDDay(LocalDate targetDate, LocalDate endDate) {
+        long days = ChronoUnit.DAYS.between(targetDate, endDate) + 1;  // 종료일로부터 며칠 남았는지 일수로 계산한다.
+        return Math.max(0, days);  // day 값이 음수가 나오는 것을 방지한다.
+    }
 }

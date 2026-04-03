@@ -13,6 +13,7 @@ import java.util.List;
 @Getter
 @Builder
 public class MyProfileResponse {
+    private Long id;
     private String nickname;
     private String introduction;
     private String profileImageUrl;
