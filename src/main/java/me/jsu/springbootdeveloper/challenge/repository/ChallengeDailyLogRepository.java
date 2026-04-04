@@ -11,7 +11,6 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import java.time.LocalDate;
 import java.util.List;
@@ -155,6 +154,7 @@ public interface ChallengeDailyLogRepository extends JpaRepository<ChallengeDail
 
     /*
         특정 날짜 사이의 모든 로그들의 개수, 유저 id를 구하는 쿼리문이다.
+        배치를 위해 사용한다.
      */
     @Query("""
         select cdl.user.id, cdl.postDate, count(cdl)
@@ -168,6 +168,25 @@ public interface ChallengeDailyLogRepository extends JpaRepository<ChallengeDail
     """)
     List<Object[]> countYearlyLogsByUsers(
             @Param("userIds") List<Long> userIds,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
+
+    /*
+        특정 날짜 사이의 모든 로그들의 개수를 구하는 쿼리문이다.
+        countYearlyLogsByUsers와 다르게 단일 유저에 대한 검색이다.
+     */
+        @Query("""
+        select cdl.postDate, count(cdl)
+        from ChallengeDailyLog cdl
+        where cdl.user.id = :userId
+          and cdl.postDate between :startDate and :endDate
+          and cdl.challenge is not null
+        group by cdl.postDate
+        order by cdl.postDate
+    """)
+    List<Object[]> countDailyRange(
+            @Param("userId") Long userId,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate
     );

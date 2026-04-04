@@ -38,7 +38,11 @@ import java.time.LocalDateTime;
                 @Index(  // 유저 업데이트의 배치 쿼리를 위해 사용한다.
                         name = "idx_weekly_user_challenge_date",
                         columnList = "user_id, challenge_id, week_start_date desc"
-                )
+                ),
+                @Index(  // 유저별 월별 추이를 구하기 위해 사용한다.
+                        name = "idx_user_week_date",
+                        columnList = "user_id, week_start_date"
+                ),
         }
 )
 @Entity

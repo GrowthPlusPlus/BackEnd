@@ -193,7 +193,7 @@ public class ChallengeQueryService {
     }
 
     /*
-        특정 날짜에 유저가 수행한 총 인증글 개수와 유저 id를 구하는 쿼리문이다.
+        특정 날짜에 유저가 수행한 총 인증글 개수와 유저 id를 구하는 함수이다.
         매일 밤마다 모든 유저의 잔디값을 업데이트하기 위해 사용한다.
         0번 인덱스에는 유저 id, 1번 인덱스에는 해당 날짜에 수행한 총 인증글 개수가 들어간다.
         데일리 로그를 배치 단위로 조회한다.
@@ -203,10 +203,26 @@ public class ChallengeQueryService {
     }
 
     /*
-        특정 날짜 사이의 모든 로그들의 개수, 유저 id를 구하는 쿼리문이다.
+        특정 날짜 사이의 모든 로그들의 개수, 유저 id를 구하는 함수이다.
         매일 밤마다 모든 유저의 잔디값을 업데이트 하는 경우, 기존에 잔디 db값이 없어서 모든 로그를 조회한 후 생성하기 위해 사용한다.
      */
     public List<Object[]> countYearlyLogsByUsers(List<Long> userIds, LocalDate startDate, LocalDate endDate) {
         return challengeDailyLogRepository.countYearlyLogsByUsers(userIds, startDate, endDate);
+    }
+
+    /*
+        start ~ end 기간을 한 달로 잡아서 해당 기간동안의 주간 챌린지 성공 횟수를 조회하는 함수이다.
+        월별 챌린지 성공 추이 계산에 사용된다.
+     */
+    public List<Object[]> sumWeeklyInRange(Long userId, LocalDate start, LocalDate end) {
+        return challengeWeeklyStatusRepository.sumWeeklyInRange(userId, start, end);
+    }
+
+    /*
+        특정 날짜 사이의 모든 로그들의 개수를 구하는 함수이다. 일간 챌린지 성공 횟수를 조회한다.
+        주별 챌린지 성공 추이 계산에 사용된다.
+     */
+    public List<Object[]> countDailyRange(Long userId, LocalDate start, LocalDate end) {
+        return challengeDailyLogRepository.countDailyRange(userId, start, end);
     }
 }

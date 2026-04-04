@@ -10,10 +10,7 @@ import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.user.dto.*;
 import me.jsu.springbootdeveloper.user.repository.UserFriendshipSearchProjection;
 import me.jsu.springbootdeveloper.user.repository.UserRepository;
-import me.jsu.springbootdeveloper.user.service.LogoutService;
-import me.jsu.springbootdeveloper.user.service.UserService;
-import me.jsu.springbootdeveloper.user.service.UserStatisticsService;
-import me.jsu.springbootdeveloper.user.service.UserWithdrawalService;
+import me.jsu.springbootdeveloper.user.service.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -35,6 +32,7 @@ public class UserApiController {
     private final UserWithdrawalService userWithdrawalService;  // 회원탈퇴 서비스이다.
     private final UserRepository userRepository;
     private final UserStatisticsService userStatisticsService;
+    private final UserProgressStatisticsService userProgressStatisticsService;
 
     //유저 검색-> 나와 해당 유저와의 관계 상태도 같이 반환
     @Operation(
@@ -328,6 +326,46 @@ public class UserApiController {
             @RequestParam int year
     ) {
         UserYearlyActivityResponse response = userStatisticsService.searchYearGrass(userDetails.getUsername(), year);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /*
+        유저의 4주간의 챌린지 성공 추이 정보를 반환하는 함수이다.
+     */
+    @Operation(
+            summary = "4주간의 챌린지 성공 추이 조회",
+            description = "로그인한 사용자의 4주간의 챌린지 성공 추이를 조회한다.\nex) GET /api/users/graph/4weeks"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "프로필 조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
+    })
+    @GetMapping("/api/users/graph/4weeks")
+    public ResponseEntity<WeeklyGraphResponse> getRecent4WeeksGraph(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        WeeklyGraphResponse response = userProgressStatisticsService.getRecent4WeeksGraph(userDetails.getUsername());
+
+        return ResponseEntity.ok(response);
+    }
+
+        /*
+        유저의 7일간의 챌린지 성공 추이 정보를 반환하는 함수이다.
+     */
+    @Operation(
+            summary = "7일간의 챌린지 성공 추이 조회",
+            description = "로그인한 사용자의 7일간의 챌린지 성공 추이를 조회한다.\nex) GET /api/users/graph/weekly"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "프로필 조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
+    })
+    @GetMapping("/api/users/graph/weekly")
+    public ResponseEntity<DailyGraphResponse> getWeeklyGraph(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        DailyGraphResponse response = userProgressStatisticsService.getWeeklyGraph(userDetails.getUsername());
 
         return ResponseEntity.ok(response);
     }
