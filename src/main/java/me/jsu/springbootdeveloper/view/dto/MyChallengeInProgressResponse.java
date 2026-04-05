@@ -23,4 +23,7 @@ public class MyChallengeInProgressResponse {
     private LocalDate endDate;
     private int achievementRate;
     private Status status;
+    private long dueToDate;  // 남은 챌린지 일수이다.
+    private long currentStreak;  // 최근 연속으로 인증한 일 수이다.
+    private boolean doIt;  // 해당 챌린지를 오늘 수행했는지에 관한 불린 값이다.
 }

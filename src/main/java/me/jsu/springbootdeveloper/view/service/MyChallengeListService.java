@@ -3,9 +3,11 @@
 package me.jsu.springbootdeveloper.view.service;
 
 import lombok.RequiredArgsConstructor;
+import me.jsu.springbootdeveloper.challenge.domain.ChallengeDailyLog;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
 import me.jsu.springbootdeveloper.challenge.enumType.Status;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeQueryService;
+import me.jsu.springbootdeveloper.challenge.service.ChallengeUtils;
 import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.view.dto.MyChallengeInProgressResponse;
 import me.jsu.springbootdeveloper.view.dto.MyChallengeSuccessOrFailResponse;
@@ -15,8 +17,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /*
     유저가 수행한 챌린지 목록을 상태에 따라 조회하는 서비스이다.
@@ -33,6 +38,7 @@ public class MyChallengeListService {
      */
     public List<MyChallengeInProgressResponse> getMyChallenges(String email, Status status, boolean onlyTwo) {
         User user = userService.findByEmail(email);
+        LocalDate today = LocalDate.now();
 
         // 참여한 챌린지들을 검색한다.
         List<ChallengeParticipant> challengeParticipants = challengeQueryService.findStatusWithChallengeByUserIdAndStatus(user.getId(), status);
@@ -44,12 +50,23 @@ public class MyChallengeListService {
                     .toList();
         }
 
+        /*
+            유저가 요청한 날짜의 하루 데일리 로그를 검색한다. 하나도 수행하지 않았다면 빈 리스트를 반환한다.
+         */
+        Map<Long, ChallengeDailyLog> dailyLogMap;
+        List<ChallengeDailyLog> challengeDailyLogs = challengeQueryService.findByUser_IdAndPostDate(user.getId(), today);
+        // 데일리 로그 list를 map으로 바꾸어서 챌린지 id와 데일리 로그의 챌린지 id를 바로 매핑한다.
+        dailyLogMap = challengeDailyLogs.stream().collect(Collectors.toMap(
+                log -> log.getChallenge().getId(),  // 챌린지 id를 map key로 설정한다.
+                log -> log,
+                (existing, replacement) -> existing  // challengeId 키값 중복 시, 기존 값으로 사용한다.
+        ));
+
         // 얻은 값을 매핑하여 반환한다.
         return challengeParticipants.stream()
                 .map(cp -> {
                     LocalDate startDate = cp.getJoinDate();  // 유저가 챌린지를 시작한 날을 기준으로 한다.
                     LocalDate endDate = cp.getChallenge().getEndDate();
-                    LocalDate today = LocalDate.now();
 
                     LocalDate effectiveEnd = today;
                     if (today.isAfter(endDate)) {  // 이미 끝난 챌린지인데 오류로 검색된 경우
@@ -61,6 +78,15 @@ public class MyChallengeListService {
                         elapsedDays = ChronoUnit.DAYS.between(startDate, effectiveEnd) + 1;  // 시작한 당일도 경과일로 계산한다.
                     }
 
+                    // 남은 챌린지 수행 일수를 계산한다.
+                    long dDay = ChallengeUtils.calculateDDay(today, endDate);
+
+                    // 오늘 데일리 로그 여부를 판별한다.
+                    ChallengeDailyLog dailyLog = dailyLogMap.get(cp.getChallenge().getId());
+
+                    // 오늘 인증을 했다면 로그가 있으므로 true, 인증을 하지 않았다면 로그가 존재하지 않으므로 false이다.
+                    boolean isDoIt = (dailyLog != null);
+
                     return MyChallengeInProgressResponse.builder()
                             .challengeId(cp.getChallenge().getId())
                             .title(cp.getChallenge().getTitle())
@@ -71,6 +97,9 @@ public class MyChallengeListService {
                             .endDate(cp.getChallenge().getEndDate())  // 완료일
                             .achievementRate(calculateAchievementRatePercent(cp))  // 달성률을 계산하여 반환한다.
                             .status(status)
+                            .dueToDate(dDay)
+                            .currentStreak(cp.getCurrentStreakDays())  // 연속 수행 일수이다.
+                            .doIt(isDoIt)
                             .build();
                         }
                 )
