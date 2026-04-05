@@ -190,4 +190,17 @@ public interface ChallengeDailyLogRepository extends JpaRepository<ChallengeDail
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate
     );
+
+    // 태그별 챌린지 인증 횟수를 구하기 위한 쿼리문이다.
+    @Query("""
+        select t.tagName, count(cdl)
+        from ChallengeDailyLog cdl
+        join cdl.challenge c
+        join c.tagMappings tm
+        join tm.tag t
+        where cdl.user.id = :userId
+        group by t.id, t.tagName
+        order by count(cdl) desc
+    """)
+    List<Object[]> findTagStats(@Param("userId") Long userId);
 }

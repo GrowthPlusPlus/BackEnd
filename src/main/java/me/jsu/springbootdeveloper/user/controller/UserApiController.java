@@ -33,6 +33,7 @@ public class UserApiController {
     private final UserRepository userRepository;
     private final UserStatisticsService userStatisticsService;
     private final UserProgressStatisticsService userProgressStatisticsService;
+    private final UserTagStatisticsService userTagStatisticsService;
 
     //유저 검색-> 나와 해당 유저와의 관계 상태도 같이 반환
     @Operation(
@@ -350,7 +351,27 @@ public class UserApiController {
         return ResponseEntity.ok(response);
     }
 
-        /*
+    /*
+        유저의 사용자의 태그별 챌린지 수행 횟수 정보를 반환하는 함수이다.
+     */
+    @Operation(
+            summary = "사용자의 태그별 챌린지 수행 횟수 조회",
+            description = "로그인한 사용자의 사용자의 태그별 챌린지 수행 횟수를 조회한다.\nex) GET /api/users/graph/tag"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "프로필 조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
+    })
+    @GetMapping("/api/users/graph/tag")
+    public ResponseEntity<List<TagGraphResponse>> getTagGraph(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        List<TagGraphResponse> response = userTagStatisticsService.getTagGraph(userDetails.getUsername());
+
+        return ResponseEntity.ok(response);
+    }
+
+    /*
         유저의 7일간의 챌린지 성공 추이 정보를 반환하는 함수이다.
      */
     @Operation(
