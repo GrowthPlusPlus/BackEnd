@@ -31,6 +31,10 @@ import java.time.LocalDateTime;
                 @Index(
                         name = "idx_user_date_log",
                         columnList = "user_id, post_date"  // 조회용 인덱스로, 유저 id와 게시 날짜를 포함하여 검색하면 성능이 향상된다.
+                ),
+                @Index(
+                        name = "idx_user_challenge_log",
+                        columnList = "user_id, challenge_id"
                 )
         }
 )

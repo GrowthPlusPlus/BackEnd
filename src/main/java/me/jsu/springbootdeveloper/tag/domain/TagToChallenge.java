@@ -25,8 +25,12 @@ import java.time.LocalDateTime;
                 )
         },
         indexes = {
+                @Index(
+                        name = "idx_tag_challenge",
+                        columnList = "tag_id"
+                ),
                 @Index(  // 챌린지 id를 통한 태그 검색을 인덱싱한다.
-                        name = "idx_challenge",
+                        name = "idx_challenge_tag",
                         columnList = "challenge_id"
                 )
         }

@@ -225,4 +225,12 @@ public class ChallengeQueryService {
     public List<Object[]> countDailyRange(Long userId, LocalDate start, LocalDate end) {
         return challengeDailyLogRepository.countDailyRange(userId, start, end);
     }
+
+    /*
+        태그별 챌린지 인증 횟수를 조회하기 위한 함수이다.
+        태그 통계 조회에 사용된다.
+     */
+    public List<Object[]> findTagStats(Long userId) {
+        return challengeDailyLogRepository.findTagStats(userId);
+    }
 }

@@ -5,7 +5,6 @@ package me.jsu.springbootdeveloper.user.service;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeQueryService;
 import me.jsu.springbootdeveloper.user.domain.User;
-import me.jsu.springbootdeveloper.user.domain.UserStatistics;
 import me.jsu.springbootdeveloper.user.dto.DailyGraphResponse;
 import me.jsu.springbootdeveloper.user.dto.WeeklyGraphResponse;
 import org.springframework.stereotype.Service;
