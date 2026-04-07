@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
@@ -38,7 +39,7 @@ public class MyChallengeListService {
      */
     public List<MyChallengeInProgressResponse> getMyChallenges(String email, Status status, boolean onlyTwo) {
         User user = userService.findByEmail(email);
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
 
         // 참여한 챌린지들을 검색한다.
         List<ChallengeParticipant> challengeParticipants = challengeQueryService.findStatusWithChallengeByUserIdAndStatus(user.getId(), status);

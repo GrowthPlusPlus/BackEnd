@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.ZoneId;
 
 /*
     메인화면을 구성하기 위한 요소를 반환해주는 컨트롤러이다.
@@ -54,7 +55,7 @@ public class MainHomeController {
             @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate targetDate  // 날짜를 받는다.
     ) {
 
-        LocalDate today = LocalDate.now();  // 해당 요청이 처리되는 기준이 되는 날짜를 생성한다.
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));  // 해당 요청이 처리되는 기준이 되는 날짜를 생성한다.
         LocalDate weekStartDate = targetDate.with(DayOfWeek.MONDAY);  // 요청 날짜 주의 챌린지 수행 로그를 검색하기 위한 값이다.
 
         // 서비스에서 정제한 정보를 response 객체에 담는다.
