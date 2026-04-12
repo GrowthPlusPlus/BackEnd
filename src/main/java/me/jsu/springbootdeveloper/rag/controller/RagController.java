@@ -9,8 +9,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.rag.dto.QueryRequestDto;
 import me.jsu.springbootdeveloper.rag.dto.QueryResponseDto;
-import me.jsu.springbootdeveloper.rag.service.AiChallengeRecommendService;
-import me.jsu.springbootdeveloper.rag.service.AiCoachService;
+import me.jsu.springbootdeveloper.rag.dto.ChallengeDiscoveryRecommendItemResponse;
+import me.jsu.springbootdeveloper.rag.service.AiChallengeDiscoveryRecommendService;
 import me.jsu.springbootdeveloper.rag.service.DocumentService;
 import me.jsu.springbootdeveloper.rag.service.GptService;
 import org.springframework.http.MediaType;
@@ -19,6 +19,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 /*
     RAG와 관련된 모든 일들을 처리하는 컨트롤러이다.
@@ -29,6 +31,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class RagController {
     private final DocumentService documentService;
     private final GptService gptService;
+    private final AiChallengeDiscoveryRecommendService aiChallengeDiscoveryRecommendService;
     /*
         PDF 문서를 업로드하여 벡터 스토어에 저장하는 컨트롤러이다.
      */
@@ -145,5 +148,32 @@ public class RagController {
         String response = gptService.challengeRecommend(userDetails.getUsername());
 
         return ResponseEntity.ok(response);
+    }
+
+    /*
+        AiChallengeRecommendService와 동일한 RAG 컨텍스트로 LLM이 challengeId를 고르고,
+        서버가 DB로 카드 필드를 채워 탐색 탭에 넘긴다.
+     */
+    @Operation(
+            summary = "탐색 탭용 AI 챌린지 추천(구조화)",
+            description = """
+        로그인 유저 기준으로 RAG/LLM이 공개 챌린지 id를 최대 3개 선택한다.
+        응답은 챌린지 이름, 참여 인원, D-000 형식 남은 일수, 태그, id를 포함한다.
+        ex) GET /api/v1/rag/recommend/discovery
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    @GetMapping("/recommend/discovery")
+    public ResponseEntity<List<ChallengeDiscoveryRecommendItemResponse>> recommendDiscovery(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        List<ChallengeDiscoveryRecommendItemResponse> items = aiChallengeDiscoveryRecommendService
+                .recommendForDiscovery(userDetails.getUsername());
+
+        return ResponseEntity.ok(items);
     }
 }

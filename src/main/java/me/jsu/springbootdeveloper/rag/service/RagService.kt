@@ -95,12 +95,34 @@ class RagService(
         relevantDocs: List<DocumentSearchResultDto>,  // 벡터 검색의 결과로, 질문과 의미적으로 유사한 문서 조각들이다. (content, metadata 포함)
         model: String = "gpt-4o"
     ): String {
+        return generateAnswerWithContextsInternal(question, relevantDocs, model, appendSourceFooter = true)
+    }
+
+    /*
+        generateAnswerWithContexts와 동일하나, 응답 끝에 참고 문서 출처 블록을 붙이지 않는다.
+        JSON 등 기계가 읽을 출력만 필요할 때 사용한다.
+     */
+    @JvmOverloads
+    fun generateAnswerWithContextsWithoutSourceFooter(
+        question: String,
+        relevantDocs: List<DocumentSearchResultDto>,
+        model: String = "gpt-4o"
+    ): String {
+        return generateAnswerWithContextsInternal(question, relevantDocs, model, appendSourceFooter = false)
+    }
+
+    private fun generateAnswerWithContextsInternal(
+        question: String,
+        relevantDocs: List<DocumentSearchResultDto>,
+        model: String,
+        appendSourceFooter: Boolean
+    ): String {
         logger.debug { "RAG 응답 생성 시작: '$question', 모델: $model" }
 
         // 검색결과를 검증하여 관련 문서가 비어있는 경우 리턴한다.
         if (relevantDocs.isEmpty()) {
             logger.info { "관련 정보를 찾을 수 없음: '$question'" }
-            
+
             return "관련 정보를 찾을 수 없습니다. 다른 질문을 시도하거나 관련 문서를 업로드해 주세요."
         }
 
@@ -108,7 +130,7 @@ class RagService(
         val commonContext = commonContextProvider.commonContext
 
         // reranking 작업으로 문서 검색 결과 중, 상위 n개만 사용한다.
-        val rerankedDocs = relevantDocs.take(5);
+        val rerankedDocs = relevantDocs.take(5)
 
         // 문서들에 번호를 붙여 하나의 컨텍스트 문자열로 결합한다.
         val context = buildContextWithLimit(rerankedDocs, maxChars = 4000)
@@ -124,21 +146,21 @@ class RagService(
         val systemPromptText = """
             당신은 지식 기반 Q&A 시스템입니다.
             아래 정보를 기반으로만 답변하세요.
-            
+
             정보:
             $fullContext
         """.trimIndent()
 
-        // LLM을 통한 응답을 생성한다.
         try {
-            // chatService에서 정보를 주고, chatResponse를 반환받는다.
             val response = chatService.openAiChat(question, systemPromptText, model)
             logger.debug { "AI 응답 생성: ${response}" }
 
-            // 반환값의 문자열 (응답)을 추출한다. 문자열이 null인 경우를 방어처리한다.
             val aiAnswer = response?.result?.output?.text ?: "응답을 생성할 수 없습니다."
 
-            // 참고 문서 정보 추가한다. AI가 어떤 문서를 참고했는지 보여주기 위해 사용한다.
+            if (!appendSourceFooter) {
+                return aiAnswer
+            }
+
             val sourceInfo = buildString {
                 appendLine("\n\n참고 문서:")
                 rerankedDocs.forEachIndexed { index, doc ->
@@ -147,7 +169,7 @@ class RagService(
                 }
             }
 
-            return aiAnswer + sourceInfo  // AI 응답과 출처를 반환한다.
+            return aiAnswer + sourceInfo
         } catch (e: Exception) {
             logger.error(e) { "AI 모델 호출 중 오류 발생: ${e.message}" }
 

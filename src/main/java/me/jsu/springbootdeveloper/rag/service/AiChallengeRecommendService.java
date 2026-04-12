@@ -60,6 +60,16 @@ public class AiChallengeRecommendService {
     }
 
     /*
+        탐색 탭용 AI 추천 등에서 AiChallengeRecommendService와 동일한 RAG 컨텍스트를 쓰기 위해 문서를 반환한다.
+
+        @param userId 로그인 사용자 PK이다.
+        @return RAG에 넣을 DocumentSearchResultDto 한 건이다.
+     */
+    public DocumentSearchResultDto getRecommendationContextDocument(Long userId) {
+        return buildUserInfoDocument(userId);
+    }
+
+    /*
         사용자 정보(관심사 태그, 참여한 챌린지)를 기반으로 RAG에 전달할 문서 DTO를 생성한다.
      */
     private DocumentSearchResultDto buildUserInfoDocument(Long userId) {
@@ -131,7 +141,8 @@ public class AiChallengeRecommendService {
             int maxChallenges = Math.min(20, publicChallenges.size());
             for (int i = 0; i < maxChallenges; i++) {
                 Challenge challenge = publicChallenges.get(i);
-                sb.append("- ").append(challenge.getTitle())
+                sb.append("- id: ").append(challenge.getId())
+                        .append(", 제목: ").append(challenge.getTitle())
                         .append(" (설명: ").append(challenge.getContent() != null ? challenge.getContent() : "설명 없음")
                         .append(")\n");
             }
