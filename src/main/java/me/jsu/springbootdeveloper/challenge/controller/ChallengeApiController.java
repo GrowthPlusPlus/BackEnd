@@ -20,8 +20,8 @@ import me.jsu.springbootdeveloper.challenge.dto.member.ChallengeOwnerDelegateReq
 import me.jsu.springbootdeveloper.challenge.dto.member.KickMemberRequest;
 import me.jsu.springbootdeveloper.challenge.dto.setting.ChallengeSettingsResponse;
 import me.jsu.springbootdeveloper.challenge.dto.setting.ChallengeSettingsUpdateRequest;
-import me.jsu.springbootdeveloper.challenge.service.ChallengeInviteService;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeDeleteService;
+import me.jsu.springbootdeveloper.challenge.service.ChallengeInviteService;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeMemberService;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeService;
 import org.springframework.data.domain.Page;

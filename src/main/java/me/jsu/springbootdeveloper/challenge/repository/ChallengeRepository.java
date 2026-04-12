@@ -64,5 +64,20 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
     """)
     List<Challenge> findPublicChallenges(@Param("today") LocalDate today);
 
+    /*
+        진행 중인 공개 챌린지와 태그 매핑·태그 엔티티를 한 번에 조회한다.
+        탐색 탭 추천 API에서 N+1 조회를 막기 위해 사용한다.
+     */
+    @Query("""
+        select distinct c
+        from Challenge c
+        left join fetch c.tagMappings tm
+        left join fetch tm.tag
+        where c.challengeVisibility = 'PUBLIC'
+          and c.startDate <= :today
+          and c.endDate >= :today
+        """)
+    List<Challenge> findPublicChallengesWithTagMappings(@Param("today") LocalDate today);
+
     boolean existsById(@NonNull Long Id);
 }
