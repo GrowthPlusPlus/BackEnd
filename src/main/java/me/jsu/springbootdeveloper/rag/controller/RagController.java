@@ -151,15 +151,15 @@ public class RagController {
     }
 
     /*
-        AiChallengeRecommendService와 동일한 RAG 컨텍스트로 LLM이 challengeId를 고르고,
-        서버가 DB로 카드 필드를 채워 탐색 탭에 넘긴다.
+        POST /api/v1/rag/recommend/query 와 동일한 질문·RAG 호출을 한 뒤,
+        답변 본문에 언급된 챌린지 제목을 컨텍스트 후보와 매칭해 카드 DTO로 반환한다.
      */
     @Operation(
-            summary = "탐색 탭용 AI 챌린지 추천(구조화)",
+            summary = "탐색 탭용 AI 챌린지 추천(카드)",
             description = """
-        로그인 유저 기준으로 RAG/LLM이 공개 챌린지 id를 최대 3개 선택한다.
+        recommend/query와 같은 프롬프트로 AI 답변을 생성하고, 그 답변에서 추천된 챌린지를 카드 형태로 돌려준다.
         응답은 챌린지 이름, 참여 인원, D-000 형식 남은 일수, 태그, id를 포함한다.
-        ex) GET /api/v1/rag/recommend/discovery
+        ex) POST /api/v1/rag/recommend/discovery
         """
     )
     @ApiResponses({
@@ -167,7 +167,7 @@ public class RagController {
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "500", description = "서버 오류")
     })
-    @GetMapping("/recommend/discovery")
+    @PostMapping("/recommend/discovery")
     public ResponseEntity<List<ChallengeDiscoveryRecommendItemResponse>> recommendDiscovery(
             @AuthenticationPrincipal UserDetails userDetails
     ) {
