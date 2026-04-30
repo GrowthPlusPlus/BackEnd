@@ -4,9 +4,9 @@ spring:
     active: prod
 
   datasource:
-    url: jdbc:postgresql://hanaemdb-hanaem.e.aivencloud.com:16313/defaultdb?sslmode=require
-    username: avnadmin
-    password: AVNS__yupPU6qosmn6Cmvtp4
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
       #데이터베이스 연결을 동시에 5명까지는 대기 없이 즉시 처리/Aiven 최대 연결수가 20이기 때문에 연결수 제한 필요
@@ -48,7 +48,7 @@ spring:
 # rag 설정
   ai:
     openai:
-      api-key: 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
+      api-key: ${OPENAI_API_KEY}
       embedding:
         options:
           model: text-embedding-3-small
@@ -72,14 +72,14 @@ spring:
       ios-redirect-uri: com.googleusercontent.apps.433865217738-gu6vtmh4d7dpephj0mb152vm4s3vcap9:/oauth2redirect
 
     kakao:
-      client_id: 9fdd13c0777c415d8fa4055b5b26a6c5
-      redirect_uri: https://hanaem.onrender.com/oauth/kakao/callback  #https://ungenially-undebatable-sindy.ngrok-free.dev/oauth/kakao/callback
-      client_secret: wvoMRh9Z2UHXlBxWDPyz3hpnWiwjTRcP
+      client_id: 9fdd13c0777c415d8fa4055b5b26a6c5  # ${KAKAO_CLIENT_ID}
+      redirect_uri: https://hanaem.onrender.com/oauth/kakao/callback  # ${APP_BASE_URL}/oauth/kakao/callback
+      client_secret: wvoMRh9Z2UHXlBxWDPyz3hpnWiwjTRcP  # ${KAKAO_CLIENT_SECRET}
 
     naver:  # 네이버 개발자센터의 제공 정보 선택에서 이메일을 필수로 받아야 함
-      client-id: NAVER_CLIENT_ID
+      client-id: ${NAVER_CLIENT_ID}
       client-secret: ${NAVER_CLIENT_SECRET}
-      redirect-uri: https://hanaem.onrender.com/oauth/naver/callback
+      redirect-uri: ${APP_BASE_URL}/oauth/naver/callback
 
 # 페이징 기능으로 클라이언트가 요청하여 한 번에 최대 검색 가능한 게시글 수를 50개로 제한한다.
   data:
@@ -90,17 +90,17 @@ spring:
 # 임의로 설정할 수 있는 값
 jwt:
   issuer: ajufresh-backend
-  secret_key: 8f3c9a1d7b6e4a2f9c5e0d1a4b8f6c7e3a9d2e5b1c4f7a6e8d0b9c2a1f  # 키가 바뀔 때 마다 토큰을 재발급 해야함
+  secret_key: ${JWT_SECRET_KEY}  # 키가 바뀔 때 마다 토큰을 재발급 해야함
 
 # 클라우디너리 설정 
 cloudinary:
-  cloud-name: doayitbfd
-  api-key: 747796122854198
-  api-secret: OB9C15esKMCvW4mcgd7GStsCWfY
+  cloud-name: ${CLOUDINARY_CLOUD_NAME}
+  api-key: ${CLOUDINARY_API_KEY}
+  api-secret: ${CLOUDINARY_API_SECRET}
 
 #챌린지 생성 시 base url 전달값
 app:
-  base-url: http://localhost:3000 # 로컬 프론트엔드 주소 (운영 시에는 운영 서버 주소로 변경)
+  base-url: ${APP_BASE_URL}
 
 # 랜더 앱에서 자세한 로그를 보기 위한 설정
 logging:
@@ -110,7 +110,7 @@ logging:
     org.springframework.web: DEBUG
 
 clip:
-  base-url: http://localhost:8000  # 로컬 CLIP 서버 주소로 랜더 운영시에는 변경
+  base-url: ${CLIP_BASE_URL}
 
 #Firebase
 fcm:
