@@ -108,6 +108,7 @@ logging:
     root: INFO
     org.springframework.security: DEBUG
     org.springframework.web: DEBUG
+    me.jsu.springbootdeveloper: DEBUG
 
 clip:
   base-url: ${CLIP_BASE_URL}

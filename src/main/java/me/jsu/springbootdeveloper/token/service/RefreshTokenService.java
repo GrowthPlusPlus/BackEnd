@@ -8,6 +8,7 @@ import me.jsu.springbootdeveloper.token.exception.TokenNotFoundException;
 import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.token.repository.RefreshTokenRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /*
     리프레시 토큰에 관한 DB 처리를 위한 클래스이다.
@@ -54,6 +55,7 @@ public class RefreshTokenService {
     /*
         OAuth 로그인 전용으로 토큰이 있으면 update, 없으면 create 한다.
      */
+    @Transactional
     public void saveForOAuth(User user, String newRefreshToken) {
         refreshTokenRepository.findByUser_Id(user.getId())  // 리프레시 토큰 DB에서 유저 정보를 검색한다.
                 .ifPresentOrElse(
