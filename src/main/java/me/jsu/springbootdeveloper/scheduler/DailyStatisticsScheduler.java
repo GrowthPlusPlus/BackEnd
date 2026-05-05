@@ -26,8 +26,9 @@ public class DailyStatisticsScheduler {
     @RequireUserYearlyActivitySchema
     public void runDailySettlement() {
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
+        LocalDate targetDate = today.minusDays(1); // 00시에 실행되므로 '어제' 데이터를 정산한다.
 
-        userDailyStatisticsService.settleDailyStatistics(today.minusDays(1));  // 유저가 연속으로 챌린지를 수행했는지를 판별하기 위해 어제 하루를 평가한다.
-        userDailyStatisticsService.updateYearlyActivity(today);  // 어제까지의 잔디를 업데이트한다.
+        userDailyStatisticsService.settleDailyStatistics(targetDate);  // 유저가 연속으로 챌린지를 수행했는지를 판별하기 위해 어제 하루를 평가한다.
+        userDailyStatisticsService.updateYearlyActivity(targetDate);  // 어제까지의 잔디를 업데이트한다.
     }
 }
