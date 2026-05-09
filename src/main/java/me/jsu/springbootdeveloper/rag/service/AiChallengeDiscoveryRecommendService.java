@@ -4,11 +4,12 @@ package me.jsu.springbootdeveloper.rag.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.jsu.springbootdeveloper.challenge.dto.basic.SearchChallengeResponse;
 import me.jsu.springbootdeveloper.challenge.domain.Challenge;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeRepository;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeQueryService;
-import me.jsu.springbootdeveloper.rag.dto.ChallengeDiscoveryRecommendItemResponse;
+import me.jsu.springbootdeveloper.tag.dto.TagResponse;
 import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.user.service.UserService;
 import org.springframework.stereotype.Service;
@@ -16,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -49,7 +49,7 @@ public class AiChallengeDiscoveryRecommendService {
         @return 답변에 제목이 언급된 순서의 추천 카드. 매칭 실패 시 빈 목록이다.
      */
     @Transactional(readOnly = true)
-    public List<ChallengeDiscoveryRecommendItemResponse> recommendForDiscovery(String email) {
+    public List<SearchChallengeResponse> recommendForDiscovery(String email) {
         User user = userService.findByEmail(email);
         LocalDate today = LocalDate.now(SERVICE_ZONE);
 
@@ -76,7 +76,7 @@ public class AiChallengeDiscoveryRecommendService {
         Map<Long, Challenge> publicWithTags = challengeRepository.findPublicChallengesWithTagMappings(today).stream()
                 .collect(Collectors.toMap(Challenge::getId, c -> c, (a, b) -> a));
 
-        List<ChallengeDiscoveryRecommendItemResponse> result = new ArrayList<>();
+        List<SearchChallengeResponse> result = new ArrayList<>();
         for (Challenge brief : picked) {
             if (participatingIds.contains(brief.getId())) {
                 continue;
@@ -85,7 +85,7 @@ public class AiChallengeDiscoveryRecommendService {
             if (full == null) {
                 continue;
             }
-            result.add(toResponse(full, today));
+            result.add(toResponse(full));
             if (result.size() >= 3) {
                 break;
             }
@@ -150,27 +150,22 @@ public class AiChallengeDiscoveryRecommendService {
     /*
         엔티티를 탐색 탭 응답 DTO로 변환한다.
      */
-    private ChallengeDiscoveryRecommendItemResponse toResponse(Challenge challenge, LocalDate today) {
-        long daysLeft = ChronoUnit.DAYS.between(today, challenge.getEndDate());
-        if (daysLeft < 0) {
-            daysLeft = 0;
-        }
-        String remainingLabel = String.format("D-%03d", daysLeft);
-
-        List<String> tagNames = List.of();
+    private SearchChallengeResponse toResponse(Challenge challenge) {
+        List<TagResponse> tags = List.of();
         if (challenge.getTagMappings() != null) {
-            tagNames = challenge.getTagMappings().stream()
-                    .map(tm -> tm.getTag().getTagName())
-                    .distinct()
-                    .toList();
+            Map<Long, TagResponse> tagMap = challenge.getTagMappings().stream()
+                    .collect(Collectors.toMap(
+                            tm -> tm.getTag().getId(),
+                            tm -> new TagResponse(
+                                    tm.getTag().getId(),
+                                    tm.getTag().getTagName(),
+                                    tm.getTag().getTagCategory()
+                            ),
+                            (left, right) -> left
+                    ));
+            tags = new ArrayList<>(tagMap.values());
         }
 
-        return new ChallengeDiscoveryRecommendItemResponse(
-                challenge.getTitle(),
-                challenge.getParticipantNumber(),
-                remainingLabel,
-                tagNames,
-                challenge.getId()
-        );
+        return new SearchChallengeResponse(challenge, tags);
     }
 }

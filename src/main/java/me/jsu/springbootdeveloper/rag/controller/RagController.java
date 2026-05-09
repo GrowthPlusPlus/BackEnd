@@ -7,9 +7,9 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
+import me.jsu.springbootdeveloper.challenge.dto.basic.SearchChallengeResponse;
 import me.jsu.springbootdeveloper.rag.dto.QueryRequestDto;
 import me.jsu.springbootdeveloper.rag.dto.QueryResponseDto;
-import me.jsu.springbootdeveloper.rag.dto.ChallengeDiscoveryRecommendItemResponse;
 import me.jsu.springbootdeveloper.rag.service.AiChallengeDiscoveryRecommendService;
 import me.jsu.springbootdeveloper.rag.service.DocumentService;
 import me.jsu.springbootdeveloper.rag.service.GptService;
@@ -168,10 +168,10 @@ public class RagController {
             @ApiResponse(responseCode = "500", description = "서버 오류")
     })
     @PostMapping("/recommend/discovery")
-    public ResponseEntity<List<ChallengeDiscoveryRecommendItemResponse>> recommendDiscovery(
+    public ResponseEntity<List<SearchChallengeResponse>> recommendDiscovery(
             @AuthenticationPrincipal UserDetails userDetails
     ) {
-        List<ChallengeDiscoveryRecommendItemResponse> items = aiChallengeDiscoveryRecommendService
+        List<SearchChallengeResponse> items = aiChallengeDiscoveryRecommendService
                 .recommendForDiscovery(userDetails.getUsername());
 
         return ResponseEntity.ok(items);

@@ -9,5 +9,7 @@ public enum ReportReason {
     SPAM,
     ABUSE,
     INAPPROPRIATE,
+    PRIVACY,
+    IMPERSONATION,
     ETC
 }

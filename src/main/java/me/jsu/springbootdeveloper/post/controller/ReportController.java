@@ -40,7 +40,7 @@ public class ReportController {
             @ApiResponse(responseCode = "400", description = "이미 신고한 인증글"),
             @ApiResponse(responseCode = "401", description = "인증 실패")
     })
-    @PostMapping("/articles/{articleId}/report")
+    @PostMapping("/api/articles/{articleId}/report")
     public ResponseEntity<Void> reportArticle(
             @AuthenticationPrincipal UserDetails userDetails,
             @Parameter(description = "인증글 id", required = true)
@@ -69,7 +69,7 @@ public class ReportController {
             @ApiResponse(responseCode = "400", description = "이미 신고한 댓글"),
             @ApiResponse(responseCode = "401", description = "인증 실패")
     })
-    @PostMapping("/comments/{commentId}/report")
+    @PostMapping("/api/comments/{commentId}/report")
     public ResponseEntity<Void> reportComment(
             @AuthenticationPrincipal UserDetails userDetails,
             @Parameter(description = "댓글 id", required = true)
