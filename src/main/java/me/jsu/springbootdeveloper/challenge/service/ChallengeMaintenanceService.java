@@ -90,8 +90,64 @@ public class ChallengeMaintenanceService {
     }
 
     /*
+        지난 주차를 "확정" 실패 판정하는 함수이다.
+        requireWeeklyCount가 1일 때도, 지난 주가 완전히 끝난 뒤 확정 실패를 처리하기 위해 분리한 1차 루프이다.
+        한 번에 모든 값을 가져오면 부하가 크므로 batch 사이즈 단위로 처리한다.
+     */
+    public void finalizePreviousWeekFailures(LocalDate today) {
+        // 배치를 처리하기 위해 커서 기반으로 검색한다.
+        Long lastId = 0L;
+        List<ChallengeParticipant> batch;
+
+        // 지난 주의 범위를 계산한다. (월요일 ~ 일요일)
+        LocalDate previousWeekStart = today.minusWeeks(1).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate previousWeekEnd = previousWeekStart.plusDays(6);
+
+        while (true) {
+            // 진행중인 챌린지들을 배치 사이즈로 검색한다.
+            batch = challengeParticipantRepository.findAllInProgressAfterId(lastId, PageRequest.of(0, BATCH_SIZE));
+            if (batch.isEmpty()) {  // 조회된 데이터가 없다면 탈출한다.
+                break;
+            }
+
+            // userId를 모두 수집한다.
+            List<Long> userIds = batch.stream()
+                    .map(cp -> cp.getUser().getId())
+                    .distinct()
+                    .toList();
+
+            // challengeId를 모두 수집한다.
+            List<Long> challengeIds = batch.stream()
+                    .map(cp -> cp.getChallenge().getId())
+                    .distinct()
+                    .toList();
+
+            // 지난 주 기준 WeeklyStatus를 한 번에 조회한다. 지난 주에 한 번도 수행하지 않은 유저는 값이 없다.
+            List<ChallengeWeeklyStatus> weeklyStatuses = challengeWeeklyStatusRepository.findAllByUsersAndChallenges(userIds, challengeIds, previousWeekStart);
+
+            // 모든 유저의 (userId, challengeId)를 pair 키로 만들어 WeeklyStatus로 매핑한다.
+            Map<Pair<Long, Long>, ChallengeWeeklyStatus> weeklyMap =
+                    weeklyStatuses.stream()
+                            .collect(Collectors.toMap(
+                                    ws -> Pair.of(ws.getUser().getId(), ws.getChallenge().getId()),
+                                    ws -> ws,
+                                    (a, b) -> a  // 중복 방지를 위한 방어 코드이다.
+                            ));
+
+            for (ChallengeParticipant cp : batch) {  // 하나씩 검사한다.
+                Pair<Long, Long> key = Pair.of(cp.getUser().getId(), cp.getChallenge().getId());  // 유저 정보를 토대로 키를 생성한다.
+                ChallengeWeeklyStatus weeklyStatus = weeklyMap.get(key);  // 주간 상태가 없으면 null이다.
+
+                checkPreviousWeekFailure(cp, weeklyStatus, today, previousWeekStart, previousWeekEnd);  // 지난 주 "확정" 실패 판정을 수행한다.
+                lastId = cp.getId();  // 커서를 이동시킨다.
+            }
+        }
+    }
+
+    /*
         챌린지의 주간 상태를 판단하는 함수이다. 해당 주에 실패하면 챌린지 자체를 실패한다.
         한 번에 모든 값을 가져오는 것은 부하가 크므로 batch사이즈로 나누어 계산한다.
+        이 함수는 "이번 주 조기 실패(2차 루프)"만 담당한다.
      */
     public void failWeeklyStatuses(LocalDate today) {
         // 배치를 처리하기 위해 커서 기반으로 검색한다.
@@ -144,6 +200,42 @@ public class ChallengeMaintenanceService {
     }
 
     /*
+        지난 주차를 "확정" 실패 판정한다.
+        checkWeeklyFailure와 달리 남은 일수(remainingDays) 개념을 쓰지 않는다.
+        주차가 이미 종료되었으므로, 지난 주 실적(successCount)과 요구치(adjustedRequired)만 비교한다.
+     */
+    private void checkPreviousWeekFailure(ChallengeParticipant cp, ChallengeWeeklyStatus weeklyStatus, LocalDate today, LocalDate weekStart, LocalDate weekEnd) {
+        Challenge challenge = cp.getChallenge();
+
+        // 챌린지와 주차가 아예 겹치지 않으면 판정 대상이 아니다.
+        if (challenge.getEndDate().isBefore(weekStart) || challenge.getStartDate().isAfter(weekEnd)) {
+            return;
+        }
+
+        int successCount;
+        if (weeklyStatus != null) {
+            successCount = weeklyStatus.getSuccessCount();  // 지난 주에 성공한 횟수
+        }
+        else {  // 지난 주에 한 번도 수행하지 않았다면 0으로 간주한다.
+            successCount = 0;
+        }
+
+        // 지난 주 범위에 맞는 부분 주 보정 요구치이다.
+        int adjustedRequired = ChallengeUtils.calculateAdjustedRequired(challenge, weekStart, weekEnd);
+
+        // 지난 주 "확정" 실패 판정이다.
+        if (successCount < adjustedRequired) {
+            if (weeklyStatus != null) {  // 지난 주에 한 번이라도 수행한 경우이다. 조건문이 없다면 NPE 가능성이 있다.
+                weeklyStatus.markFail();  // 주간 상태를 실패로 바꾼다.
+            }
+            cp.markFail(today);  // 챌린지 상태를 실패로 바꾼다.
+            userStatisticsService.updateFailedChallengeCount(cp.getUser().getId());  // 실패한 챌린지 개수를 늘린다.
+
+            markParticipantFail(cp);  // 참가자 실패, 통계, 알림을 공통 처리한다.
+        }
+    }
+
+    /*
         하루가 지났을 때, 챌린지가 실패했는지 하나씩 검사해주는 함수이다.
      */
     private void checkWeeklyFailure(ChallengeParticipant cp, ChallengeWeeklyStatus weeklyStatus, LocalDate today, LocalDate weekStart, LocalDate weekEnd) {
@@ -152,7 +244,8 @@ public class ChallengeMaintenanceService {
         int successCount;
         if (weeklyStatus != null) {
             successCount =  weeklyStatus.getSuccessCount();  // 해당 주에 성공한 횟수
-        } else {  // Optional.empty()인 케이스로 해당 주에 한 번도 수행하지 않았으므로 0 처리한다.
+        }
+        else {  // Optional.empty()인 케이스로 해당 주에 한 번도 수행하지 않았으므로 0 처리한다.
             successCount = 0;
         }
 
@@ -189,31 +282,42 @@ public class ChallengeMaintenanceService {
 
         // 조기 실패 판정을 결정한다. 요구된 최소 횟수가 지금까지 수행한 횟수 + 남은 수행 가능 횟수보다 적으면 실패한다.
         if (successCount + remainingDays < adjustedRequired) {
-            if (weeklyStatus != null) {  // 해당 주에 한 번이라도 수행한 경우이다.
+            if (weeklyStatus != null) {  // 해당 주에 한 번이라도 수행한 경우이다. 조건문이 없다면 NPE 가능성이 있다.
                 weeklyStatus.markFail();  // 주간 상태를 실패로 바꾼다.
             }
             cp.markFail(today);  // 챌린지 상태를 실패로 바꾼다.
             userStatisticsService.updateFailedChallengeCount(cp.getUser().getId());  // 실패한 챌린지 개수를 늘린다.
 
-            //챌린지 실패 알림을 보낸다
-            //아쉬워요! '챌린지명' 달성에 실패했지만, 다음엔 꼭 해낼 수 있어요.
-            String title = "챌린지 실패";
-            String message = "아쉬워요! '" + challenge.getTitle() + "' 달성에 실패했지만, 다음엔 꼭 해낼 수 있어요.";
-            //인앱 알림 발송
-            User user = cp.getUser();
-            long userId = user.getId();
-            Long targetId = challenge.getId();
-            String imageUrl = userProfilePictureRepository.findImageUrlByUserId(userId).orElse("");
-            notificationService.sendNotification(user, NotificationType.CHALLENGE, message, imageUrl, targetId);
+            markParticipantFail(cp);  // 참가자 실패, 통계, 알림을 공통 처리한다.
+        }
+    }
 
-            // 푸시 알림을 발송
-            // 챌린지 푸시 알림이 활성화되어 있고, FCM 토큰이 있는 경우에만 발송한다.
-            if (user.isAllPushNotificationEnabled()
-                    && user.getFcmToken() != null
-                    && !user.getFcmToken().isBlank()) {
-                fcmService.sendMessageTo(user.getFcmToken(), title, message);
+    /*
+        챌린지 참가자를 실패로 처리하는 공통 함수이다.
+        이번 주 조기 실패와 지난 주 확정 실패에서 동일하게 호출한다.
+     */
+    private void markParticipantFail(ChallengeParticipant cp) {
+        Challenge challenge = cp.getChallenge();
 
-            }
+        //챌린지 실패 알림을 보낸다
+        //아쉬워요! '챌린지명' 달성에 실패했지만, 다음엔 꼭 해낼 수 있어요.
+        String title = "챌린지 실패";
+        String message = "아쉬워요! '" + challenge.getTitle() + "' 달성에 실패했지만, 다음엔 꼭 해낼 수 있어요.";
+
+        //인앱 알림 발송
+        User user = cp.getUser();
+        long userId = user.getId();
+        Long targetId = challenge.getId();
+        String imageUrl = userProfilePictureRepository.findImageUrlByUserId(userId).orElse("");
+        notificationService.sendNotification(user, NotificationType.CHALLENGE, message, imageUrl, targetId);
+
+        // 푸시 알림을 발송
+        // 챌린지 푸시 알림이 활성화되어 있고, FCM 토큰이 있는 경우에만 발송한다.
+        if (user.isAllPushNotificationEnabled()
+                && user.getFcmToken() != null
+                && !user.getFcmToken().isBlank()) {
+            fcmService.sendMessageTo(user.getFcmToken(), title, message);
+
         }
     }
 
