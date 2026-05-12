@@ -70,12 +70,22 @@ public interface ChallengeWeeklyStatusRepository extends JpaRepository<Challenge
     // 유저 id와 챌린지 id로 이번주 상태를 삭제한다.
     void deleteByUser_IdAndChallenge_Id(Long userId, Long challengeId);
 
-    // start ~ end 기간을 한 달로 잡아서 해당 기간동안의 주간 챌린지 성공 횟수를 조회하는 쿼리문이다.
+    /*
+        start ~ end 기간을 한 달로 잡아서 해당 기간동안의 주간 챌린지 성공 횟수를 조회하는 쿼리문이다.
+        challenge_participant값이 있어야 집계에 포함한다.
+     */
     @Query("""
         select w.weekStartDate, sum(w.successCount)
         from ChallengeWeeklyStatus w
         where w.user.id = :userId
           and w.weekStartDate between :start and :end
+          and w.challenge is not null
+          and exists (
+            select 1
+            from ChallengeParticipant cp
+            where cp.user.id = :userId
+                and cp.challenge.id = w.challenge.id
+          )
         group by w.weekStartDate
         order by w.weekStartDate asc
     """)

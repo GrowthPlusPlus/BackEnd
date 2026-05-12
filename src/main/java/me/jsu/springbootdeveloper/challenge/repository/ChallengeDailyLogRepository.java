@@ -119,6 +119,7 @@ public interface ChallengeDailyLogRepository extends JpaRepository<ChallengeDail
 
     /*
         특정 날짜에 해당 유저가 수행한 총 인증글 개수를 구하는 쿼리문이다.
+        challenge_participant값이 존재하는 경우에만 검색한다.
      */
     @Query("""
         select count(cdl)
@@ -126,6 +127,12 @@ public interface ChallengeDailyLogRepository extends JpaRepository<ChallengeDail
         where cdl.user.id = :userId
           and cdl.postDate = :postDate
           and cdl.challenge is not null
+          and exists (
+              select 1
+              from ChallengeParticipant cp
+              where cp.user.id = :userId
+                and cp.challenge.id = cdl.challenge.id
+          )
     """)
     int countByPostDateWithChallenge(
             @Param("userId") Long userId,
@@ -142,7 +149,14 @@ public interface ChallengeDailyLogRepository extends JpaRepository<ChallengeDail
         from ChallengeDailyLog cdl
         where cdl.postDate = :today
           and cdl.challenge is not null
+          and cdl.user is not null
           and cdl.id > :lastId
+          and exists (
+              select 1
+              from ChallengeParticipant cp
+              where cp.user.id = cdl.user.id
+                and cp.challenge.id = cdl.challenge.id
+          )
         group by cdl.user.id
         order by max(cdl.id)
     """)
@@ -154,7 +168,9 @@ public interface ChallengeDailyLogRepository extends JpaRepository<ChallengeDail
 
     /*
         특정 날짜 사이의 모든 로그들의 개수, 유저 id를 구하는 쿼리문이다.
-        배치를 위해 사용한다.
+        기존에 유저가 잔디 통계 DB값이 없었거나, 로그 삭제, 챌린지 탈퇴로 해당 기간의 잔디를 전부 전수 조사 해야되는 경우 사용한다.
+        편의를 위해 userId를 리스트로 받는다. (배치에도 사용되기 때문)
+        challenge_participant가 없는 경우 검색에 포함하지 않는다.
      */
     @Query("""
         select cdl.user.id, cdl.postDate, count(cdl)
@@ -163,6 +179,12 @@ public interface ChallengeDailyLogRepository extends JpaRepository<ChallengeDail
           and cdl.postDate between :startDate and :endDate
           and cdl.challenge is not null
           and cdl.user is not null
+          and exists (
+              select 1
+              from ChallengeParticipant cp
+              where cp.user.id = cdl.user.id
+                and cp.challenge.id = cdl.challenge.id
+          )
         group by cdl.user.id, cdl.postDate
         order by cdl.user.id, cdl.postDate
     """)
@@ -175,6 +197,7 @@ public interface ChallengeDailyLogRepository extends JpaRepository<ChallengeDail
     /*
         특정 날짜 사이의 모든 로그들의 개수를 구하는 쿼리문이다.
         countYearlyLogsByUsers와 다르게 단일 유저에 대한 검색이다.
+        challenge_participant값이 있어야 집계에 포함한다.
      */
         @Query("""
         select cdl.postDate, count(cdl)
@@ -182,6 +205,12 @@ public interface ChallengeDailyLogRepository extends JpaRepository<ChallengeDail
         where cdl.user.id = :userId
           and cdl.postDate between :startDate and :endDate
           and cdl.challenge is not null
+          and exists (
+            select 1
+            from ChallengeParticipant cp
+            where cp.user.id = :userId
+                and cp.challenge.id = cdl.challenge.id
+          )
         group by cdl.postDate
         order by cdl.postDate
     """)
@@ -191,11 +220,17 @@ public interface ChallengeDailyLogRepository extends JpaRepository<ChallengeDail
             @Param("endDate") LocalDate endDate
     );
 
-    // 태그별 챌린지 인증 횟수를 구하기 위한 쿼리문이다.
+    /*
+        태그별 챌린지 인증 횟수를 구하기 위한 쿼리문이다.
+        challenge_participant값이 있어야 집계에 포함한다.
+     */
     @Query("""
         select t.tagName, count(cdl)
         from ChallengeDailyLog cdl
         join cdl.challenge c
+        join ChallengeParticipant cp
+            on cp.challenge.id = c.id
+            and cp.user.id = :userId
         join c.tagMappings tm
         join tm.tag t
         where cdl.user.id = :userId

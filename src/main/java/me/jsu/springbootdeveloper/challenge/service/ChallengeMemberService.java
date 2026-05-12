@@ -27,6 +27,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Comparator;
 import java.util.List;
 
@@ -245,6 +247,9 @@ public class ChallengeMemberService {
 
         // 참여자 정보를 실제로 삭제한다.
         challengeParticipantRepository.delete(challengeParticipant);
+
+        // 챌린지 탈퇴 후 잔디를 재집계한다.
+        userStatisticsService.researchLog(userId, LocalDate.now(ZoneId.of("Asia/Seoul")));
 
         // 챌린지의 전체 참여자 수를 감소시킨다.
         challengeDeleteService.updateChallengeParticipantCount(challenge);
