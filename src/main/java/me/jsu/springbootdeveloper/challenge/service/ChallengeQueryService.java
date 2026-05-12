@@ -44,8 +44,15 @@ public class ChallengeQueryService {
     /*
         유저 id로 유저가 참여한 모든 진행중, 성공, 실패 챌린지 목록을 가져오는 함수이다. 챌린지 정보도 포함하여 가져온다.
      */
-    public  List<ChallengeParticipant> findWithChallengeByUserId(Long userId) {
+    public List<ChallengeParticipant> findWithChallengeByUserId(Long userId) {
         return challengeParticipantRepository.findWithChallengeByUserId(userId);
+    }
+
+    /*
+        챌린지에 참여한 유저 id들을 반환한다. 잔디 재집계에 사용한다.
+     */
+    public List<Long> findUserIdsByChallengeId(Long challengeId) {
+        return challengeParticipantRepository.findUserIdsByChallengeId(challengeId);
     }
 
     /*

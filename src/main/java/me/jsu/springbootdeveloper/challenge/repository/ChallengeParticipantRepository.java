@@ -30,6 +30,15 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
     """)
     List<ChallengeParticipant> findWithChallengeByUserId(@Param("userId") Long userId);
 
+    // 챌린지 id로 해당 챌린지에 참여한 유저 id들을 반환한다.
+    @Query("""
+        select cp.user.id
+        from ChallengeParticipant cp
+        where cp.challenge.id = :challengeId
+          and cp.user is not null
+    """)
+    List<Long> findUserIdsByChallengeId(@Param("challengeId") Long challengeId);
+
     // 유저 id와 챌린지 상태로 챌린지 참여 DB와 챌린지 자체 DB를 함께 검색한다.
     @Query("""
         select cp

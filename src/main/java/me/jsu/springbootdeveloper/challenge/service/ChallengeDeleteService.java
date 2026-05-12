@@ -13,10 +13,14 @@ import me.jsu.springbootdeveloper.challenge.repository.ChallengeParticipantRepos
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeRepository;
 import me.jsu.springbootdeveloper.post.repository.PostRepository;
 import me.jsu.springbootdeveloper.user.domain.User;
+import me.jsu.springbootdeveloper.user.domain.UserStatistics;
 import me.jsu.springbootdeveloper.user.service.UserService;
+import me.jsu.springbootdeveloper.user.service.UserStatisticsService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -32,6 +36,7 @@ public class ChallengeDeleteService {
     private final ChallengeParticipantRepository challengeParticipantRepository;
     private final PostRepository postRepository;
     private final UserService userService;
+    private final UserStatisticsService userStatisticsService;
 
     /*
         유저가 회원탈퇴를 하는 경우, 해당 유저가 오너인 챌린지가 삭제되지 않도록 다른 유저에게 위임한다.
@@ -85,12 +90,20 @@ public class ChallengeDeleteService {
     public void deleteChallengeInternal(Long challengeId) {
         Challenge challenge = challengeQueryService.findById(challengeId);
 
+        // 삭제 전에 잔디의 재집계를 위해 챌린지에 참여한 유저 id를 저장한다.
+        List<Long> userIds = challengeQueryService.findUserIdsByChallengeId(challengeId);
+
         // 데일리 로그, 인증글의 fK값을 null 처리한다.
         challengeDailyLogRepository.detachChallenge(challenge);
         postRepository.detachChallenge(challenge);  // 순환참조 방지를 위해 서비스를 사용하지 않고 직접 사용한다.
 
         // 챌린지를 삭제한다. 나머지 종속된 값들은 cascade REMOVE 옵션으로 자동 삭제된다.
         challengeRepository.delete(challenge);
+
+        // 삭제된 챌린지에 참여했던 유저들의 잔디를 재집계 한다.
+        for (Long userId : userIds) {
+            userStatisticsService.researchLog(userId, LocalDate.now(ZoneId.of("Asia/Seoul")));
+        }
     }
 
     /*
