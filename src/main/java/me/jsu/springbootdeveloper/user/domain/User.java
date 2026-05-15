@@ -319,4 +319,18 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
         // 계정이 아직 사용 가능한지 확인하는 로직
         return true;
     }
+
+    /*
+        관리자 회원가입 시, 해당 유저를 이메일 인증 대기 상태로 만든다.
+     */
+    public void adminEmailPending() {
+        this.userStatus = UserStatus.ADMIN_EMAIL_PENDING;
+    }
+
+    /*
+        관리자 회원가입 시, 유저가 이메일 인증을 한 경우, 관리자 인증 대기 상태로 만든다.
+     */
+    public void adminApprovalPending() {
+        this.userStatus = UserStatus.ADMIN_APPROVAL_PENDING;
+    }
 }

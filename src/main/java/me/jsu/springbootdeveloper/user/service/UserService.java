@@ -2,10 +2,13 @@
 
 package me.jsu.springbootdeveloper.user.service;
 
+import me.jsu.springbootdeveloper.admin.dto.AdminPendingResponse;
 import me.jsu.springbootdeveloper.tag.domain.TagToUser;
 import me.jsu.springbootdeveloper.tag.repository.TagToUserRepository;
 import me.jsu.springbootdeveloper.user.domain.UserStatistics;
 import me.jsu.springbootdeveloper.user.dto.MyProfileResponse;
+import me.jsu.springbootdeveloper.user.enumType.Role;
+import me.jsu.springbootdeveloper.user.exception.DuplicateEmailException;
 import me.jsu.springbootdeveloper.user.exception.DuplicateNicknameException;
 import me.jsu.springbootdeveloper.user.exception.UserNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
@@ -71,6 +74,33 @@ public class UserService {
     public User findByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("USER_NOT_FOUND_FOR_EMAIL"));
+    }
+
+    /*
+        해당 이메일로 가입한 유저가 있는지 검색하는 함수이다.
+     */
+    public void existsByEmail(String email) {
+        if (userRepository.existsByEmail(email)) {
+            throw new DuplicateEmailException("이미 가입된 관리자 이메일입니다.");
+        }
+    }
+
+    /*
+        관리자 승인 대기중인 관리자 계정 목록을 조회하는 함수이다.
+     */
+    @Transactional(readOnly = true)
+    public List<AdminPendingResponse> getPendingAdmins() {
+        // 관리자 권한이면서 승인 대기 상태인 유저들을 조회한다.
+        List<User> pendingAdmins = userRepository.findAllByRoleAndUserStatus(Role.ROLE_ADMIN, UserStatus.ADMIN_APPROVAL_PENDING);
+
+        // DTO 형태로 변환하여 반환한다.
+        return pendingAdmins.stream()
+                .map(user -> AdminPendingResponse.builder()
+                        .userId(user.getId())
+                        .email(user.getEmail())
+                        .nickname(user.getNickname())
+                        .build())
+                .toList();
     }
 
     /*

@@ -87,6 +87,24 @@ spring:
       pageable:
         max-page-size: 50
 
+# 이메일로 인증 번호를 보내기 위한 설정이다. 2단계 인증을 안했으므로 현재는 사용하지 못한다.
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}  # 공통 gmail
+    password: ${MAIL_PASSWORD}  # 구글 앱 비밀번호
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+# 이메일로 인증 번호를 보내기 위한 설정으로, 돈을 내지 않으면 현재는 제한된 계정으로만 메일을 보낼 수 있다.
+resend:
+  api-key: ${RESEND_API_KEY}
+  from: "Haenaem <onboarding@resend.dev>"
+
 # 임의로 설정할 수 있는 값
 jwt:
   issuer: ajufresh-backend

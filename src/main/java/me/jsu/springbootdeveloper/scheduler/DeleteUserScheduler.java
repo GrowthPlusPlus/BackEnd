@@ -23,7 +23,11 @@ public class DeleteUserScheduler {
     @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
     @RequireUserDeleteSchema
     public void runDailyDeleteUser() {
+        // DELETE 상태로 30일이 지난 계정들을 삭제한다.
         LocalDateTime threshold = LocalDateTime.now(ZoneId.of("Asia/Seoul")).minusDays(30);
+
+        // 즉시 삭제를 위해 임시로 남겨놓은 코드
+        //LocalDateTime threshold = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
 
         userWithdrawalService.withdraw(threshold);
     }
