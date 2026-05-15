@@ -3,6 +3,7 @@
 package me.jsu.springbootdeveloper.user.repository;
 
 import me.jsu.springbootdeveloper.user.domain.User;
+import me.jsu.springbootdeveloper.user.enumType.Role;
 import me.jsu.springbootdeveloper.user.enumType.UserStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -21,6 +22,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByNickname(String nickname);  // 닉네임 정보로 사용자 정보를 가져온다.
     boolean existsByNickname(String nickname);  // 닉네임이 이미 존재하는지 검사한다.
     Optional<User> findByFcmToken(String fcmToken);  // FCM 토큰으로 사용자를 찾는다. 만료된 토큰 삭제 시 사용한다.
+    boolean existsByEmail(String email);  // 이메일이 이미 존재하는지 검사한다.
 
     //유저 닉네임 검색 시 해당 유저와 나의 관계 보여주기
     @Query("""
@@ -57,5 +59,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
             @Param("status") UserStatus status,
             @Param("threshold") LocalDateTime threshold
     );
+
+    // 유저의 권한과 상태로 유저 목록을 조회하는 쿼리문이다.
+    List<User> findAllByRoleAndUserStatus(Role role, UserStatus userStatus);
 }
 

@@ -106,6 +106,10 @@ dependencies {
     //재시도 로직을 위한 의존성
     implementation 'org.springframework.boot:spring-boot-starter-aop'
     implementation 'org.springframework.retry:spring-retry'
+
+    // SMTP 방식으로 이메일을 보내기 위한 의존성
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+    implementation 'com.resend:resend-java:+'
 }
 
 test {

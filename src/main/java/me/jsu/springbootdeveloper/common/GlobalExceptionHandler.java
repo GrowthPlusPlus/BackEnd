@@ -2,6 +2,7 @@
 
 package me.jsu.springbootdeveloper.common;
 
+import me.jsu.springbootdeveloper.admin.exception.*;
 import me.jsu.springbootdeveloper.challenge.exception.*;
 import me.jsu.springbootdeveloper.post.exception.*;
 import me.jsu.springbootdeveloper.cloudinary.exception.CloudinaryDeleteException;
@@ -175,6 +176,21 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.CONFLICT)  // 409
                 .body(new ErrorResponse(
                         "DUPLICATE_NICKNAME",
+                        e.getErrorCode()
+                ));
+    }
+
+    /*
+        DB에 이미 동일한 이메일을 가진 유저가 존재하는 경우의 핸들러이다.
+     */
+    @ExceptionHandler(DuplicateEmailException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateNickname(
+            DuplicateEmailException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)  // 409
+                .body(new ErrorResponse(
+                        "DUPLICATE_EMAIL",
                         e.getErrorCode()
                 ));
     }
@@ -569,6 +585,81 @@ public class GlobalExceptionHandler {
                         e.getErrorCode()
                 ));
 
+    }
+
+    /*
+        관리자 로그인/회원가입 예외 중 401을 처리하는 핸들러이다.
+     */
+    @ExceptionHandler(AdminAuthUnauthorizedException.class)
+    public ResponseEntity<ErrorResponse> handleAdminAuthUnauthorized(
+            AdminAuthUnauthorizedException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED) // 401
+                .body(new ErrorResponse(
+                        "ADMIN_AUTH_UNAUTHORIZED",
+                        e.getErrorCode()
+                ));
+    }
+
+    /*
+        관리자 로그인/회원가입 예외 중 403을 처리하는 핸들러이다.
+     */
+    @ExceptionHandler(AdminAuthForbiddenException.class)
+    public ResponseEntity<ErrorResponse> handleAdminAuthForbidden(
+            AdminAuthForbiddenException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN) // 403
+                .body(new ErrorResponse(
+                        "ADMIN_AUTH_FORBIDDEN",
+                        e.getErrorCode()
+                ));
+    }
+
+    /*
+        관리자 로그인/회원가입 예외 중 404를 처리하는 핸들러이다.
+    */
+    @ExceptionHandler(AdminAuthNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleAdminAuthNotFound(
+            AdminAuthNotFoundException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND) // 404
+                .body(new ErrorResponse(
+                        "ADMIN_AUTH_NOT_FOUND",
+                        e.getErrorCode()
+                ));
+    }
+
+    /*
+        관리자 로그인/회원가입 예외 중 409를 처리하는 핸들러이다.
+     */
+    @ExceptionHandler(AdminAuthConflictException.class)
+    public ResponseEntity<ErrorResponse> handleAdminAuthConflict(
+            AdminAuthConflictException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT) // 409
+                .body(new ErrorResponse(
+                        "ADMIN_AUTH_CONFLICT",
+                        e.getErrorCode()
+                ));
+    }
+
+    /*
+        관리자 로그인/회원가입 예외 중 400를 처리하는 핸들러이다.
+     */
+    @ExceptionHandler(AdminAuthBadRequestException.class)
+    public ResponseEntity<ErrorResponse> handleAdminAuthBadRequest(
+            AdminAuthBadRequestException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST) // 400
+                .body(new ErrorResponse(
+                        "ADMIN_AUTH_BAD_REQUEST",
+                        e.getErrorCode()
+                ));
     }
 
     /*

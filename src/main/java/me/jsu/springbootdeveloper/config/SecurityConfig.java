@@ -81,6 +81,8 @@ public class SecurityConfig {
                         // OAuth 로그인/토큰 교환 엔드포인트이다. 즉 jwt인 엑세스 토큰, 리프레시 토큰이 아직 없는 상황이다.
                         // 엑세스 토큰, 리프레시 토큰 생성 등의 일을 한다.
                         .requestMatchers(new AntPathRequestMatcher("/api/oauth/**")).permitAll()
+                        // 관리자 자체 회원가입/로그인/이메일 인증은 모두 허용한다.
+                        .requestMatchers(new AntPathRequestMatcher("/api/admin/auth/**")).permitAll()
                         // 위의 케이스를 제외한 api는 모두 인증이 필요하다.
                         .requestMatchers(new AntPathRequestMatcher("/api/**")).authenticated()
                         // 추가: 에러 페이지 접근 허용

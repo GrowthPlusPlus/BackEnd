@@ -39,6 +39,7 @@ jobs:
             echo "CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}" >> .env
             echo "APP_BASE_URL=${{ secrets.APP_BASE_URL }}" >> .env
             echo "CLIP_BASE_URL=${{ secrets.CLIP_BASE_URL }}" >> .env
+            echo "RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}" >> .env
 
             # 3. CLIP 이동 및 업데이트
             cd ~/hanaem/CLIP
