@@ -112,10 +112,12 @@ public class PostFeedMapper {
 
             return ArticleDetailResponse.builder()
                     .postId(article.getId())
+                    .challengeId(challenge == null ? 0 : challenge.getId())
                     .challengeTitle(
                             challenge == null ? "삭제된 챌린지" : challenge.getTitle()
                     )
                     .totalSuccessDays(successDays)
+                    .title(article.getTitle())
                     .content(article.getContent())
                     .images(
                             imageMap.getOrDefault(article.getId(), List.of())
