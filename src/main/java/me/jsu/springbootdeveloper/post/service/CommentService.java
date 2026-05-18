@@ -114,31 +114,35 @@ public class CommentService {
         //홍길동님이 내 '챌린지명''0일차' 에 댓글을 달았어요: "댓글 내용"
         User writer = postRepository.findUserByArticleId(postId)
                 .orElseThrow(() -> new NotFoundException("작성자를 찾을 수 없습니다."));
-        Challenge challenge = postRepository.findChallengeByArticleId(postId)
-                .orElseThrow(() -> new NotFoundException("연관된 챌린지를 찾을 수 없습니다."));
-        long daysPassed = challenge.getChallengeDayCount(); // "n일차"를 계산한다.
-        String title = "새 댓글";
-        String message = String.format("%s님이 내 '%s' %d일차에 댓글을 달았어요: \"%s\"",
-                user.getNickname(),
-                challenge.getTitle(),
-                daysPassed,
-                comment.getContents());
-        //인앱 알림 발송
-        //댓글 작성자의 프로필 이미지도 notificaiton객체로 같이 저장한다, targetId: 게시글 Id
-        long commentUserId = user.getId();
-        String imageUrl = userProfilePictureRepository.findImageUrlByUserId(commentUserId).orElse("");
-        notificationService.sendNotification(writer, NotificationType.COMMENT, message, imageUrl, postId);
+        long userId = user.getId();
+        //좋아요 누른 사람이 나 자신이 아닐 경우에만 인앱&푸시 알림 발송
+        if ( userId != writer.getId() ) {
+            Challenge challenge = postRepository.findChallengeByArticleId(postId)
+                    .orElseThrow(() -> new NotFoundException("연관된 챌린지를 찾을 수 없습니다."));
+            long daysPassed = challenge.getChallengeDayCount(); // "n일차"를 계산한다.
+            String title = "새 댓글";
+            String message = String.format("%s님이 내 '%s' %d일차에 댓글을 달았어요: \"%s\"",
+                    user.getNickname(),
+                    challenge.getTitle(),
+                    daysPassed,
+                    comment.getContents());
+            //인앱 알림 발송
+            //댓글 작성자의 프로필 이미지도 notificaiton객체로 같이 저장한다, targetId: 게시글 Id
+            long commentUserId = user.getId();
+            String imageUrl = userProfilePictureRepository.findImageUrlByUserId(commentUserId).orElse("");
+            notificationService.sendNotification(writer, NotificationType.COMMENT, message, imageUrl, postId);
 
-        // 푸시 알림을 발송
-        // 챌린지별 멤버 반응 소식 설정이 활성화되어 있고, 진행중이며, FCM 토큰이 있을 때에만 발송한다.
-        ChallengeParticipant writerParticipant = challengeQueryService.findByUser_IdAndChallenge_IdForParticipant(writer.getId(), challenge.getId());
-        boolean inProgress = writerParticipant.getStatus() == Status.IN_PROGRESS;
-        boolean challengeAllEnabled = writerParticipant.isChallengeAllPushEnabled();
-        boolean reactionEnabled = writerParticipant.isCommentsPushEnabled();
-        boolean hasFcm = writer.getFcmToken() != null && !writer.getFcmToken().isBlank();
-        if (inProgress && challengeAllEnabled && reactionEnabled && hasFcm) {
-            fcmService.sendMessageTo(writer.getFcmToken(), title, message);
+            // 푸시 알림을 발송
+            // 챌린지별 멤버 반응 소식 설정이 활성화되어 있고, 진행중이며, FCM 토큰이 있을 때에만 발송한다.
+            ChallengeParticipant writerParticipant = challengeQueryService.findByUser_IdAndChallenge_IdForParticipant(writer.getId(), challenge.getId());
+            boolean inProgress = writerParticipant.getStatus() == Status.IN_PROGRESS;
+            boolean challengeAllEnabled = writerParticipant.isChallengeAllPushEnabled();
+            boolean reactionEnabled = writerParticipant.isCommentsPushEnabled();
+            boolean hasFcm = writer.getFcmToken() != null && !writer.getFcmToken().isBlank();
+            if (inProgress && challengeAllEnabled && reactionEnabled && hasFcm) {
+                fcmService.sendMessageTo(writer.getFcmToken(), title, message);
 
+            }
         }
     }
 

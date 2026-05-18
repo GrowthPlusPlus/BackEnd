@@ -91,30 +91,33 @@ public class PostLikeService {
         //홍길동님이 내 '챌린지명''0일차' 인증글을 좋아해요.
         User writer = postRepository.findUserByArticleId(postId)
                 .orElseThrow(() -> new NotFoundException("해당 게시글의 작성자를 찾을 수 없습니다.")); // Optional을 안전하게 벗겨낸다.
-        Challenge challenge = postRepository.findChallengeByArticleId(postId)
-                .orElseThrow(() -> new NotFoundException("연관된 챌린지를 찾을 수 없습니다.")); // Optional에서 객체를 꺼낸다.
-        long daysPassed = challenge.getChallengeDayCount(); // "n일차"를 계산한다.
-        String title = "게시글 좋아요";
-        String message = String.format("%s님이 내 '%s' %d일차 인증글을 좋아해요.",
-                user.getNickname(),
-                challenge.getTitle(),
-                daysPassed
-        );
-
-        // 푸시 알림&인앱 알림 발송 - 작성자에게 발송
-        // 좋아요 누른 사람의 profileurl notification객체에 함께 저장
         long userId = user.getId();
-        String imageUrl = userProfilePictureRepository.findImageUrlByUserId(userId).orElse("");
-        notificationService.sendNotification(writer, NotificationType.LIKE, message, imageUrl, postId);
+        //좋아요 누른 사람이 나 자신이 아닐 경우에만 인앱&푸시 알림 발송
+        if (userId != writer.getId()) {
+            Challenge challenge = postRepository.findChallengeByArticleId(postId)
+                    .orElseThrow(() -> new NotFoundException("연관된 챌린지를 찾을 수 없습니다.")); // Optional에서 객체를 꺼낸다.
+            long daysPassed = challenge.getChallengeDayCount(); // "n일차"를 계산한다.
+            String title = "게시글 좋아요";
+            String message = String.format("%s님이 내 '%s' %d일차 인증글을 좋아해요.",
+                    user.getNickname(),
+                    challenge.getTitle(),
+                    daysPassed
+            );
 
-        // 챌린지별 멤버 반응 소식 설정이 활성화되어 있고, 진행중이며, FCM 토큰이 있을 때에만 발송한다.
-        ChallengeParticipant writerParticipant = challengeQueryService.findByUser_IdAndChallenge_IdForParticipant(writer.getId(), challenge.getId());
-        boolean inProgress = writerParticipant.getStatus() == Status.IN_PROGRESS;
-        boolean challengeAllEnabled = writerParticipant.isChallengeAllPushEnabled();
-        boolean reactionEnabled = writerParticipant.isLikesPushEnabled();
-        boolean hasFcm = writer.getFcmToken() != null && !writer.getFcmToken().isBlank();
-        if (inProgress && challengeAllEnabled && reactionEnabled && hasFcm) {
-            fcmService.sendMessageTo(writer.getFcmToken(), title, message);
+            // 푸시 알림&인앱 알림 발송 - 작성자에게 발송
+            // 좋아요 누른 사람의 profileurl notification객체에 함께 저장
+            String imageUrl = userProfilePictureRepository.findImageUrlByUserId(userId).orElse("");
+            notificationService.sendNotification(writer, NotificationType.LIKE, message, imageUrl, postId);
+
+            // 챌린지별 멤버 반응 소식 설정이 활성화되어 있고, 진행중이며, FCM 토큰이 있을 때에만 발송한다.
+            ChallengeParticipant writerParticipant = challengeQueryService.findByUser_IdAndChallenge_IdForParticipant(writer.getId(), challenge.getId());
+            boolean inProgress = writerParticipant.getStatus() == Status.IN_PROGRESS;
+            boolean challengeAllEnabled = writerParticipant.isChallengeAllPushEnabled();
+            boolean reactionEnabled = writerParticipant.isLikesPushEnabled();
+            boolean hasFcm = writer.getFcmToken() != null && !writer.getFcmToken().isBlank();
+            if (inProgress && challengeAllEnabled && reactionEnabled && hasFcm) {
+                fcmService.sendMessageTo(writer.getFcmToken(), title, message);
+            }
         }
     }
 
