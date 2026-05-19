@@ -68,11 +68,14 @@ public interface PostRepository extends JpaRepository<Article, Long> {
         where c.startDate <= :targetDate
           and c.endDate >= :targetDate
           and c.challengeVisibility = 'FRIENDS_ONLY'
-          and exists (
-                select 1
-                from Friendship fs
-                where fs.user1.id = least(:viewerId, a.user.id)
-                  and fs.user2.id = greatest(:viewerId, a.user.id)
+          and (
+                a.user.id = :viewerId
+                or exists (
+                    select 1
+                    from Friendship fs
+                    where (fs.user1.id = :viewerId and fs.user2.id = a.user.id)
+                       or (fs.user1.id = a.user.id and fs.user2.id = :viewerId)
+                )
           )
     """,
     countQuery = """
@@ -82,11 +85,14 @@ public interface PostRepository extends JpaRepository<Article, Long> {
             where c.startDate <= :targetDate
               and c.endDate >= :targetDate
               and c.challengeVisibility = 'FRIENDS_ONLY'
-              and exists (
-                    select 1
-                    from Friendship fs
-                    where fs.user1.id = least(:viewerId, a.user.id)
-                      and fs.user2.id = greatest(:viewerId, a.user.id)
+              and (
+                    a.user.id = :viewerId
+                    or exists (
+                        select 1
+                        from Friendship fs
+                        where (fs.user1.id = :viewerId and fs.user2.id = a.user.id)
+                           or (fs.user1.id = a.user.id and fs.user2.id = :viewerId)
+                    )
               )
         """
     )
