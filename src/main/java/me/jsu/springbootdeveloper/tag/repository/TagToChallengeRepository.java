@@ -19,6 +19,7 @@ public interface TagToChallengeRepository extends JpaRepository<TagToChallenge, 
         from TagToChallenge ttc
         join fetch ttc.tag
         where ttc.challenge.id = :challengeId
+        order by ttc.createdAt
     """)
     List<TagToChallenge> findWithTagByChallengeId(@Param("challengeId") Long challengeId);  // 챌린지 id로 태그를 검색한다.
 

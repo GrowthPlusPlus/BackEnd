@@ -11,6 +11,8 @@ import me.jsu.springbootdeveloper.challenge.enumType.Status;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeQueryService;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeUtils;
 import me.jsu.springbootdeveloper.user.domain.User;
+import me.jsu.springbootdeveloper.view.domain.DayStatus;
+import me.jsu.springbootdeveloper.view.dto.WeekDayStatusResponse;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.view.dto.MainHomeResponse;
@@ -21,10 +23,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /*
@@ -43,21 +42,72 @@ public class MainHomeService {
         User user = userService.findByEmail(userEmail);
         List<MyChallenge> myChallenges = new ArrayList<>();  // 유저의 챌린지 별 정보가 들어갈 변수이다.
 
-        log.info("today = {}", today);
-        log.info("targetDate = {}", targetDate);
-
         // 유저 id로 읽지 않은 알람 개수를 가져온다.
         long notificationNumber = notificationService.countByUser_IdAndIsReadFalse(user.getId());
+
+        // 주간 캘린더 색상 정보이다.
+        List<WeekDayStatusResponse> weekStatus = new ArrayList<>();
+
+        // 이번 주의 마지막 날이다.
+        LocalDate weekEnd = weekStartDate.plusDays(6);
+
+        // 해당 주의 성공 로그를 전부 조회한다.
+        List<ChallengeDailyLog> logs = challengeQueryService.findByUserIdAndPostDateBetween(
+                        user.getId(),
+                        weekStartDate,
+                        weekEnd
+                );
+
+        // 로그 인증 날짜인 postDate를 추출하여 중복을 제거한다. 즉 그 주에 성공한 날짜 목록이다.
+        Set<LocalDate> successDates = logs.stream()
+                        .map(ChallengeDailyLog::getPostDate)
+                        .collect(Collectors.toSet());
+
+        // 유저의 모든 실패한 챌린지를 검색한다.
+        List<ChallengeParticipant> failedChallenges = challengeQueryService.findStatusWithChallengeByUserIdAndStatus(user.getId(), Status.FAIL);
+
+        // 실패한 챌린지의 실패일이 해당 주에 존재하는지 조회한다. 즉 실패 날짜만 추출한다.
+        Set<LocalDate> failDates = failedChallenges.stream()
+                        .map(ChallengeParticipant::getFailedAt)
+                        .filter(Objects::nonNull)  // 실패한 챌린지가 없는 경우 NPE 방지
+                        // 실패일이 주에 해당하지 않는 챌린지들은 전부 필터링한다.
+                        .filter(date -> !date.isBefore(weekStartDate) && !date.isAfter(weekEnd))
+                        .collect(Collectors.toSet());
+
+        /*
+            주간 캘린더 색상을 생성한다.
+            월 ~ 일 7일에 대해 RED > GREEN > GRAY 우선순위로 계산한다.
+         */
+        for (int i = 0; i < 7; i++) {
+            LocalDate date = weekStartDate.plusDays(i);
+            DayStatus status;
+
+            // 해당 날짜의 상태를 조회한다.
+            if (date.isAfter(today)) {
+                status = DayStatus.NONE;
+            }
+            else if (failDates.contains(date)) {
+                status = DayStatus.RED;
+            }
+            else if (successDates.contains(date)) {
+                status = DayStatus.GREEN;
+            }
+            else {
+                status = DayStatus.GRAY;
+            }
+
+            // 해당 날짜에 대한 dto를 생성한다.
+            weekStatus.add(WeekDayStatusResponse.builder()
+                    .date(date)
+                    .status(status)
+                    .build()
+            );
+        }
 
         // 요청받은 날짜가 오늘인지, 과거인지, 미래인지 판단한다.
         boolean isToday = targetDate.isEqual(today);
         boolean isPast = targetDate.isBefore(today);  // 현재는 사용하지 않는다.
         boolean isFuture = targetDate.isAfter(today);
-
-        log.info("isToday = {}", isToday);
-        log.info("isPast = {}", isPast);
-        log.info("isFuture = {}", isFuture);
-
 
         // 과거, 현재, 미래와 같이 시점에 따라 쓰는 경우도 있고 아닌 경우도 있으므로 일단 빈 map으로 초기화 한다.
         Map<Long, ChallengeDailyLog> dailyLogMap = Collections.emptyMap();
@@ -65,8 +115,9 @@ public class MainHomeService {
 
         // 내가 참여한 챌린지 중, 현재 진행중인 챌린지 목록을 가져온다. 시점은 상관없다.
         List<ChallengeParticipant> joinedChallenges = challengeQueryService.findStatusWithChallengeByUserIdAndStatus(user.getId(), Status.IN_PROGRESS);
+
         if (joinedChallenges.isEmpty()) {  // 아직 아무런 챌린지에도 참여하지 않는 경우 빈 리스트를 반환한다.
-                return new MainHomeResponse(Collections.emptyList(), notificationNumber);
+                return new MainHomeResponse(Collections.emptyList(), notificationNumber, weekStatus);
         }
 
         log.info("dailyLogMap 찍기 직전");
@@ -188,6 +239,6 @@ public class MainHomeService {
         }
 
         // 얻은 정보들을 dto로 반환한다.
-        return new MainHomeResponse(myChallenges, notificationNumber);
+        return new MainHomeResponse(myChallenges, notificationNumber, weekStatus);
     }
 }

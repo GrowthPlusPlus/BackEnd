@@ -7,6 +7,8 @@ import me.jsu.springbootdeveloper.challenge.service.ChallengeQueryService;
 import me.jsu.springbootdeveloper.post.dto.verify.ImageVerificationResult;
 import me.jsu.springbootdeveloper.post.exception.ClipServerException;
 import me.jsu.springbootdeveloper.post.exception.InvalidImageException;
+import me.jsu.springbootdeveloper.tag.domain.TagToChallenge;
+import me.jsu.springbootdeveloper.tag.service.TagService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ByteArrayResource;
@@ -23,6 +25,7 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Set;
 
 /*
@@ -34,16 +37,19 @@ public class ImageVerificationService {
 
     private final WebClient webClient;
     private final ChallengeQueryService challengeQueryService;
+    private final TagService tagService;
 
     // 의존성을 주입한다. config를 사용하면 default값이 주입되므로 직접 주입한다.
     public ImageVerificationService(
             @Value("${clip.base-url}") String clipBaseUrl,
-            ChallengeQueryService challengeQueryService
+            ChallengeQueryService challengeQueryService,
+            TagService tagService
     ) {
         this.webClient = WebClient.builder()
                 .baseUrl(clipBaseUrl)
                 .build();
         this.challengeQueryService = challengeQueryService;
+        this.tagService = tagService;
     }
 
     private static final long MAX_FILE_SIZE = 5 * 1024 * 1024;  // 최대 이미지 크기이다.
@@ -114,7 +120,7 @@ public class ImageVerificationService {
 
         // 보낼 값을 map으로 만든다.
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        body.add("title", challenge.getTitle() );
+        body.add("title", buildClipPrompt(challenge));
         try {
             body.add("image", new ByteArrayResource(image.getBytes()) {  // 파일명을 명시적으로 지정한다.
                 @Override
@@ -147,5 +153,29 @@ public class ImageVerificationService {
             log.error("CLIP verification failed", e);
             throw e;
         }
+    }
+
+    /*
+        챌린지 이름 뒤에 태그를 붙이기 위한 함수이다.
+        clip 서버에 이름 뿐만 아니라 태그 정보도 보내게 된다.
+     */
+    private String buildClipPrompt(Challenge challenge) {
+        StringBuilder prompt = new StringBuilder(challenge.getTitle());
+
+        // 챌린지의 태그들을 조회한다.
+        List<TagToChallenge> tags = tagService.searchChallengeTags(challenge.getId());
+
+        // 최대 3개까지만 태그를 사용한다.
+        int count = 0;
+        for (TagToChallenge tagToChallenge : tags) {
+            if (count >= 3) {
+                break;
+            }
+
+            prompt.append(", ").append(tagToChallenge.getTag().getTagName());
+            count++;
+        }
+
+        return prompt.toString();
     }
 }
