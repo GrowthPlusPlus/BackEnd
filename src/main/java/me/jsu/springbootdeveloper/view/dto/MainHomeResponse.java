@@ -15,9 +15,11 @@ import java.util.List;
 public class MainHomeResponse {
     private final List<MyChallenge> myChallenges;  // 내가 참여한 챌린지의 정보이다.
     private final long notificationNumber;  // 내가 아직 읽지 않은 알람 수이다.
+    private final List<WeekDayStatusResponse> weekStatus;
 
-    public MainHomeResponse(List<MyChallenge> myChallenges, long notificationNumber) {
+    public MainHomeResponse(List<MyChallenge> myChallenges, long notificationNumber, List<WeekDayStatusResponse> weekStatus) {
         this.myChallenges = myChallenges;
         this.notificationNumber = notificationNumber;
+        this.weekStatus = weekStatus;
     }
 }

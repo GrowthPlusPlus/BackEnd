@@ -238,4 +238,19 @@ public interface ChallengeDailyLogRepository extends JpaRepository<ChallengeDail
         order by count(cdl) desc
     """)
     List<Object[]> findTagStats(@Param("userId") Long userId);
+
+    /*
+        특정 유저의 날짜 사이의 모든 로그를 조회하는 쿼리문이다.
+     */
+    @Query("""
+        select cdl
+        from ChallengeDailyLog cdl
+        where cdl.user.id = :userId
+          and cdl.postDate between :startDate and :endDate
+    """)
+    List<ChallengeDailyLog> findByUserIdAndPostDateBetween(
+            @Param("userId") Long userId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
 }

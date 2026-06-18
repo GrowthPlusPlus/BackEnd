@@ -102,6 +102,14 @@ public class ChallengeQueryService {
     }
 
     /*
+        유저 id로 날짜 사이의 모든 데일리 로그를 조회하는 함수이다.
+        mainHome 서비스에서 주간 캘린더 색상을 결정하기 위해 사용한다.
+     */
+    public List<ChallengeDailyLog> findByUserIdAndPostDateBetween(Long userId, LocalDate startDate, LocalDate endDate) {
+        return challengeDailyLogRepository.findByUserIdAndPostDateBetween(userId, startDate, endDate);
+    }
+
+    /*
         해당 유저가 방장인 모든 챌린지를 검색한다.
         회원탈퇴를 하는 경우, 방장을 위임하기 위해 사용한다.
      */
