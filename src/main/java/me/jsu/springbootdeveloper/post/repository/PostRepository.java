@@ -40,21 +40,16 @@ public interface PostRepository extends JpaRepository<Article, Long> {
         left join fetch a.user u
         left join fetch u.userProfilePicture
         left join fetch a.challenge c
-        where c.startDate <= :targetDate
-          and c.endDate >= :targetDate
-          and c.challengeVisibility = 'PUBLIC'
+        where c.challengeVisibility = 'PUBLIC'
     """,
     countQuery = """
             select count(a)
             from Article a
             join a.challenge c
-            where c.startDate <= :targetDate
-              and c.endDate >= :targetDate
-              and c.challengeVisibility = 'PUBLIC'
+            where c.challengeVisibility = 'PUBLIC'
         """
     )
     Page<Article> findPublicFeed(
-            @Param("targetDate") LocalDate targetDate,
             Pageable pageable
     );
 
@@ -65,9 +60,7 @@ public interface PostRepository extends JpaRepository<Article, Long> {
         left join fetch a.user u
         left join fetch u.userProfilePicture
         left join fetch a.challenge c
-        where c.startDate <= :targetDate
-          and c.endDate >= :targetDate
-          and c.challengeVisibility = 'FRIENDS_ONLY'
+        where c.challengeVisibility = 'FRIENDS_ONLY'
           and (
                 a.user.id = :viewerId
                 or exists (
@@ -82,9 +75,7 @@ public interface PostRepository extends JpaRepository<Article, Long> {
             select count(a)
             from Article a
             join a.challenge c
-            where c.startDate <= :targetDate
-              and c.endDate >= :targetDate
-              and c.challengeVisibility = 'FRIENDS_ONLY'
+            where c.challengeVisibility = 'FRIENDS_ONLY'
               and (
                     a.user.id = :viewerId
                     or exists (
@@ -98,7 +89,6 @@ public interface PostRepository extends JpaRepository<Article, Long> {
     )
     Page<Article> findFriendFeed(
             @Param("viewerId") Long viewerId,
-            @Param("targetDate") LocalDate targetDate,
             Pageable pageable
     );
 

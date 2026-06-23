@@ -48,7 +48,7 @@ public class PostQueryService {
         피드 생성에 사용된다.
      */
     public Page<Article> findPublicFeed(LocalDate targetDate, Pageable pageable) {
-        return postRepository.findPublicFeed(targetDate, pageable);
+        return postRepository.findPublicFeed(pageable);
     }
 
     /*
@@ -56,7 +56,7 @@ public class PostQueryService {
         피드 생성에 사용된다.
      */
     public Page<Article> findFriendFeed(Long userId, LocalDate targetDate, Pageable pageable) {
-        return postRepository.findFriendFeed(userId, targetDate, pageable);
+        return postRepository.findFriendFeed(userId, pageable);
     }
 
     /*
