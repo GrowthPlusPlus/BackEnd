@@ -52,9 +52,9 @@ public class AiChallengeRecommendService {
 
     /*
         LLM에 넣을 "추천 가능한 공개 챌린지" 최대 개수이다.
-        후보가 100개여도 상위 20개만 본문에 실어 토큰·비용을 제한한다.
+        후보가 100개여도 상위 50개만 본문에 실어 토큰·비용을 제한한다.
      */
-    private static final int MAX_PUBLIC_CHALLENGES_IN_CONTEXT = 20;
+    private static final int MAX_PUBLIC_CHALLENGES_IN_CONTEXT = 50;
 
     /*
         LLM에 넣을 "참여 이력" 최대 개수이다.
@@ -78,7 +78,7 @@ public class AiChallengeRecommendService {
         - "id·제목을 목록과 동일하게" → 앱의 제목/id 매칭 실패 방지
      */
     public static final String CHALLENGE_RECOMMEND_USER_QUERY = """
-            사용자의 관심사 태그와 지금까지 참여한 챌린지(제목·한줄소개·태그)를 바탕으로,
+            사용자의 관심사 태그와 지금까지 참여한 챌린지 제목를 바탕으로,
             아래 "추천 가능한 공개 챌린지 정보" 목록에 있는 챌린지만 골라 추천해줘.
             목록에 없는 챌린지, 이미 참여한 챌린지, 종료된 챌린지는 추천하지 마.
             (목록은 오늘 기준 진행 중인 공개 챌린지만 포함한다.)
@@ -86,6 +86,16 @@ public class AiChallengeRecommendService {
             추천하는 챌린지는 최대 3개까지야.
             각 추천 챌린지를 말할 때는 반드시 목록에 적힌 id와 제목을 그대로 써줘.
             id나 제목을 임의로 바꾸거나 새로 만들지 마. (앱에서 제목·id로 매칭한다.)
+            
+            [추천 규칙]
+            1. 사용자의 관심 태그와 챌린지의 이름과 가장 많이 연관되는 챌린지를 우선 추천한다.
+            2. 수능, 공부, 입시 등과 직접 관련된 태그가 존재하면 관련 없는 챌린지보다 반드시 우선 추천한다.
+            3. 단순히 나이 태그(20대, 30대 등)만 일치하는 챌린지는 추천 우선순위를 낮춘다.
+            4. 가장 관련도가 높은 순서대로 정렬한다.
+            5. 제공되지 않은 태그를 추론하거나 만들어내지 마라.
+            6. 추천 이유에 언급하는 모든 태그는 사용자 관심 태그에 실제 존재해야 한다.
+            7. 사용자의 20대, 30대 등의 나이 태그는 수능, 입시, 공부, 취업 등의 목적 태그보다 우선순위가 낮다.
+            8. 사용자의 20대, 30대 등의 나이 태그는 챌린지 제목과 직접적으로 일치하는게 있으면 목적 태그보다 우선시 한다.
             """;
 
     private final RagService ragService;
@@ -201,6 +211,10 @@ public class AiChallengeRecommendService {
                 today
         );
 
+//        System.out.println("===== GPT Context =====");
+//        System.out.println(content);
+//        System.out.println("=======================");
+
         /*
             metadata는 RagService가 LLM 프롬프트에 넣지 않는다. (content만 사용)
             참고 문서 푸터는 originalFilename 키만 쓰므로 비워 둔다.
@@ -262,8 +276,8 @@ public class AiChallengeRecommendService {
                 sb.append("- id: ").append(ch.getId())
                         .append(", 제목: ").append(ch.getTitle())
                         .append(", 상태: ").append(formatParticipationStatus(cp, today))
-                        .append(", 태그: ").append(tags.isEmpty() ? "없음" : String.join(", ", tags))
-                        .append(", 한줄소개: ").append(toContentSnippet(ch.getContent()))
+                        //.append(", 태그: ").append(tags.isEmpty() ? "없음" : String.join(", ", tags))
+                        //.append(", 한줄소개: ").append(toContentSnippet(ch.getContent()))
                         .append("\n");
             }
         }
@@ -278,8 +292,8 @@ public class AiChallengeRecommendService {
                         .append(", 제목: ").append(challenge.getTitle())
                         .append(", 기간: ").append(challenge.getStartDate())
                         .append(" ~ ").append(challenge.getEndDate())
-                        .append(", 챌린지태그: ").append(formatChallengeTagNames(challenge))
-                        .append(", 한줄소개: ").append(toContentSnippet(challenge.getContent()))
+                        //.append(", 챌린지태그: ").append(formatChallengeTagNames(challenge))
+                        //.append(", 한줄소개: ").append(toContentSnippet(challenge.getContent()))
                         .append("\n");
             }
         }
@@ -392,11 +406,11 @@ public class AiChallengeRecommendService {
                     //원래 낮은 숫자가 위로 가는데 reverseOrder()를 써서 높은 숫자가 위로 가도록 함
                 .thenComparing(Challenge::getStartDate, Comparator.reverseOrder()));
                     //겹침이 같으면 시작일이 최근인 챌린지가 위 -> Comparator.reverseOrder()를 써서 최근인 챌린지가 위로 가도록 함
-        int n = Math.min(MAX_PUBLIC_CHALLENGES_IN_CONTEXT, candidates.size()); //최대 20개만 반환
+        int n = Math.min(MAX_PUBLIC_CHALLENGES_IN_CONTEXT, candidates.size()); //최대 50개만 반환
         if (n == 0) {
             return List.of();
         }
-        return new ArrayList<>(candidates.subList(0, n));//
+        return new ArrayList<>(candidates.subList(0, n));
     }
 
     /*
