@@ -16,6 +16,7 @@ import me.jsu.springbootdeveloper.user.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -55,6 +56,7 @@ public class ReminderNotificationController {
             @ApiResponse(responseCode = "400", description = "잘못된 요청 (시간 형식 오류 등)"),
             @ApiResponse(responseCode = "401", description = "인증 실패")
     })
+    @Transactional
     @PutMapping("/api/notification/reminder/time")
     public ResponseEntity<Void> setReminderNotificationTime(
             @AuthenticationPrincipal UserDetails userDetails,
