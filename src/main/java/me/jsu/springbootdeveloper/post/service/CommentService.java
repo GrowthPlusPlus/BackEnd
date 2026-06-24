@@ -74,18 +74,43 @@ public class CommentService {
         Page<Comment> comments = commentRepository.findByArticleIdWithUser(postId, pageable);
 
         // 댓글을 CommentResponse에 매핑하여 반환한다.
-        return comments.map(comment -> CommentResponse.builder()
-                .commentId(comment.getId())
-                .userId(comment.getUser().getId())
-                .userNickname(comment.getUser().getNickname())
-                // 유저 사진이 없으면 null, 있으면 사진의 주소를 넣는다.
-                .userPicture(comment.getUser().getUserProfilePicture() != null ? comment.getUser().getUserProfilePicture().getImageUrl() : null)
-                .contents(comment.getContents())  // 댓글 내용이다.
-                .updatedAt(comment.getUpdateAt())
-                .createdAt(comment.getCreatedAt())
-                .isEdited(Boolean.TRUE.equals(comment.getIsEdited()))
-                .mine(comment.getUser().getId().equals(user.getId()))  // 해당 댓글이 접속한 유저와 같은지 검사한다.
-                .build()
+        return comments.map(comment -> {
+                    User author = comment.getUser();
+
+                    Long userId = null;
+                    String userNickname;
+                    String userPicture = null;  // 프로필 사진이 없는 경우를 대비한다.
+                    boolean mine = false;
+
+                    // 댓글 작성자가 탈퇴한 경우를 대비한다.
+                    if (author == null) {
+                        userNickname = "탈퇴한 사용자";
+                    }
+                    else {
+                        userId = author.getId();
+                        userNickname = author.getNickname();
+
+                        // 유저 사진이 없으면 null, 있으면 사진의 주소를 넣는다.
+                        if (author.getUserProfilePicture() != null) {
+                            userPicture = author.getUserProfilePicture().getImageUrl();
+                        }
+
+                        // 해당 댓글이 접속한 유저와 같은지 검사한다.
+                        mine = author.getId().equals(user.getId());
+                    }
+
+                    return CommentResponse.builder()
+                            .commentId(comment.getId())
+                            .userId(userId)
+                            .userNickname(userNickname)
+                            .userPicture(userPicture)
+                            .contents(comment.getContents())  // 댓글 내용이다.
+                            .updatedAt(comment.getUpdateAt())
+                            .createdAt(comment.getCreatedAt())
+                            .isEdited(Boolean.TRUE.equals(comment.getIsEdited()))
+                            .mine(mine)
+                            .build();
+                }
         );
     }
 
@@ -113,7 +138,11 @@ public class CommentService {
         //게시글 작성자에게 인앱&푸시 알림 발송
         //홍길동님이 내 '챌린지명''0일차' 에 댓글을 달았어요: "댓글 내용"
         User writer = postRepository.findUserByArticleId(postId)
-                .orElseThrow(() -> new NotFoundException("작성자를 찾을 수 없습니다."));
+                .orElse(null);
+        if (writer == null) {  // 게시글 작성자가 탈퇴 했다면 메세지를 보내지 않는다.
+            return;
+        }
+
         long userId = user.getId();
         //좋아요 누른 사람이 나 자신이 아닐 경우에만 인앱&푸시 알림 발송
         if ( userId != writer.getId() ) {
@@ -135,6 +164,10 @@ public class CommentService {
             // 푸시 알림을 발송
             // 챌린지별 멤버 반응 소식 설정이 활성화되어 있고, 진행중이며, FCM 토큰이 있을 때에만 발송한다.
             ChallengeParticipant writerParticipant = challengeQueryService.findByUser_IdAndChallenge_IdForParticipant(writer.getId(), challenge.getId());
+            if (writerParticipant == null) {  // npe를 방지한다.
+                return;
+            }
+
             boolean inProgress = writerParticipant.getStatus() == Status.IN_PROGRESS;
             boolean challengeAllEnabled = writerParticipant.isChallengeAllPushEnabled();
             boolean reactionEnabled = writerParticipant.isCommentsPushEnabled();
@@ -180,7 +213,7 @@ public class CommentService {
         수정/삭제를 하려는 유저가 댓글을 작성한 유저인지 검사하는 함수이다.
      */
     private static void authorizeCommentAuthor(Comment comment, User user) {
-        if (!comment.getUser().getId().equals(user.getId())) {  // 유저의 id와 댓글 작성자의 id를 비교한다.
+        if (comment.getUser() == null || !comment.getUser().getId().equals(user.getId())) {  // 유저의 id와 댓글 작성자의 id를 비교한다.
             throw new CommentAccessDeniedException("COMMENT_ACCESS_DENIED");
         }
     }

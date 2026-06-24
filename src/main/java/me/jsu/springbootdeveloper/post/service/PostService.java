@@ -473,14 +473,22 @@ public class PostService {
     @Transactional
     public void deletePostAsAdmin(Long postId) {
         Article article = postQueryService.findWithChallengeById(postId);
+
+        // 인증글의 사진 정보를 검색한다.
+        List<PostPicture> postPictures = postPictureRepository.findAllByArticle_Id(postId);
+        deleteImages(postPictures);  // 인증글에 저장된 사진들을 클라우디너리에서 삭제한다.
+
+        // 게시글 작성자가 탈퇴한 경우엔 게시글만 삭제한다.
+        if (article.getUser() == null) {
+            postRepository.delete(article);
+            return;
+        }
+
         Long authorId = article.getUser().getId();  // 인증글 작성자의 id를 저장한다.
 
         LocalDate postDate = article.getPostDate();  // 인증글의 생성 날짜를 검색한다.
         LocalDate todaySeoul = LocalDate.now(ZoneId.of("Asia/Seoul"));  // 삭제 당일 시간을 검색한다.
         boolean isTodayPost = todaySeoul.isEqual(postDate);  // 두 날짜가 같은지 확인한다.
-
-        // 인증글의 사진 정보를 검색한다.
-        List<PostPicture> postPictures = postPictureRepository.findAllByArticle_Id(postId);
 
         // 챌린지 데일리 로그 정보는 게시글이 삭제되면 삭제한다.
         ChallengeDailyLog challengeDailyLog = challengeQueryService.findLogByUser_IdAndArticle_IdAndPostDate(authorId, postId, postDate);
@@ -489,9 +497,13 @@ public class PostService {
         // 삭제된 로그를 기반으로 연간 활동(잔디)를 업데이트한다.
         userStatisticsService.researchLog(authorId, postDate);
 
-        deleteImages(postPictures);  // 인증글에 저장된 사진들을 클라우디너리에서 삭제한다.
-
         Challenge challenge = article.getChallenge();  // 인증글의 챌린지 정보를 가져온다.
+
+        // 챌린지가 삭제된 경우, 게시글만 삭제한다.
+        if (challenge == null) {
+            postRepository.delete(article);
+            return;
+        }
 
         // 당일 글일 때만 챌린지 "오늘 성공" 카운터를 줄인다.
         if (isTodayPost) {
