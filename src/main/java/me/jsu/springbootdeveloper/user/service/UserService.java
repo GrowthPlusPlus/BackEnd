@@ -7,6 +7,7 @@ import me.jsu.springbootdeveloper.tag.domain.TagToUser;
 import me.jsu.springbootdeveloper.tag.repository.TagToUserRepository;
 import me.jsu.springbootdeveloper.user.domain.UserStatistics;
 import me.jsu.springbootdeveloper.user.dto.MyProfileResponse;
+import me.jsu.springbootdeveloper.user.dto.ReportedUserResponse;
 import me.jsu.springbootdeveloper.user.enumType.Role;
 import me.jsu.springbootdeveloper.user.exception.DuplicateEmailException;
 import me.jsu.springbootdeveloper.user.exception.DuplicateNicknameException;
@@ -27,6 +28,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static me.jsu.springbootdeveloper.user.enumType.Role.ROLE_USER;
@@ -270,4 +272,24 @@ public class UserService {
                 .build();
     }
 
+    /*
+        제재당한 유저 목록을 횟수 순으로 정렬하여 반환하는 함수이다.
+     */
+    @Transactional(readOnly = true)
+    public List<ReportedUserResponse> getReportedUsers() {
+        // 제재당한 유저들을 조회한다.
+        List<User> users = userRepository.findReportedUsers();
+
+        // user 정보를 dto에 맞게 변환하여 반환한다.
+        return userRepository.findReportedUsers()
+                .stream()
+                .map(user -> ReportedUserResponse.builder()
+                        .id(user.getId())
+                        .nickname(user.getNickname())
+                        .introduction(user.getIntroduction())
+                        .profileImageUrl(user.getProfileImageUrl())
+                        .reported(user.getReported())
+                        .build())
+                .toList();
+    }
 }
