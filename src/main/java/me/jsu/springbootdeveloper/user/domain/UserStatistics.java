@@ -159,6 +159,27 @@ public class UserStatistics {
     }
 
     /*
+        대표 챌린지를 초기화 하는 함수이다.
+     */
+    public void removeDominantChallenge() {
+        this.dominantChallengeId = null;
+    }
+
+    /*
+        주간 실패 챌린지를 초기화 하는 함수이다.
+     */
+    public void removeMostFailedChallenge() {
+        this.mostFailedChallengeId = null;
+    }
+
+    /*
+        불안정 챌린지를 초기화 하는 함수이다.
+     */
+    public void removeMostUnstableChallenge() {
+        this.mostUnstableChallengeId = null;
+    }
+
+    /*
         챌린지 하나에 새로 참여했을 때 호출되는 함수이다.
      */
     public void increaseChallengeCount() {

@@ -115,6 +115,17 @@ public class AiCoachService {
         sb.append("- 최근 7일 활동 일수: ").append(s.getWeeklyActiveDays()).append("일\n");
         sb.append("- 최근 30일 활동 일수: ").append(s.getMonthlyActiveDays()).append("일\n");
 
+        // 챌린지가 삭제된 경우에 대한 방어 코드들이다.
+        if (challengeQueryService.findByIdOrNull(s.getDominantChallengeId()) == null) {
+            s.removeDominantChallenge();
+        }
+        if (challengeQueryService.findByIdOrNull(s.getMostFailedChallengeId()) == null) {
+            s.removeMostFailedChallenge();
+        }
+        if (challengeQueryService.findByIdOrNull(s.getMostUnstableChallengeId()) == null) {
+            s.removeMostUnstableChallenge();
+        }
+
         if (s.getDominantChallengeId() != null) {
             Challenge dominant = challengeQueryService.findById(s.getDominantChallengeId());
 
