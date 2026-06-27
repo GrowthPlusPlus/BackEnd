@@ -240,10 +240,11 @@ public class ChallengeApiController {
     )
     @GetMapping("/api/challenge/{challengeId}")
     public ResponseEntity<ChallengeDetailResponse> getChallengeDetail(
+            @AuthenticationPrincipal UserDetails userDetails,
             @Parameter(description = "챌린지 번호", required = true, example = "1")
             @PathVariable Long challengeId
     ) {
-        ChallengeDetailResponse response = challengeService.getChallengeDetail(challengeId);
+        ChallengeDetailResponse response = challengeService.getChallengeDetail(userDetails.getUsername(), challengeId);
 
         return ResponseEntity.ok(response);
     }

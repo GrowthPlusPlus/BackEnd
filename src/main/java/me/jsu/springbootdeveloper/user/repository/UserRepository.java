@@ -62,5 +62,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // 유저의 권한과 상태로 유저 목록을 조회하는 쿼리문이다.
     List<User> findAllByRoleAndUserStatus(Role role, UserStatus userStatus);
+
+    // 유저가 제재당한 횟수를 내림차순으로 정렬하여 유저 목록을 조회하는 쿼리문이다. 0번 제재당한 경우엔 조회되지 않는다.
+    @Query("""
+        select u
+        from User u
+        left join fetch u.userProfilePicture
+        where u.reported > 0
+        order by u.reported desc, u.id asc
+    """)
+    List<User> findReportedUsers();
 }
 

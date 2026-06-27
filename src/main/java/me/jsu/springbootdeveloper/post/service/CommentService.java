@@ -239,6 +239,12 @@ public class CommentService {
         // 인증글의 총 댓글 수를 감소시킨다.
         postService.minusCommentNumber(article);
 
+        // 유저가 탈퇴하지 않은 상태라면, 제재당한 횟수를 증가시킨다.
+        User user = comment.getUser();
+        if (user != null) {
+            user.updateReported();
+        }
+
         // 댓글을 삭제한다.
         commentRepository.delete(comment);
     }

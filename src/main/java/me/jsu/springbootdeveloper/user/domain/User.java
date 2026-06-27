@@ -75,6 +75,9 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
     @Column(name = "fcm_token", columnDefinition = "TEXT")
     private String fcmToken;  // Firebase Cloud Messaging 토큰이다. 푸시 알림 발송 시 사용한다.
 
+    @Column(name = "reported")
+    private int reported;  // 관리자에게 제재당한 횟수이다.
+
     /*
         친구 관련 푸시 알림 활성화 여부를 설정하는 함수이다.
      */
@@ -179,6 +182,9 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
     @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE)
     private List<UserYearlyActivity> userYearlyActivities;
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE)
+    private List<ChallengeDailyLog> challengeDailyLogs;
+
     @Builder
     public User(String email, String password, Role role, String nickname) {
         this.email = email;
@@ -187,6 +193,7 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
         this.nickname = nickname;  //OAuth 로그인 시, 구글 프로필에 사용된 이름이 저장된다.
         this.userStatus = UserStatus.NEW;  // 처음 생성시엔 초기 설정을 위해 NEW 상태가 된다.
         this.introduction = "";  // 초기 상태엔 소개가 비어있다.
+        this.reported = 0;  // 초기엔 제재당한 횟수를 0으로 한다.
     }
     
     /*
@@ -332,5 +339,12 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
      */
     public void adminApprovalPending() {
         this.userStatus = UserStatus.ADMIN_APPROVAL_PENDING;
+    }
+
+    /*
+        유저의 게시글이나 댓글을 관리자가 강제로 삭제한 경우, 신고 당한 횟수를 증가시킨다.
+     */
+    public void updateReported() {
+        this.reported++;
     }
 }

@@ -40,15 +40,14 @@ public class ImageTemporaryService {
         User user = userService.findByEmail(email);
         Challenge challenge = challengeQueryService.findById(challengeId);
 
-        // 이미지를 검증하고 CLIP 결과를 받는다.
-        String passed = imageVerificationService.verify(challengeId, image);
+        // 이미지가 비정상적이지 않은지 검사한다.
+        imageVerificationService.verify(image);
 
         // 이미지를 클라우디너리에 업로드한다.
         PostPictureTemporary temp = saveImages(image, user, challenge);
 
-        // CLIP 검증 결과와 임시로 업로드 한 이미지 id를 반환한다.
+        // 임시로 업로드 한 이미지 id를 반환한다.
         return ImageVerificationResponse.builder()
-                .passed(passed)
                 .tempImageId(temp.getId())
                 .build();
     }

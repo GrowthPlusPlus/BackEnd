@@ -486,6 +486,10 @@ public class PostService {
 
         Long authorId = article.getUser().getId();  // 인증글 작성자의 id를 저장한다.
 
+        // 유저가 제재당한 횟수를 증가시킨다.
+        User user = article.getUser();
+        user.updateReported();
+
         LocalDate postDate = article.getPostDate();  // 인증글의 생성 날짜를 검색한다.
         LocalDate todaySeoul = LocalDate.now(ZoneId.of("Asia/Seoul"));  // 삭제 당일 시간을 검색한다.
         boolean isTodayPost = todaySeoul.isEqual(postDate);  // 두 날짜가 같은지 확인한다.

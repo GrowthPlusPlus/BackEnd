@@ -15,6 +15,8 @@ import me.jsu.springbootdeveloper.post.dto.report.ReportedCommentResponse;
 import me.jsu.springbootdeveloper.post.service.CommentService;
 import me.jsu.springbootdeveloper.post.service.PostService;
 import me.jsu.springbootdeveloper.post.service.ReportService;
+import me.jsu.springbootdeveloper.user.dto.ReportedUserResponse;
+import me.jsu.springbootdeveloper.user.service.UserService;
 import me.jsu.springbootdeveloper.user.service.UserWithdrawalService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -38,6 +40,7 @@ public class AdminController {
     private final CommentService commentService;
     private final UserWithdrawalService userWithdrawalService;
     private final ReportService reportService;
+    private final UserService userService;
 
     /*
         관리자가 방장 여부와 관계없이 챌린지를 삭제한다.
@@ -118,6 +121,29 @@ public class AdminController {
         commentService.deleteCommentAsAdmin(commentId);
 
         return ResponseEntity.noContent().build();
+    }
+
+    /*
+        제재당한 유저 목록 조회 (관리자용)
+     */
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @Operation(
+            summary = "제재당한 유저 목록 조회",
+            description = """
+        제재당한 유저 목록 조회을 제재 횟수 순으로 조회한다.
+        ex) GET /api/reported/users
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "제재당한 유저 목록 조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "관리자 권한 필요")
+    })
+    @GetMapping("/api/reported/users")
+    public ResponseEntity<List<ReportedUserResponse>> getReportedUsers() {
+        List<ReportedUserResponse> responses = userService.getReportedUsers();
+
+        return ResponseEntity.ok(responses);
     }
 
     /*
