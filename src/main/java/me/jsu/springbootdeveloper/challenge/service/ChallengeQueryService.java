@@ -143,6 +143,14 @@ public class ChallengeQueryService {
     }
 
     /*
+        챌린지 참여자 DB값을 챌린지 id, 유저 id로 검색하되, 검색에 실패하면 null값을 반환한다.
+     */
+    public ChallengeParticipant findByUser_IdAndChallenge_IdForParticipantCanNull(Long userId, Long challengeId) {
+        return challengeParticipantRepository.findByUser_IdAndChallenge_Id(userId, challengeId)
+                .orElse(null);
+    }
+
+    /*
         유저가 해당 날짜에 로그가 하나라도 존재하는지 검색하는 함수이다.
      */
     public boolean existsByUser_IdAndPostDateForLog(Long userId, LocalDate postDate) {
