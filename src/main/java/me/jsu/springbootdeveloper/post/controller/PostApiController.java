@@ -76,7 +76,7 @@ public class PostApiController {
             summary = "임시 사진에 대한 clip 검사",
             description = """
         임시로 올라가있는 사진에 대해 clip 검사를 수행하여 챌린지와 관련있는 사진인지 확인해주는 컨트롤러이다.
-        ex) POST /api/image/clip?challengeId=3
+        ex) POST /api/image/clip
         """
     )
     @ApiResponses({

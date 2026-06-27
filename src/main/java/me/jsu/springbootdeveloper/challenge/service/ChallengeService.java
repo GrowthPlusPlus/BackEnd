@@ -80,7 +80,7 @@ public class ChallengeService {
         User user = userService.findByEmail(email);
         Challenge challenge = challengeQueryService.findById(challengeId);
 
-        ChallengeParticipant challengeParticipant = challengeQueryService.findByUser_IdAndChallenge_IdForParticipant(user.getId(), challengeId);
+        ChallengeParticipant challengeParticipant = challengeQueryService.findByUser_IdAndChallenge_IdForParticipantCanNull(user.getId(), challengeId);
         LocalDate joinDate = null;
         if (challengeParticipant != null) {
             joinDate = challengeParticipant.getJoinDate();
