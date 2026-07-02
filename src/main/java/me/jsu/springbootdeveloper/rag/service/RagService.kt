@@ -161,15 +161,15 @@ class RagService(
                 return aiAnswer
             }
 
-            val sourceInfo = buildString {
-                appendLine("\n\n참고 문서:")
-                rerankedDocs.forEachIndexed { index, doc ->
-                    val originalFilename = doc.metadata["originalFilename"]?.toString() ?: "Unknown file"
-                    appendLine("[${index + 1}] $originalFilename")
-                }
-            }
+//            val sourceInfo = buildString {
+//                appendLine("\n\n참고 문서:")
+//                rerankedDocs.forEachIndexed { index, doc ->
+//                    val originalFilename = doc.metadata["originalFilename"]?.toString() ?: "Unknown file"
+//                    appendLine("[${index + 1}] $originalFilename")
+//                }
+//            }
 
-            return aiAnswer + sourceInfo
+            return aiAnswer //+ sourceInfo
         } catch (e: Exception) {
             logger.error(e) { "AI 모델 호출 중 오류 발생: ${e.message}" }
 

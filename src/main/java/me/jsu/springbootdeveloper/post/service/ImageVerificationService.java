@@ -4,9 +4,11 @@ package me.jsu.springbootdeveloper.post.service;
 
 import me.jsu.springbootdeveloper.challenge.domain.Challenge;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeQueryService;
+import me.jsu.springbootdeveloper.post.domain.PostPictureTemporary;
 import me.jsu.springbootdeveloper.post.dto.verify.ImageVerificationResult;
 import me.jsu.springbootdeveloper.post.exception.ClipServerException;
 import me.jsu.springbootdeveloper.post.exception.InvalidImageException;
+import me.jsu.springbootdeveloper.post.repository.PostPictureTemporaryRepository;
 import me.jsu.springbootdeveloper.tag.domain.TagToChallenge;
 import me.jsu.springbootdeveloper.tag.service.TagService;
 import org.slf4j.Logger;
@@ -27,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Set;
+import java.net.URL;
 
 /*
     클라이언트가 보낸 사진을 검증하는 서비스이다.
@@ -38,18 +41,21 @@ public class ImageVerificationService {
     private final WebClient webClient;
     private final ChallengeQueryService challengeQueryService;
     private final TagService tagService;
+    private final PostPictureTemporaryRepository postPictureTemporaryRepository;
 
     // 의존성을 주입한다. config를 사용하면 default값이 주입되므로 직접 주입한다.
     public ImageVerificationService(
             @Value("${clip.base-url}") String clipBaseUrl,
             ChallengeQueryService challengeQueryService,
-            TagService tagService
+            TagService tagService,
+            PostPictureTemporaryRepository postPictureTemporaryRepository
     ) {
         this.webClient = WebClient.builder()
                 .baseUrl(clipBaseUrl)
                 .build();
         this.challengeQueryService = challengeQueryService;
         this.tagService = tagService;
+        this.postPictureTemporaryRepository = postPictureTemporaryRepository;
     }
 
     private static final long MAX_FILE_SIZE = 5 * 1024 * 1024;  // 최대 이미지 크기이다.
@@ -60,9 +66,9 @@ public class ImageVerificationService {
     );
 
     /*
-        사용자가 업로드한 이미지를 검증하는 함수이다.
+        사용자가 업로드한 이미지를 검증하는 함수이다. 문제가 없는지 검증한다.
      */
-    public String verify(Long challengeId, MultipartFile image) {
+    public void verify(MultipartFile image) {
         // 이미지가 없는 경우이다.
         if (image == null || image.isEmpty()) {
             throw new InvalidImageException("EMPTY_IMAGE");
@@ -72,10 +78,6 @@ public class ImageVerificationService {
         validateFileSize(image);
         validateMimeType(image);
         validateImageDecoding(image);
-
-        return verifyWithCLIP(challengeId, image);  // CLIP 결과를 프론트에 반환한다.
-        // CLIP 방식이 변경될 수 있으므로 일단 보류함
-        //return "PASS";
     }
 
     /*
@@ -115,20 +117,40 @@ public class ImageVerificationService {
     /*
         clip 서버에 챌린지 제목과 이미지를 보내 검증 결과를 얻는 함수이다.
      */
-    public String verifyWithCLIP(Long challengeId, MultipartFile image) {
+    public String verifyWithCLIP(Long challengeId, Long temporaryImageId) {
         Challenge challenge = challengeQueryService.findById(challengeId);
+
+        // 임시 이미지의 db값을 조회한다.
+        PostPictureTemporary postPictureTemporary = postPictureTemporaryRepository.findById(temporaryImageId)
+                .orElseThrow(() -> new InvalidImageException("CANNOT_FIND_TEMPORARY_IMAGE"));
 
         // 보낼 값을 map으로 만든다.
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("title", buildClipPrompt(challenge));
+
         try {
-            body.add("image", new ByteArrayResource(image.getBytes()) {  // 파일명을 명시적으로 지정한다.
-                @Override
-                public String getFilename() {
-                    return image.getOriginalFilename();
-                }
-            });
-        } catch (IOException e) {
+            // Cloudinary URL에서 이미지를 다운로드한다.
+            URL imageUrl = new URL(postPictureTemporary.getImageUrl());
+
+            try (InputStream inputStream = imageUrl.openStream()) {
+                byte[] imageBytes = inputStream.readAllBytes();
+
+                // URL에서 원본 파일명을 추출한다.
+                String imageUrlString = postPictureTemporary.getImageUrl();
+                final String fileName =
+                        imageUrlString.substring(imageUrlString.lastIndexOf('/') + 1)
+                                .split("\\?")[0];
+
+                // 다운로드한 이미지를 multipart 파일처럼 만들어 CLIP 서버에 전송한다.
+                body.add("image", new ByteArrayResource(imageBytes) {
+                    @Override
+                    public String getFilename() {
+                        return fileName;
+                    }
+                });
+            }
+        }
+        catch (IOException e) {
             throw new ClipServerException("Failed to read image bytes");
         }
 

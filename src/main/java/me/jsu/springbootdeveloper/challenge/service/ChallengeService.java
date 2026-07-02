@@ -76,8 +76,15 @@ public class ChallengeService {
     /*
         챌린지의 상세 정보를 반환하는 함수이다.
      */
-    public ChallengeDetailResponse getChallengeDetail(Long challengeId) {
+    public ChallengeDetailResponse getChallengeDetail(String email, Long challengeId) {
+        User user = userService.findByEmail(email);
         Challenge challenge = challengeQueryService.findById(challengeId);
+
+        ChallengeParticipant challengeParticipant = challengeQueryService.findByUser_IdAndChallenge_IdForParticipantCanNull(user.getId(), challengeId);
+        LocalDate joinDate = null;
+        if (challengeParticipant != null) {
+            joinDate = challengeParticipant.getJoinDate();
+        }
 
         // 챌린지의 태그를 조회한다.
         List<TagToChallenge> tags = tagService.searchChallengeTags(challengeId);
@@ -103,6 +110,7 @@ public class ChallengeService {
                         challenge.getUser().getProfileImageUrl()
                 ),
                 challenge.getParticipantNumber(),  // 참여자 수
+                joinDate,
                 successUsers.stream()
                         .map(u -> new ChallengeDetailResponse.UserSummary(
                                 u.getId(),

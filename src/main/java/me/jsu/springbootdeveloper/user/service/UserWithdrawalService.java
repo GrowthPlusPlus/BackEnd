@@ -74,8 +74,8 @@ public class UserWithdrawalService {
                 .map(User::getId)
                 .toList();
 
-        // 게시글, 로그, 댓글, 좋아요, 유저 통계 등의 정보는 FK를 해제하여 회원이 사라져도 남겨두도록 한다.
-        challengeDeleteService.detachLogToUser(userIds);  // 로그 해제
+        // 게시글, 댓글, 좋아요, 유저 통계 등의 정보는 FK를 해제하여 회원이 사라져도 남겨두도록 한다.
+        //challengeDeleteService.detachLogToUser(userIds);  // 로그 해제
         postService.detachPostToUser(userIds);  // 게시글 해제
         commentService.detachCommentToUser(userIds);  // 댓글 해제
         postLikeService.detachLikeToUser(userIds);  // 좋아요 해제
@@ -96,7 +96,8 @@ public class UserWithdrawalService {
         }
 
         // 유저를 삭제한다. 유저가 사라짐에 따라 필요 없는 정보들은 CASCADE로 자동으로 삭제된다.
-        userRepository.deleteAllByIdInBatch(userIds);
+        // userRepository.deleteAllByIdInBatch(userIds); batch작업을 수행하면 cascade가 적용되지 않는다.
+        userRepository.deleteAll(users);
     }
 
     /*

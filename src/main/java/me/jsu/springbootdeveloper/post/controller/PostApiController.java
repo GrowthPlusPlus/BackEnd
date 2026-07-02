@@ -14,6 +14,7 @@ import me.jsu.springbootdeveloper.post.dto.article.UpdateArticleRequest;
 import me.jsu.springbootdeveloper.post.dto.comment.CommentCreateRequest;
 import me.jsu.springbootdeveloper.post.dto.comment.CommentResponse;
 import me.jsu.springbootdeveloper.post.dto.comment.CommentUpdateRequest;
+import me.jsu.springbootdeveloper.post.dto.verify.ClipRequest;
 import me.jsu.springbootdeveloper.post.dto.verify.ImageVerificationResponse;
 import me.jsu.springbootdeveloper.post.service.*;
 import org.springframework.data.domain.Page;
@@ -37,6 +38,7 @@ public class PostApiController {
     private final CommentService commentService;
     private final PostLikeService postLikeService;
     private final ImageTemporaryService temporaryService;
+    private final ImageVerificationService imageVerificationService;
 
     /*
         서버에 사진을 올리기 전에, 해당 사진이 올바른 사진인지 검사하는 컨트롤러이다.
@@ -65,6 +67,30 @@ public class PostApiController {
         ImageVerificationResponse response = temporaryService.uploadTempImage(userDetails.getUsername(), challengeId, image);
 
         return ResponseEntity.ok(response);  // 사진 인증 결과와 임시 파일 id를 반환한다.
+    }
+
+    /*
+        임시로 올라가있는 사진에 대해 clip 검사를 수행하여 챌린지와 관련있는 사진인지 확인해주는 컨트롤러이다.
+     */
+    @Operation(
+            summary = "임시 사진에 대한 clip 검사",
+            description = """
+        임시로 올라가있는 사진에 대해 clip 검사를 수행하여 챌린지와 관련있는 사진인지 확인해주는 컨트롤러이다.
+        ex) POST /api/image/clip
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "clip 검사 성공"),
+            @ApiResponse(responseCode = "400", description = "clip 검사 실패")
+    })
+    @PostMapping(value = "/api/image/clip")
+    public ResponseEntity<String> clip(
+            @Parameter(description = "챌린지 id와 검사할 이미지 번호", required = true)
+            @RequestBody @Valid ClipRequest request
+    ) {
+        String response = imageVerificationService.verifyWithCLIP(request.getChallengeId(), request.getTemporaryImageId());
+
+        return ResponseEntity.ok(response);  // 검증 결과를 string 형태로 반환한다.
     }
 
     /*

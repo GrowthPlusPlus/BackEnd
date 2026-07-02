@@ -42,6 +42,14 @@ public class ChallengeQueryService {
     }
 
     /*
+        챌린지 id로 챌린지를 검색하지만 없을 경우 null을 반환하는 함수이다.
+     */
+    public Challenge findByIdOrNull(Long id) {
+        return challengeRepository.findById(id)
+                .orElse(null);
+    }
+
+    /*
         유저 id로 유저가 참여한 모든 진행중, 성공, 실패 챌린지 목록을 가져오는 함수이다. 챌린지 정보도 포함하여 가져온다.
      */
     public List<ChallengeParticipant> findWithChallengeByUserId(Long userId) {
@@ -132,6 +140,14 @@ public class ChallengeQueryService {
     public ChallengeParticipant findByUser_IdAndChallenge_IdForParticipant(Long userId, Long challengeId) {
         return challengeParticipantRepository.findByUser_IdAndChallenge_Id(userId, challengeId)
                 .orElseThrow(() -> new ChallengeNotFoundException("CHALLENGE_PARTICIPANT_NOT_FOUND"));
+    }
+
+    /*
+        챌린지 참여자 DB값을 챌린지 id, 유저 id로 검색하되, 검색에 실패하면 null값을 반환한다.
+     */
+    public ChallengeParticipant findByUser_IdAndChallenge_IdForParticipantCanNull(Long userId, Long challengeId) {
+        return challengeParticipantRepository.findByUser_IdAndChallenge_Id(userId, challengeId)
+                .orElse(null);
     }
 
     /*
