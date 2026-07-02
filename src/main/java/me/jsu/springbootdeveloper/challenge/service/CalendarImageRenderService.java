@@ -210,6 +210,7 @@ public class CalendarImageRenderService {
                 g.fill(rect);
             }
         }
+
         else if (success) {  // 인증했지만 사진이 없는 경우에 성공 처리를 한다.
             g.setColor(new Color(219, 234, 254));
             g.fill(rect);

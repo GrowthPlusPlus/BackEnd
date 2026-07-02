@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
        (탐색 탭 API는 답변 속 제목을 후보 목록과 대조해 카드 id를 채운다.)
 
     [이번 개선의 핵심]
-    - 참여 이력: 제목만 → 태그·한줄소개·진행/종료 상태까지 포함
+    - 참여 이력: 제목만 → 태그·진행/종료 상태까지 포함
     - 후보 선정: 관심 태그만 → 관심 태그 + 참여했던 챌린지의 태그(preferenceTagNames)
     - 후보 목록: 이미 참여한 챌린지는 LLM 컨텍스트에서 제외
     - DB 호출: 공개 챌린지 1회 조회 후 메모리에서 필터·정렬
@@ -51,22 +51,10 @@ public class AiChallengeRecommendService {
     private static final ZoneId SERVICE_ZONE = ZoneId.of("Asia/Seoul");
 
     /*
-        LLM에 넣을 "추천 가능한 공개 챌린지" 최대 개수이다.
-        후보가 100개여도 상위 20개만 본문에 실어 토큰·비용을 제한한다.
-     */
-    private static final int MAX_PUBLIC_CHALLENGES_IN_CONTEXT = 20;
-
-    /*
         LLM에 넣을 "참여 이력" 최대 개수이다.
         참여 챌린지가 수십 개여도 12개만 넣어 프롬프트 길이를 막는다.
      */
     private static final int MAX_PARTICIPATED_CHALLENGES_IN_CONTEXT = 12;
-
-    /*
-        챌린지 content(한줄소개)를 잘라 넣을 때의 최대 글자 수이다.
-        긴 본문 전체를 넣으면 느려지고 비용이 커지므로 앞 80자만 사용한다.
-     */
-    private static final int MAX_CONTENT_SNIPPET_LENGTH = 80;
 
     /*
         LLM에게 보내는 고정 질문(프롬프트)이다.
@@ -78,7 +66,7 @@ public class AiChallengeRecommendService {
         - "id·제목을 목록과 동일하게" → 앱의 제목/id 매칭 실패 방지
      */
     public static final String CHALLENGE_RECOMMEND_USER_QUERY = """
-            사용자의 관심사 태그와 지금까지 참여한 챌린지(제목·한줄소개·태그)를 바탕으로,
+            사용자의 관심사 태그와 지금까지 참여한 챌린지(제목·태그)를 바탕으로,
             아래 "추천 가능한 공개 챌린지 정보" 목록에 있는 챌린지만 골라 추천해줘.
             목록에 없는 챌린지, 이미 참여한 챌린지, 종료된 챌린지는 추천하지 마.
             (목록은 오늘 기준 진행 중인 공개 챌린지만 포함한다.)
@@ -154,7 +142,7 @@ public class AiChallengeRecommendService {
         이 메서드가 추천 품질·성능 개선의 중심이다.
 
         @param userId 추천 대상 사용자 PK
-        @return document(LLM 컨텍스트 문자열), publicSlice(후보 최대 20개, 미참여·태그 정렬됨)
+        @return document(LLM 컨텍스트 문자열), publicSlice(미참여·태그 정렬된 전체 후보)
      */
     private RecommendContextBundle buildRecommendContextBundle(Long userId) {
         // ----- 1단계: DB에서 사용자 원천 데이터 조회 -----
@@ -219,13 +207,13 @@ public class AiChallengeRecommendService {
         LLM 컨텍스트 본문을 만든다. 구조는 항상 아래 3블록이다.
 
         1) 관심사 태그 목록
-        2) 참여한 챌린지 목록 (태그·한줄소개·상태 포함, 최대 12건)
-        3) 추천 가능한 공개 챌린지 (진행 중·미참여만, 최대 20건)
+        2) 참여한 챌린지 목록 (태그·상태 포함, 최대 12건)
+        3) 추천 가능한 공개 챌린지 (진행 중·미참여 전체)
 
         @param tagToUsers 사용자 관심 태그 전체
         @param participantsForContext LLM에 넣을 참여 이력(선별된 목록)
         @param participatedTagNamesByChallengeId 챌린지 id → 태그 이름 목록
-        @param publicChallenges LLM 후보로 실린 공개 챌린지(슬라이스, 최대 20건)
+        @param publicChallenges LLM 후보로 실린 공개 챌린지(미참여·정렬된 전체)
         @param today 서울 기준 오늘(참여 상태 문구·formatParticipationStatus 와 동일 기준일)
         @return LLM에 전달할 평문 문자열
      */
@@ -252,7 +240,7 @@ public class AiChallengeRecommendService {
         }
         sb.append("\n");
 
-        sb.append("지금까지 참여한 챌린지 목록 (최근·진행 중 우선, 태그·한줄소개 포함):\n");
+        sb.append("지금까지 참여한 챌린지 목록 (최근·진행 중 우선, 태그 포함):\n");
         if (participantsForContext.isEmpty()) {
             sb.append("- 참여한 챌린지가 없습니다.\n");
         } else {
@@ -263,7 +251,6 @@ public class AiChallengeRecommendService {
                         .append(", 제목: ").append(ch.getTitle())
                         .append(", 상태: ").append(formatParticipationStatus(cp, today))
                         .append(", 태그: ").append(tags.isEmpty() ? "없음" : String.join(", ", tags))
-                        .append(", 한줄소개: ").append(toContentSnippet(ch.getContent()))
                         .append("\n");
             }
         }
@@ -279,7 +266,6 @@ public class AiChallengeRecommendService {
                         .append(", 기간: ").append(challenge.getStartDate())
                         .append(" ~ ").append(challenge.getEndDate())
                         .append(", 챌린지태그: ").append(formatChallengeTagNames(challenge))
-                        .append(", 한줄소개: ").append(toContentSnippet(challenge.getContent()))
                         .append("\n");
             }
         }
@@ -368,12 +354,12 @@ public class AiChallengeRecommendService {
         1) participatingChallengeIds 에 있으면 제거 (이미 참여 → 추천 불필요)
         2) preferenceTagNames 와 챌린지 태그 겹침 개수로 내림차순 정렬
         3) 겹침이 같으면 startDate 최신순
-        4) 상위 MAX_PUBLIC_CHALLENGES_IN_CONTEXT(20)개만 반환
+        4) 정렬된 미참여 후보 전체 반환
 
         @param allPublicWithTags DB에서 이미 읽은 진행 중 공개 챌린지 전체
         @param preferenceTagNames 관심사+참여 이력 태그 합집합
         @param excludeChallengeIds 제외할 챌린지 id (보통 참여 중인 id 전체)
-        @return LLM 컨텍스트·Discovery 제목 매칭에 쓰는 후보 슬라이스
+        @return LLM 컨텍스트·Discovery 제목 매칭에 쓰는 후보 목록
      */
     private List<Challenge> slicePublicChallengesForContext(
             List<Challenge> allPublicWithTags,
@@ -392,11 +378,7 @@ public class AiChallengeRecommendService {
                     //원래 낮은 숫자가 위로 가는데 reverseOrder()를 써서 높은 숫자가 위로 가도록 함
                 .thenComparing(Challenge::getStartDate, Comparator.reverseOrder()));
                     //겹침이 같으면 시작일이 최근인 챌린지가 위 -> Comparator.reverseOrder()를 써서 최근인 챌린지가 위로 가도록 함
-        int n = Math.min(MAX_PUBLIC_CHALLENGES_IN_CONTEXT, candidates.size()); //최대 20개만 반환
-        if (n == 0) {
-            return List.of();
-        }
-        return new ArrayList<>(candidates.subList(0, n));//
+        return candidates;
     }
 
     /*
@@ -437,24 +419,6 @@ public class AiChallengeRecommendService {
             return "종료(참여기록)";
         }
         return "진행중";
-    }
-
-    /*
-        챌린지 본문(content)을 LLM용 한 줄 요약으로 줄인다.
-        줄바꿈은 공백으로 바꾸고, MAX_CONTENT_SNIPPET_LENGTH 를 넘으면 "..." 처리한다.
-
-        @param content DB의 챌린지 설명 필드 (null 가능)
-        @return 잘린 한줄소개 또는 "설명 없음"
-     */
-    private String toContentSnippet(String content) {
-        if (content == null || content.isBlank()) {
-            return "설명 없음";
-        }
-        String normalized = content.replace('\n', ' ').trim();
-        if (normalized.length() <= MAX_CONTENT_SNIPPET_LENGTH) {
-            return normalized;
-        }
-        return normalized.substring(0, MAX_CONTENT_SNIPPET_LENGTH) + "...";
     }
 
     /*
