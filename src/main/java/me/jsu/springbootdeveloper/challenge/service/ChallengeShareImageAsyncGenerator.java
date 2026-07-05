@@ -5,10 +5,12 @@ package me.jsu.springbootdeveloper.challenge.service;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.domain.Challenge;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeCalenderShare;
+import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
 import me.jsu.springbootdeveloper.challenge.exception.ShareImageNotFoundException;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeCalenderShareRepository;
 import me.jsu.springbootdeveloper.cloudinary.dto.ImageUploadResult;
 import me.jsu.springbootdeveloper.cloudinary.service.CloudinaryService;
+import me.jsu.springbootdeveloper.post.domain.Article;
 import me.jsu.springbootdeveloper.post.domain.PostPicture;
 import me.jsu.springbootdeveloper.post.event.CloudinaryDeleteEvent;
 import me.jsu.springbootdeveloper.post.service.PostQueryService;
@@ -70,8 +72,11 @@ public class ChallengeShareImageAsyncGenerator {
             Challenge challenge = challengeQueryService.findById(shareImage.getChallenge().getId());
             User user = userService.findById(shareImage.getUser().getId());
 
-            // 해당 월의 인증글들의 사진을 조회한다.
-            List<PostPicture> proofs = postQueryService.findMonthlyProofPictures(
+            ChallengeParticipant challengeParticipant = challengeQueryService.findByUser_IdAndChallenge_IdForParticipant(user.getId(), challenge.getId());
+            int totalSuccessDays = challengeParticipant.getTotalSuccessDays();  // 해당 챌린지에 대한 총 성공 횟수를 조회한다.
+
+            // 해당 월의 인증글들을 조회한다.
+            List<Article> articles = postQueryService.findMonthlyProofArticles(
                     shareImage.getUser().getId(),
                     shareImage.getChallenge().getId(),
                     startDate,
@@ -80,16 +85,16 @@ public class ChallengeShareImageAsyncGenerator {
 
             Set<Integer> successDays = new HashSet<>();  // 캘린더 이미지에 표시할 성공 날짜를 계산한다. 여기선 인증글을 올린 날짜를 뽑아낸다.
             Map<Integer, String> proofImageUrlByDay = new HashMap<>();  // 인증 사진을 날짜에 매핑한다.
-            for (PostPicture picture : proofs) {
-                Integer day = picture.getArticle()
-                        .getPostDate()
-                        .getDayOfMonth();
-
+            for (Article article : articles) {
+                Integer day = article.getPostDate().getDayOfMonth();
                 successDays.add(day);  // 성공 날짜를 계산한다.
-                String imageUrl = picture.getImageUrl();
 
-                if (imageUrl != null) {
-                    proofImageUrlByDay.putIfAbsent(day, imageUrl);  // 성공 날짜에 사진을 매핑한다.
+                if (!article.getPostPictures().isEmpty()) {
+                    String imageUrl = article.getPostPictures().get(0).getImageUrl();  // 사진 한 장만 사용한다.
+
+                    if (imageUrl != null) {
+                        proofImageUrlByDay.putIfAbsent(day, imageUrl);  // 성공 날짜에 사진을 매핑한다.
+                    }
                 }
             }
 
@@ -99,7 +104,9 @@ public class ChallengeShareImageAsyncGenerator {
                     shareImage.getYear(),
                     shareImage.getMonth(),
                     successDays,
-                    proofImageUrlByDay
+                    proofImageUrlByDay,
+                    challengeParticipant.getJoinDate(),
+                    totalSuccessDays
             );
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
