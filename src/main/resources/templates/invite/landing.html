@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${landing.ogTitle}">챌린지 초대</title>
+    <meta property="og:type" content="website">
+    <meta property="og:title" th:content="${landing.ogTitle}">
+    <meta property="og:description" th:content="${landing.ogDescription}">
+    <meta property="og:url" th:content="${landing.pageUrl}">
+    <meta property="og:image" th:content="${landing.ogImageUrl}">
+    <link rel="stylesheet" th:href="@{/css/invite-landing.css}">
+</head>
+<body>
+<main class="container">
+    <section class="card">
+        <p class="badge">챌린지 초대</p>
+
+        <h1 class="title" th:text="${landing.challengeTitle}">챌린지 제목</h1>
+
+        <p class="subtitle"
+           th:if="${landing.inviterNickname != null}"
+           th:text="|${landing.inviterNickname}님이 초대했어요|">
+            초대자님이 초대했어요
+        </p>
+
+        <div class="status-box valid" th:if="${landing.openAppEnabled}">
+            <div class="spinner" aria-hidden="true"></div>
+            <p id="loading-message">앱을 여는 중...</p>
+        </div>
+
+        <div class="status-box error"
+             th:if="${!landing.openAppEnabled}"
+             th:text="${landing.statusMessage}">
+            유효하지 않은 초대 링크입니다.
+        </div>
+
+        <p id="fallback-message" class="fallback" style="display: none;">
+            앱이 설치되어 있지 않습니다.
+        </p>
+    </section>
+</main>
+
+<script th:if="${landing.openAppEnabled}" th:inline="javascript">
+    /*
+        유효한 초대 링크일 때만 앱 딥링크를 시도한다.
+        일정 시간 내 앱이 열리지 않으면 fallback 메시지를 표시한다.
+     */
+    (function openMobileApp() {
+        var deepLinkUrl = /*[[${landing.deepLinkUrl}]]*/ '';
+        var fallbackMessage = document.getElementById('fallback-message');
+        var loadingMessage = document.getElementById('loading-message');
+        var fallbackDelayMs = 2000;
+        var appOpened = false;
+
+        document.addEventListener('visibilitychange', function handleVisibilityChange() {
+            if (document.hidden) {
+                appOpened = true;
+            }
+        });
+
+        window.addEventListener('blur', function handleBlur() {
+            appOpened = true;
+        });
+
+        window.location.href = deepLinkUrl;
+
+        window.setTimeout(function showFallbackMessage() {
+            if (appOpened) {
+                return;
+            }
+
+            if (loadingMessage) {
+                loadingMessage.style.display = 'none';
+            }
+
+            if (fallbackMessage) {
+                fallbackMessage.style.display = 'block';
+            }
+        }, fallbackDelayMs);
+    })();
+</script>
+</body>
+</html>

@@ -53,6 +53,9 @@ public class ChallengeLinkService {
                 .inviteCode(inviteCode)
                 .build();
 
+        // 생성 직후 링크를 사용 가능 상태로 둔다. (기본값 false면 랜딩/resolve 모두 만료 처리됨)
+        challengeInviteLink.setActive(true);
+
         //링크 타입 - TimeBased 일 경우 만료 시간 계산 (현재 시간 + expirationDays일)
         if (linkType == InviteLinkType.TIME_BASED){
             LocalDateTime expiresAt = LocalDateTime.now().plusDays(expirationDays);
