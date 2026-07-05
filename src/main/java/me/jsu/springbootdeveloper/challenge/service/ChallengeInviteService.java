@@ -6,6 +6,7 @@ import me.jsu.springbootdeveloper.challenge.domain.ChallengeInvite;
 import me.jsu.springbootdeveloper.challenge.dto.invite.ChallengeInviteListResponse;
 import me.jsu.springbootdeveloper.challenge.enumType.InviteStatus;
 import me.jsu.springbootdeveloper.challenge.exception.ChallengeInviteNotFoundException;
+import me.jsu.springbootdeveloper.challenge.exception.ChallengeNotInProgressException;
 import me.jsu.springbootdeveloper.challenge.exception.NotAllowedChallengeActionException;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeInviteRepository;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeParticipantRepository;
@@ -43,22 +44,47 @@ public class ChallengeInviteService {
 
     /*
         친구를 챌린지에 초대하는 함수이다.
-        (1) 알림 전송 (2) 초대 테이블에 'INVITED' 상태로 저장
+        (1) 초대 가능 여부 검증 (2) 초대 테이블에 'INVITED' 상태로 저장 (3) 알림 전송
+        실제 챌린지 참여는 invitee가 수락(acceptInvite)할 때 처리한다.
+
+        @param inviterEmail 초대를 보내는 유저 이메일
+        @param challengeId 초대할 챌린지 ID
+        @param targetNickname 초대 대상 친구 닉네임
      */
     @Transactional
     public void inviteUser(String inviterEmail, Long challengeId, String targetNickname) {
         User inviter = userService.findByEmail(inviterEmail);
         Challenge challenge = challengeQueryService.findById(challengeId);
         User invitee = userService.findByNickname(targetNickname);
-        //챌린지 참여 인원수 확인 후 참여
-        if (!challengeService.joinChallenge(challenge, invitee))
-        {
-            //참여 못했다면 exception 발동
-            throw new IllegalStateException("챌린지 참여 정원이 꽉 찼습니다");
+        LocalDate today = LocalDate.now();
 
+        // 진행 중인 챌린지인지 확인한다.
+        if (challenge.getEndDate().isBefore(today)) {
+            throw new ChallengeNotInProgressException("진행중인 챌린지가 아닙니다.");
         }
 
-        //초대 정보 저장
+        // 이미 참여 중인 유저는 초대할 수 없다.
+        if (challengeParticipantRepository.existsByUser_IdAndChallenge_Id(
+                invitee.getId(),
+                challengeId
+        )) {
+            throw new IllegalStateException("이미 참여 중인 챌린지입니다.");
+        }
+
+        // 정원이 가득 찬 챌린지에는 초대할 수 없다.
+        if (challenge.checkIfOverMaxParticipantNumber()) {
+            throw new IllegalStateException("챌린지 참여 정원이 꽉 찼습니다");
+        }
+
+        // INVITED 상태의 중복 초대를 방지한다. (거절 후 재초대는 허용)
+        challengeInviteRepository.findByChallenge_IdAndInvitee_Id(challengeId, invitee.getId())
+                .ifPresent(existingInvite -> {
+                    if (existingInvite.getStatus() == InviteStatus.INVITED) {
+                        throw new NotAllowedChallengeActionException("이미 초대된 유저입니다.");
+                    }
+                });
+
+        // 초대 정보 저장 (ChallengeInvite 생성자 기본 상태: INVITED)
         ChallengeInvite invite = ChallengeInvite.builder()
                 .challenge(challenge)
                 .inviter(inviter)
@@ -67,7 +93,7 @@ public class ChallengeInviteService {
 
         challengeInviteRepository.save(invite);
 
-        //초대 알림 전송
+        // 초대 알림 전송
         // 전체 알림이 아니라 "챌린지 초대 푸시 알림" 활성화 여부만 확인 후 초대되는 사람에게 푸시알림 전송
         String message = inviter.getNickname() + "님이 " + challenge.getTitle()+ " 방에 나를 초대했어요.";
         String title = "챌린지 초대";
@@ -148,8 +174,7 @@ public class ChallengeInviteService {
 
     /*
         챌린지 초대를 수락하는 함수이다.
-        초대 상태를 ACCEPTED로 변경하고, 아직 참여하지 않은 경우 챌린지에 참여시킨다.
-        초대 시점에 이미 참여 처리를 했을 수 있으므로, 중복 참여를 방지한다.
+        초대 상태를 ACCEPTED로 변경하고, 챌린지에 참여시킨다.
      */
     @Transactional
     public void acceptInvite(String email, Long challengeId) {

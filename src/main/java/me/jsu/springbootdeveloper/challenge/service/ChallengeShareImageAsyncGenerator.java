@@ -5,6 +5,7 @@ package me.jsu.springbootdeveloper.challenge.service;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.domain.Challenge;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeCalenderShare;
+import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
 import me.jsu.springbootdeveloper.challenge.exception.ShareImageNotFoundException;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeCalenderShareRepository;
 import me.jsu.springbootdeveloper.cloudinary.dto.ImageUploadResult;
@@ -25,6 +26,7 @@ import javax.imageio.ImageIO;
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.util.*;
 
@@ -93,13 +95,31 @@ public class ChallengeShareImageAsyncGenerator {
                 }
             }
 
+            ChallengeParticipant participant = challengeQueryService
+                    .findByUser_IdAndChallenge_IdForParticipantCanNull(
+                            shareImage.getUser().getId(),
+                            shareImage.getChallenge().getId()
+                    );
+
+            LocalDate participantJoinDate = participant != null
+                    ? participant.getJoinDate()
+                    : challenge.getStartDate();
+            int totalSuccessDays = participant != null
+                    ? participant.getTotalSuccessDays()
+                    : successDays.size();
+            int daysInMonth = YearMonth.of(shareImage.getYear(), shareImage.getMonth()).lengthOfMonth();
+
             // 이미지 랜더링 서비스에 정보들을 전달하여 이미지를 생성한다.
             var rendered = renderService.render(
                     challenge.getTitle(),
                     shareImage.getYear(),
                     shareImage.getMonth(),
                     successDays,
-                    proofImageUrlByDay
+                    proofImageUrlByDay,
+                    participantJoinDate,
+                    successDays.size(),
+                    daysInMonth,
+                    totalSuccessDays
             );
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
