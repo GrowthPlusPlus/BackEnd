@@ -98,9 +98,9 @@ public class PostQueryService {
     }
 
     /*
-        캘린더 공유 이미지 생성을 위해, 일정 기간동안의 인증글의 대표 사진 1장을 가져오는 함수이다.
+        캘린더 공유 이미지 생성을 위해, 인증글과 사진을 가져오는 함수이다.
      */
-    public List<PostPicture> findMonthlyProofPictures(Long userId, Long challengeId, LocalDate start, LocalDate end) {
-        return postPictureRepository.findMonthlyProofPictures(userId, challengeId, start, end);
+    public List<Article> findMonthlyProofArticles(Long userId, Long challengeId, LocalDate start, LocalDate end) {
+        return postRepository.findMonthlyProofArticles(userId, challengeId, start, end);
     }
 }

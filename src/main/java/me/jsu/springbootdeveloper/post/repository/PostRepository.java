@@ -242,7 +242,7 @@ public interface PostRepository extends JpaRepository<Article, Long> {
     """)
     Optional<User> findUserByArticleId(@Param("articleId") Long articleId);
 
-    //게시글 id로 게시글이 쓰여진 챌린지를 조회한다
+    // 게시글 id로 게시글이 쓰여진 챌린지를 조회한다
     @Query("""
         select c
         from Article a
@@ -263,5 +263,23 @@ public interface PostRepository extends JpaRepository<Article, Long> {
             @Param("userId") Long userId,
             @Param("challengeId") Long challengeId,
             @Param("time") LocalDateTime time
+    );
+
+    // 캘린더 공유 이미지를 생성하기 위해 게시글을 검색하는 쿼리문이다.
+    @Query("""
+        select distinct a
+        from Article a
+        left join fetch a.postPictures
+        where a.challenge.id = :challengeId
+          and a.user.id = :userId
+          and a.postDate >= :start
+          and a.postDate < :end
+        order by a.postDate
+    """)
+    List<Article> findMonthlyProofArticles(
+            @Param("userId") Long userId,
+            @Param("challengeId") Long challengeId,
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end
     );
 }
