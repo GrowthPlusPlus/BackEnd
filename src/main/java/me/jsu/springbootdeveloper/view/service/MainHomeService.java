@@ -21,6 +21,7 @@ import me.jsu.springbootdeveloper.notification.service.NotificationService;
 import me.jsu.springbootdeveloper.user.service.UserService;
 import org.springframework.stereotype.Service;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -40,7 +41,7 @@ public class MainHomeService {
 
     public MainHomeResponse getMainHome(String userEmail, LocalDate today, LocalDate weekStartDate, LocalDate targetDate) {
         User user = userService.findByEmail(userEmail);
-        List<MyChallenge> myChallenges = new ArrayList<>();  // 유저의 챌린지 별 정보가 들어갈 변수이다.
+        List<MyChallenge> myChallenges = new ArrayList<>();
 
         // 유저 id로 읽지 않은 알람 개수를 가져온다.
         long notificationNumber = notificationService.countByUser_IdAndIsReadFalse(user.getId());
@@ -51,57 +52,73 @@ public class MainHomeService {
         // 이번 주의 마지막 날이다.
         LocalDate weekEnd = weekStartDate.plusDays(6);
 
+        // 조회 시작/종료 날짜
+        LocalDate searchStart = weekStartDate.minusDays(1);
+        LocalDate searchEnd = weekEnd.minusDays(1);
+
+        // 조회하는 날짜가 일요일인 경우에는 이번주 월 ~ 금을 조사한 뒤, status값을 넣을 때 일요일 외엔 모두 none값으로 만든다.
+        if (targetDate.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            searchStart = weekStartDate;
+            searchEnd = weekEnd;
+        }
+
         // 해당 주의 성공 로그를 전부 조회한다.
         List<ChallengeDailyLog> logs = challengeQueryService.findByUserIdAndPostDateBetween(
-                        user.getId(),
-                        weekStartDate,
-                        weekEnd
-                );
+                user.getId(),
+                searchStart,
+                searchEnd
+        );
 
-        // 로그 인증 날짜인 postDate를 추출하여 중복을 제거한다. 즉 그 주에 성공한 날짜 목록이다.
+        // 로그 인증 날짜인 postDate를 추출하여 중복을 제거한다.
         Set<LocalDate> successDates = logs.stream()
-                        .map(ChallengeDailyLog::getPostDate)
-                        .collect(Collectors.toSet());
+                .map(ChallengeDailyLog::getPostDate)
+                .collect(Collectors.toSet());
+
+        // filter 오류 방지를 위해 사용한다.
+        LocalDate start = searchStart;
+        LocalDate end = searchEnd;
 
         // 유저의 모든 실패한 챌린지를 검색한다.
         List<ChallengeParticipant> failedChallenges = challengeQueryService.findStatusWithChallengeByUserIdAndStatus(user.getId(), Status.FAIL);
 
-        // 실패한 챌린지의 실패일이 해당 주에 존재하는지 조회한다. 즉 실패 날짜만 추출한다.
+        // 실패 날짜만 추출한다.
         Set<LocalDate> failDates = failedChallenges.stream()
-                        .map(ChallengeParticipant::getFailedAt)
-                        .filter(Objects::nonNull)  // 실패한 챌린지가 없는 경우 NPE 방지
-                        // 실패일이 주에 해당하지 않는 챌린지들은 전부 필터링한다.
-                        .filter(date -> !date.isBefore(weekStartDate) && !date.isAfter(weekEnd))
-                        .collect(Collectors.toSet());
+                .map(ChallengeParticipant::getFailedAt)
+                .filter(Objects::nonNull)
+                .filter(date -> !date.isBefore(start) && !date.isAfter(end))
+                .collect(Collectors.toSet());
 
         /*
             주간 캘린더 색상을 생성한다.
-            월 ~ 일 7일에 대해 RED > GREEN > GRAY 우선순위로 계산한다.
+            일 ~ 토 7일에 대해 RED > GREEN > GRAY 우선순위로 계산한다.
          */
         for (int i = 0; i < 7; i++) {
-            LocalDate date = weekStartDate.plusDays(i);
+            LocalDate date;
+
+            if (targetDate.getDayOfWeek() == DayOfWeek.SUNDAY) {
+                // 일요일인 경우 : 첫 칸은 오늘(일요일), 나머지는 미래
+                date = weekStartDate.plusDays(6 + i);
+            } else {
+                // 평일인 경우 : 이전 주 일요일 ~ 이번 주 토요일
+                date = weekStartDate.minusDays(1).plusDays(i);
+            }
+
             DayStatus status;
 
-            // 해당 날짜의 상태를 조회한다.
             if (date.isAfter(today)) {
                 status = DayStatus.NONE;
-            }
-            else if (failDates.contains(date)) {
+            } else if (failDates.contains(date)) {
                 status = DayStatus.RED;
-            }
-            else if (successDates.contains(date)) {
+            } else if (successDates.contains(date)) {
                 status = DayStatus.GREEN;
-            }
-            else {
+            } else {
                 status = DayStatus.GRAY;
             }
 
-            // 해당 날짜에 대한 dto를 생성한다.
             weekStatus.add(WeekDayStatusResponse.builder()
                     .date(date)
                     .status(status)
-                    .build()
-            );
+                    .build());
         }
 
         // 요청받은 날짜가 오늘인지, 과거인지, 미래인지 판단한다.
