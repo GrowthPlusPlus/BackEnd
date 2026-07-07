@@ -14,7 +14,9 @@ import me.jsu.springbootdeveloper.fcm.service.FcmService;
 import me.jsu.springbootdeveloper.notification.enumType.NotificationType;
 import me.jsu.springbootdeveloper.notification.service.NotificationService;
 import me.jsu.springbootdeveloper.tag.domain.TagToChallenge;
+import me.jsu.springbootdeveloper.tag.dto.TagResponse;
 import me.jsu.springbootdeveloper.tag.repository.TagToChallengeRepository;
+import me.jsu.springbootdeveloper.tag.service.TagService;
 import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.user.service.UserService;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor  // final 또는 notNull이 있는 맴버변수만 생성자에서 초기화 한다.
@@ -36,6 +39,8 @@ public class ChallengeInviteService {
     private final ChallengeService challengeService;
     private final TagToChallengeRepository tagToChallengeRepository;
     private final ChallengeParticipantRepository challengeParticipantRepository;
+    private final TagService tagService;
+
     /*
        작성된 함수 목록
        - 친구를 챌린지에 초대하는 함수/public void inviteUser(String inviterEmail, Long challengeId, String targetNickname)
@@ -120,6 +125,15 @@ public class ChallengeInviteService {
                 user.getId(),
                 today
         );
+
+        // challengeId 목록
+        List<Long> challengeIds = invites.stream()
+                .map(invite -> invite.getChallenge().getId())
+                .distinct()
+                .toList();
+
+        // 태그 한 번에 조회
+        Map<Long, List<TagResponse>> tagMap = tagService.getChallengeTagsByOnce(challengeIds);
         
         // 각 초대 정보를 DTO로 변환
         return invites.stream()
@@ -141,15 +155,12 @@ public class ChallengeInviteService {
                     if (remainingDays < 0) {
                         remainingDays = 0;
                     }
-                    
-                    // 해당 챌린지의 태그 목록 조회
-                    List<TagToChallenge> tagMappings = tagToChallengeRepository.findWithTagByChallengeId(
-                            challenge.getId()
+
+                    // 미리 생성한 챌린지 id와 태그 목록으로 챌린지에 맞는 태그를 결합한다.
+                    List<TagResponse> tags = tagMap.getOrDefault(
+                            challenge.getId(),
+                            List.of()
                     );
-                    // 태그 이름만 추출하여 리스트로 변환
-                    List<String> tags = tagMappings.stream()
-                            .map(ttc -> ttc.getTag().getTagName())
-                            .collect(Collectors.toList());
 
                     // 초대자 프로필 이미지 URL (없으면 null)
                     String profileUrl = null;

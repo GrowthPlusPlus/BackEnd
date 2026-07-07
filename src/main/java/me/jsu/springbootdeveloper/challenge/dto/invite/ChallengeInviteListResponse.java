@@ -3,6 +3,7 @@
 package me.jsu.springbootdeveloper.challenge.dto.invite;
 
 import lombok.Getter;
+import me.jsu.springbootdeveloper.tag.dto.TagResponse;
 
 import java.util.List;
 
@@ -19,7 +20,7 @@ public class ChallengeInviteListResponse {
     private final String challengeTitle;  // 챌린지 이름
     private final int participantCount;  // 현재 챌린지에 참여중인 ChallengeParticipant 명수
     private final long remainingDays;  // 챌린지 완료까지 남은 날짜
-    private final List<String> tags;  // 해당 챌린지의 태그들
+    private final List<TagResponse> tags;  // 해당 챌린지의 태그들
 
     public ChallengeInviteListResponse(
             Long inviterId,
@@ -29,7 +30,7 @@ public class ChallengeInviteListResponse {
             String challengeTitle,
             int participantCount,
             long remainingDays,
-            List<String> tags
+            List<TagResponse> tags
     ) {
         this.inviterId = inviterId;
         this.inviterNickname = inviterNickname;
