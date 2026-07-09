@@ -8,8 +8,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.dto.basic.SearchChallengeResponse;
+import me.jsu.springbootdeveloper.rag.dto.AiChallengeCombinedRecommendResponse;
 import me.jsu.springbootdeveloper.rag.dto.QueryRequestDto;
 import me.jsu.springbootdeveloper.rag.dto.QueryResponseDto;
+import me.jsu.springbootdeveloper.rag.service.AiChallengeCombinedRecommendService;
 import me.jsu.springbootdeveloper.rag.service.AiChallengeDiscoveryRecommendService;
 import me.jsu.springbootdeveloper.rag.service.DocumentService;
 import me.jsu.springbootdeveloper.rag.service.GptService;
@@ -32,6 +34,7 @@ public class RagController {
     private final DocumentService documentService;
     private final GptService gptService;
     private final AiChallengeDiscoveryRecommendService aiChallengeDiscoveryRecommendService;
+    private final AiChallengeCombinedRecommendService aiChallengeCombinedRecommendService;
     /*
         PDF 문서를 업로드하여 벡터 스토어에 저장하는 컨트롤러이다.
      */
@@ -175,5 +178,32 @@ public class RagController {
                 .recommendForDiscovery(userDetails.getUsername());
 
         return ResponseEntity.ok(items);
+    }
+
+    /*
+        서술형 요약(배너)과 추천 카드(추천 이유 포함)를 한 번에 반환한다.
+        RAG는 합본 서비스 내부에서 1회만 호출한다.
+     */
+    @Operation(
+            summary = "탐색 탭용 AI 챌린지 추천(서술+카드 합본)",
+            description = """
+        recommend/query의 서술형 요약과 recommend/discovery의 카드 목록을 한 응답으로 돌려준다.
+        각 카드에는 추천 이유(recommendReason)가 포함된다.
+        ex) POST /api/v1/rag/recommend/combined
+        """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    @PostMapping("/recommend/combined")
+    public ResponseEntity<AiChallengeCombinedRecommendResponse> recommendCombined(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        AiChallengeCombinedRecommendResponse response = aiChallengeCombinedRecommendService
+                .recommendCombined(userDetails.getUsername());
+
+        return ResponseEntity.ok(response);
     }
 }
