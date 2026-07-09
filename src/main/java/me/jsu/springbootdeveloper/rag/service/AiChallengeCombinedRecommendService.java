@@ -121,15 +121,6 @@ public class AiChallengeCombinedRecommendService {
             // 카드별 추천 이유: 해당 제목 구간 ~ 다음 제목 직전까지.
             Map<Long, String> reasonByChallengeId = extractRecommendReasons(prose, cardChallenges);
 
-            List<AiChallengeCombinedRecommendItemResponse> items = new ArrayList<>();
-            for (Challenge challenge : cardChallenges) {
-                String reason = reasonByChallengeId.getOrDefault(challenge.getId(), "");
-                items.add(new AiChallengeCombinedRecommendItemResponse(
-                        toResponse(challenge),
-                        reason
-                ));
-            }
-
             /*
                 배너 요약은 LLM 본문을 쓰지 않는다.
                 관심 태그 + (추천 결과·추천 이유와 비슷한 참여 챌린지 최대 3개)로 문장을 만든다.
@@ -142,6 +133,27 @@ public class AiChallengeCombinedRecommendService {
                     reasonByChallengeId
             );
             String summary = buildBannerSummary(tagToUsers, similarParticipatedTitles);
+
+            // 추천 이유 표시용: 태그 → #태그, 제목/태그 따옴표·역슬래시 제거
+            Set<String> knownTagNames = collectKnownTagNames(tagToUsers, cardChallenges);
+            Set<String> knownChallengeTitles = collectKnownChallengeTitles(
+                    cardChallenges,
+                    participants,
+                    similarParticipatedTitles
+            );
+
+            List<AiChallengeCombinedRecommendItemResponse> items = new ArrayList<>();
+            for (Challenge challenge : cardChallenges) {
+                String reason = formatRecommendReasonForDisplay(
+                        reasonByChallengeId.getOrDefault(challenge.getId(), ""),
+                        knownTagNames,
+                        knownChallengeTitles
+                );
+                items.add(new AiChallengeCombinedRecommendItemResponse(
+                        toResponse(challenge),
+                        reason
+                ));
+            }
 
             if (items.isEmpty() && !picked.isEmpty()) {
                 log.debug("합본 추천: 답변 매칭은 됐으나 공개·참여 필터 후 카드가 비었습니다.");
@@ -632,6 +644,180 @@ public class AiChallengeCombinedRecommendService {
         cleaned = cleaned.replaceAll("[ \\t]+", " ");
         cleaned = cleaned.replaceAll(" *\\n+ *", " ");
         return cleaned.trim();
+    }
+
+    /*
+        추천 이유 표시용으로 따옴표·역슬래시를 정리한다.
+        - 알려진 태그: "스터디" / \"스터디\" → #스터디
+        - 알려진 챌린지 제목: "코테d-100" → 코테d-100 (따옴표만 제거)
+        - 그 외 남은 ASCII 따옴표도 제거한다.
+
+        @param reason 정리 전 추천 이유이다.
+        @param knownTagNames 관심/추천 챌린지 태그 이름 집합이다.
+        @param knownChallengeTitles 추천·참여 챌린지 제목 집합이다.
+        @return UI에 바로 쓸 추천 이유이다.
+     */
+    private String formatRecommendReasonForDisplay(
+            String reason,
+            Set<String> knownTagNames,
+            Set<String> knownChallengeTitles
+    ) {
+        if (reason == null || reason.isBlank()) {
+            return "";
+        }
+
+        String formatted = reason;
+        // JSON/원문에 섞인 이스케이프 따옴표를 일반 따옴표로 통일한다.
+        formatted = formatted.replace("\\\"", "\"");
+
+        // 긴 제목부터 치환해 부분 문자열 충돌을 줄인다.
+        List<String> titlesLongestFirst = knownChallengeTitles.stream()
+                .filter(title -> title != null && !title.isBlank())
+                .sorted(Comparator.comparingInt(String::length).reversed())
+                .toList();
+        for (String title : titlesLongestFirst) {
+            formatted = replaceQuotedOrPlainKeepUnquoted(formatted, title);
+        }
+
+        List<String> tagsLongestFirst = knownTagNames.stream()
+                .filter(tag -> tag != null && !tag.isBlank())
+                .sorted(Comparator.comparingInt(String::length).reversed())
+                .toList();
+        for (String tagName : tagsLongestFirst) {
+            String bareTag = tagName.startsWith("#") ? tagName.substring(1) : tagName;
+            if (bareTag.isBlank()) {
+                continue;
+            }
+            formatted = replaceQuotedTagWithHash(formatted, bareTag);
+        }
+
+        // 남은 ASCII 큰따옴표는 모두 제거한다. (역슬래시 잔여 포함)
+        formatted = formatted.replace("\"", "");
+        formatted = formatted.replace("\\", "");
+        return formatted.trim();
+    }
+
+    /*
+        따옴표로 감싼 챌린지 제목을 따옴표 없는 제목으로 바꾼다.
+        이미 따옴표 없이 있는 제목은 그대로 둔다.
+
+        @param text 추천 이유 원문이다.
+        @param title 챌린지 제목이다.
+        @return 제목 따옴표가 제거된 문자열이다.
+     */
+    private String replaceQuotedOrPlainKeepUnquoted(String text, String title) {
+        if (text == null || title == null || title.isBlank()) {
+            return text;
+        }
+        String quoted = "\"" + title + "\"";
+        return text.replace(quoted, title);
+    }
+
+    /*
+        따옴표로 감싼 태그명을 #태그 형태로 바꾼다.
+        예: "스터디" → #스터디
+
+        @param text 추천 이유 원문이다.
+        @param bareTag # 없는 태그 이름이다.
+        @return 태그가 해시 형태로 바뀐 문자열이다.
+     */
+    private String replaceQuotedTagWithHash(String text, String bareTag) {
+        if (text == null || bareTag == null || bareTag.isBlank()) {
+            return text;
+        }
+        String hashed = bareTag.startsWith("#") ? bareTag : "#" + bareTag;
+        String quoted = "\"" + bareTag + "\"";
+        String quotedWithHash = "\"#" + bareTag + "\"";
+        String result = text.replace(quotedWithHash, hashed);
+        result = result.replace(quoted, hashed);
+        return result;
+    }
+
+    /*
+        관심 태그 + 추천 카드 태그 이름을 모은다.
+
+        @param tagToUsers 사용자 관심 태그이다.
+        @param cardChallenges 추천 카드 챌린지이다.
+        @return # 없는 태그 이름 집합이다.
+     */
+    private Set<String> collectKnownTagNames(
+            List<TagToUser> tagToUsers,
+            List<Challenge> cardChallenges
+    ) {
+        Set<String> tags = new HashSet<>();
+        if (tagToUsers != null) {
+            for (TagToUser ttu : tagToUsers) {
+                if (ttu.getTag() != null && ttu.getTag().getTagName() != null) {
+                    String name = ttu.getTag().getTagName().trim();
+                    if (name.startsWith("#")) {
+                        name = name.substring(1);
+                    }
+                    if (!name.isBlank()) {
+                        tags.add(name);
+                    }
+                }
+            }
+        }
+        if (cardChallenges != null) {
+            for (Challenge challenge : cardChallenges) {
+                if (challenge.getTagMappings() == null) {
+                    continue;
+                }
+                for (TagToChallenge tm : challenge.getTagMappings()) {
+                    if (tm.getTag() == null || tm.getTag().getTagName() == null) {
+                        continue;
+                    }
+                    String name = tm.getTag().getTagName().trim();
+                    if (name.startsWith("#")) {
+                        name = name.substring(1);
+                    }
+                    if (!name.isBlank()) {
+                        tags.add(name);
+                    }
+                }
+            }
+        }
+        return tags;
+    }
+
+    /*
+        추천·참여 챌린지 제목을 모은다.
+
+        @param cardChallenges 추천 카드이다.
+        @param participants 참여 이력이다.
+        @param similarParticipatedTitles 요약에 쓴 참여 제목이다.
+        @return 챌린지 제목 집합이다.
+     */
+    private Set<String> collectKnownChallengeTitles(
+            List<Challenge> cardChallenges,
+            List<ChallengeParticipant> participants,
+            List<String> similarParticipatedTitles
+    ) {
+        Set<String> titles = new HashSet<>();
+        if (cardChallenges != null) {
+            for (Challenge challenge : cardChallenges) {
+                if (challenge.getTitle() != null && !challenge.getTitle().isBlank()) {
+                    titles.add(challenge.getTitle().trim());
+                }
+            }
+        }
+        if (participants != null) {
+            for (ChallengeParticipant cp : participants) {
+                if (cp.getChallenge() != null
+                        && cp.getChallenge().getTitle() != null
+                        && !cp.getChallenge().getTitle().isBlank()) {
+                    titles.add(cp.getChallenge().getTitle().trim());
+                }
+            }
+        }
+        if (similarParticipatedTitles != null) {
+            for (String title : similarParticipatedTitles) {
+                if (title != null && !title.isBlank()) {
+                    titles.add(title.trim());
+                }
+            }
+        }
+        return titles;
     }
 
     /*
