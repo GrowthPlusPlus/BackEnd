@@ -11,10 +11,11 @@ import me.jsu.springbootdeveloper.challenge.enumType.ChallengeVisibility;
 import me.jsu.springbootdeveloper.challenge.enumType.Status;
 import me.jsu.springbootdeveloper.challenge.dto.invite.ChallengeFriendInviteListResponse;
 import me.jsu.springbootdeveloper.challenge.dto.invite.ChallengeInviteResponse;
+import me.jsu.springbootdeveloper.challenge.exception.ChallengeNotFoundException;
 import me.jsu.springbootdeveloper.challenge.exception.ChallengeNotInProgressException;
+import me.jsu.springbootdeveloper.challenge.exception.NotAllowedChallengeActionException;
 import me.jsu.springbootdeveloper.challenge.repository.*;
 import me.jsu.springbootdeveloper.fcm.service.FcmService;
-import me.jsu.springbootdeveloper.post.exception.NotFoundException;
 import me.jsu.springbootdeveloper.tag.domain.TagToChallenge;
 import me.jsu.springbootdeveloper.user.domain.UserStatistics;
 import me.jsu.springbootdeveloper.user.repository.FriendshipRepository;
@@ -188,7 +189,7 @@ public class ChallengeService {
      참여하는 경로 (경로가 다양하므로 joinChallenge에서 초대 상태를 바꾸지 않음)
      - 초대
      - 검색
-     - 링크 (구현예정)
+     - 링크
     */
     public boolean joinChallenge(Challenge challenge, User user) {
         /*참여하기 전에 유효한 챌린지인지 확인한다
@@ -197,28 +198,29 @@ public class ChallengeService {
                 - 이미 종료된 챌린지에는 참여 불가
                 - 참여 인원이 초과된 챌린지에는 참여 불가
          */
-        LocalDate today = LocalDate.now();
+        // 상세 조회와 동일하게 서울 기준 날짜를 사용한다.
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
 
         //존재하는 챌린지인지 확인
-        if (!challengeRepository.existsById(challenge.getId()))
-        {
-            throw new NotFoundException("존재하지 않는 챌린지입니다.");
+        if (!challengeRepository.existsById(challenge.getId())) {
+            throw new ChallengeNotFoundException("존재하지 않는 챌린지입니다.");
         }
 
         // 이미 참여 중인지 확인 (중복 참여 방지)
+        // 초대 수락(ACCEPTED) 후 재참여 시도도 여기에 해당한다.
         if (challengeParticipantRepository.existsByUser_IdAndChallenge_Id(
                 user.getId(),
                 challenge.getId()
             ))
         {
-            throw new IllegalStateException("이미 참여 중인 챌린지입니다.");
+            throw new NotAllowedChallengeActionException("이미 참여 중인 챌린지입니다.");
         }
         // 이미 종료된 챌린지 && 인원초과가 된 챌린지인 경우엔 예외처리한다.
         if (challenge.getEndDate().isBefore(today)) {
-            throw new ChallengeNotInProgressException("진행중인 챌린지가 아닙니다.");
+            throw new ChallengeNotInProgressException("이미 종료된 챌린지입니다.");
         }
         else if (challenge.checkIfOverMaxParticipantNumber()) {
-            throw new IllegalStateException("챌린지의 최대 참가 인원수가 초과되었습니다.");
+            throw new NotAllowedChallengeActionException("챌린지의 최대 참가 인원수가 초과되었습니다.");
         }
         else {
 

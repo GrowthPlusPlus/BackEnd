@@ -312,7 +312,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.CONFLICT)
                 .body(new ErrorResponse(
                         "CHALLENGE_STATE_ERROR",
-                        e.getMessage()
+                        e.getErrorCode()
                 ));
     }
 
