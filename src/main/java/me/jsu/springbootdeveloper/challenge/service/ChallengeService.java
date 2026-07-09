@@ -12,7 +12,6 @@ import me.jsu.springbootdeveloper.challenge.enumType.Status;
 import me.jsu.springbootdeveloper.challenge.dto.invite.ChallengeFriendInviteListResponse;
 import me.jsu.springbootdeveloper.challenge.dto.invite.ChallengeInviteResponse;
 import me.jsu.springbootdeveloper.challenge.exception.ChallengeNotFoundException;
-import me.jsu.springbootdeveloper.challenge.exception.ChallengeNotInProgressException;
 import me.jsu.springbootdeveloper.challenge.exception.NotAllowedChallengeActionException;
 import me.jsu.springbootdeveloper.challenge.repository.*;
 import me.jsu.springbootdeveloper.fcm.service.FcmService;
@@ -216,8 +215,9 @@ public class ChallengeService {
             throw new NotAllowedChallengeActionException("이미 참여 중인 챌린지입니다.");
         }
         // 이미 종료된 챌린지 && 인원초과가 된 챌린지인 경우엔 예외처리한다.
+        // 이미 참여와 동일하게 안내 메시지를 reason으로 내려준다.
         if (challenge.getEndDate().isBefore(today)) {
-            throw new ChallengeNotInProgressException("이미 종료된 챌린지입니다.");
+            throw new NotAllowedChallengeActionException("이미 종료된 챌린지입니다.");
         }
         else if (challenge.checkIfOverMaxParticipantNumber()) {
             throw new NotAllowedChallengeActionException("챌린지의 최대 참가 인원수가 초과되었습니다.");
