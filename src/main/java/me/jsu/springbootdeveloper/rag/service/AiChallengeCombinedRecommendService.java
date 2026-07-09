@@ -214,7 +214,7 @@ public class AiChallengeCombinedRecommendService {
         배너용 서술형 요약을 고정 문장으로 만든다.
 
         예1) 비슷한 참여 챌린지가 있을 때
-        사용자의 관심사 태그는 #운동 과 #러닝 이며, 지금까지 참여한 챌린지는 "매일 30분 러닝" 입니다.
+        사용자의 관심사 태그는 #운동 과 #러닝 이며, 지금까지 참여한 챌린지는 매일 30분 러닝 입니다.
         이러한 정보를 바탕으로 추천할 수 있는 공개 챌린지는 다음과 같습니다.
 
         예2) 참여 이력이 없거나 비슷한 참여 챌린지가 없을 때
@@ -234,9 +234,11 @@ public class AiChallengeCombinedRecommendService {
         sb.append("사용자의 관심사 태그는 ").append(tagPart);
 
         if (similarParticipatedTitles != null && !similarParticipatedTitles.isEmpty()) {
-            String challengePart = similarParticipatedTitles.stream()
-                    .map(title -> "\"" + title + "\"")
-                    .collect(Collectors.joining(", "));
+            /*
+                ASCII 큰따옴표(")는 JSON 직렬화 시 \" 로 보여 혼란을 주므로 쓰지 않는다.
+                제목만 쉼표로 이어 붙인다.
+             */
+            String challengePart = String.join(", ", similarParticipatedTitles);
             sb.append(" 이며, 지금까지 참여한 챌린지는 ").append(challengePart)
                     .append(" 입니다.");
         } else {
@@ -441,8 +443,13 @@ public class AiChallengeCombinedRecommendService {
     }
 
     /*
-        각 챌린지 제목 구간에서 추천 이유 문장을 잘라 낸다.
-        해당 제목 끝 ~ 다음 제목 시작(또는 본문 끝)까지를 이유 텍스트로 본다.
+        각 추천 챌린지마다 추천 이유 1개만 정확히 잘라 낸다.
+
+        처리 순서:
+        1) id 또는 제목으로 해당 챌린지 구간 시작 위치를 찾는다.
+        2) 다음 챌린지 구간 직전까지를 한 섹션으로 자른다.
+        3) 섹션 안에서 "추천 이유" 라벨 뒤 문장만 우선 사용한다.
+        4) 라벨이 없으면 제목/id 줄을 제외한 본문 문장을 사용한다.
 
         @param prose AI 답변 본문이다.
         @param cardChallenges 카드로 내려줄 챌린지 목록이다.
@@ -453,45 +460,160 @@ public class AiChallengeCombinedRecommendService {
             return Map.of();
         }
 
-        record IndexedTitle(int indexInAnswer, Long challengeId, String title) {
+        record IndexedChallenge(int indexInAnswer, Challenge challenge) {
         }
 
-        List<IndexedTitle> indexed = new ArrayList<>();
+        List<IndexedChallenge> indexed = new ArrayList<>();
         for (Challenge challenge : cardChallenges) {
-            String title = challenge.getTitle();
-            if (title == null || title.isBlank()) {
-                continue;
-            }
-            int idx = prose.indexOf(title);
+            int idx = findChallengeSectionStart(prose, challenge);
             if (idx >= 0) {
-                indexed.add(new IndexedTitle(idx, challenge.getId(), title));
+                indexed.add(new IndexedChallenge(idx, challenge));
             }
         }
-        indexed.sort(Comparator.comparingInt(IndexedTitle::indexInAnswer));
+        indexed.sort(Comparator.comparingInt(IndexedChallenge::indexInAnswer));
 
-        Map<Long, String> reasons = new java.util.HashMap<>();
+        Map<Long, String> reasons = new HashMap<>();
         for (int i = 0; i < indexed.size(); i++) {
-            IndexedTitle current = indexed.get(i);
-            int reasonStart = current.indexInAnswer() + current.title().length();
-            int reasonEnd = (i + 1 < indexed.size())
+            IndexedChallenge current = indexed.get(i);
+            int sectionStart = current.indexInAnswer();
+            int sectionEnd = (i + 1 < indexed.size())
                     ? indexed.get(i + 1).indexInAnswer()
                     : prose.length();
-
-            if (reasonStart >= reasonEnd) {
-                reasons.put(current.challengeId(), "");
+            if (sectionStart >= sectionEnd) {
+                reasons.put(current.challenge().getId(), "");
                 continue;
             }
 
-            String rawReason = prose.substring(reasonStart, reasonEnd).trim();
-            reasons.put(current.challengeId(), cleanRecommendReason(rawReason));
+            String section = prose.substring(sectionStart, sectionEnd);
+            String reason = extractSingleRecommendReason(section, current.challenge());
+            reasons.put(current.challenge().getId(), reason);
+        }
+
+        // 본문에서 위치를 못 찾은 카드는 빈 이유로 채운다.
+        for (Challenge challenge : cardChallenges) {
+            reasons.putIfAbsent(challenge.getId(), "");
         }
         return reasons;
     }
 
     /*
-        제목 뒤에 붙은 번호·기호·불필요한 공백을 정리한다.
+        답변 본문에서 해당 챌린지 구간의 시작 인덱스를 찾는다.
+        id 표기(id: 131)를 우선하고, 없으면 제목 문자열을 사용한다.
 
-        @param rawReason 제목 직후부터 자른 원문이다.
+        @param prose AI 답변 본문이다.
+        @param challenge 찾을 챌린지이다.
+        @return 시작 인덱스. 없으면 -1이다.
+     */
+    private int findChallengeSectionStart(String prose, Challenge challenge) {
+        if (challenge.getId() != null) {
+            String idMarker = "id: " + challenge.getId();
+            int idIdx = indexOfIgnoreCase(prose, idMarker);
+            if (idIdx >= 0) {
+                return idIdx;
+            }
+        }
+
+        String title = challenge.getTitle();
+        if (title == null || title.isBlank()) {
+            return -1;
+        }
+        return prose.indexOf(title);
+    }
+
+    /*
+        한 챌린지 섹션에서 추천 이유 문장 하나만 뽑는다.
+
+        @param section 해당 챌린지 구간 원문이다.
+        @param challenge 대상 챌린지이다.
+        @return 정리된 추천 이유 1개이다.
+     */
+    private String extractSingleRecommendReason(String section, Challenge challenge) {
+        if (section == null || section.isBlank()) {
+            return "";
+        }
+
+        String normalized = section.replace("\r\n", "\n");
+
+        // 1순위: "추천 이유" 라벨 뒤 텍스트
+        int reasonLabelIdx = indexOfIgnoreCase(normalized, "추천 이유");
+        if (reasonLabelIdx >= 0) {
+            String afterLabel = normalized.substring(reasonLabelIdx + "추천 이유".length());
+            afterLabel = afterLabel.replaceFirst("^\\s*[:：\\-–—]?\\s*", "");
+            return cleanRecommendReason(takeFirstReasonParagraph(afterLabel));
+        }
+
+        // 2순위: 제목/id 헤더 줄을 제외한 나머지 본문
+        String withoutHeader = stripChallengeHeaderLine(normalized, challenge);
+        return cleanRecommendReason(takeFirstReasonParagraph(withoutHeader));
+    }
+
+    /*
+        섹션 맨 앞의 id·제목 헤더 줄을 제거한다.
+
+        @param section 챌린지 구간 원문이다.
+        @param challenge 대상 챌린지이다.
+        @return 헤더를 뺀 본문이다.
+     */
+    private String stripChallengeHeaderLine(String section, Challenge challenge) {
+        String[] lines = section.split("\n", 2);
+        if (lines.length == 0) {
+            return "";
+        }
+
+        String firstLine = lines[0];
+        boolean looksLikeHeader = false;
+        if (challenge.getId() != null
+                && indexOfIgnoreCase(firstLine, "id: " + challenge.getId()) >= 0) {
+            looksLikeHeader = true;
+        }
+        if (challenge.getTitle() != null
+                && !challenge.getTitle().isBlank()
+                && firstLine.contains(challenge.getTitle())) {
+            looksLikeHeader = true;
+        }
+
+        if (looksLikeHeader && lines.length == 2) {
+            return lines[1];
+        }
+        if (looksLikeHeader) {
+            return "";
+        }
+        return section;
+    }
+
+    /*
+        추천 이유 본문에서 첫 의미 있는 문단(또는 문장)만 남긴다.
+        다음 번호 목록(2. / 3.)이 나오면 그 앞에서 끊는다.
+
+        @param text 추천 이유 후보 원문이다.
+        @return 한 챌린지용 이유 초안이다.
+     */
+    private String takeFirstReasonParagraph(String text) {
+        if (text == null || text.isBlank()) {
+            return "";
+        }
+
+        String trimmed = text.trim();
+        // 다음 추천 항목 번호(예: "\n2." / "\n3.") 앞에서 끊는다.
+        java.util.regex.Matcher nextItem = java.util.regex.Pattern
+                .compile("(?m)^\\s*\\d+\\s*[.)]")
+                .matcher(trimmed);
+        if (nextItem.find() && nextItem.start() > 0) {
+            trimmed = trimmed.substring(0, nextItem.start());
+        }
+
+        // 빈 줄 기준으로 첫 문단만 사용한다.
+        int blankLine = trimmed.indexOf("\n\n");
+        if (blankLine >= 0) {
+            trimmed = trimmed.substring(0, blankLine);
+        }
+        return trimmed.trim();
+    }
+
+    /*
+        마크다운·번호·id/제목 잔여물을 제거하고 추천 이유 문장만 남긴다.
+
+        @param rawReason 제목 직후 또는 라벨 뒤에서 자른 원문이다.
         @return UI에 보여주기 좋게 다듬은 추천 이유이다.
      */
     private String cleanRecommendReason(String rawReason) {
@@ -500,10 +622,31 @@ public class AiChallengeCombinedRecommendService {
         }
 
         String cleaned = rawReason.trim();
-        // 앞쪽의 번호/구두점/줄바꿈 잔여물을 가볍게 제거한다.
-        cleaned = cleaned.replaceFirst("^[\\s\\-–—:：)\\].0-9]+", "");
-        cleaned = cleaned.replaceFirst("(?i)^(추천\\s*이유)\\s*[:：]?\\s*", "");
+        cleaned = cleaned.replace("**", "");
+        cleaned = cleaned.replaceAll("(?m)^\\s*[-*•]\\s*", "");
+        cleaned = cleaned.replaceFirst("(?i)^\\s*추천\\s*이유\\s*[:：\\-–—]?\\s*", "");
+        // id / 제목 헤더 잔여물 제거
+        cleaned = cleaned.replaceAll("(?i)id\\s*:\\s*\\d+\\s*,?\\s*", "");
+        cleaned = cleaned.replaceAll("(?i)제목\\s*:\\s*", "");
+        cleaned = cleaned.replaceFirst("^[\\s\\-–—:：)\\].0-9*]+", "");
+        cleaned = cleaned.replaceAll("[ \\t]+", " ");
+        cleaned = cleaned.replaceAll(" *\\n+ *", " ");
         return cleaned.trim();
+    }
+
+    /*
+        대소문자 무시 부분 문자열 검색이다.
+
+        @param source 검색 대상 문자열이다.
+        @param target 찾을 문자열이다.
+        @return 시작 인덱스. 없으면 -1이다.
+     */
+    private int indexOfIgnoreCase(String source, String target) {
+        if (source == null || target == null || target.isBlank()) {
+            return -1;
+        }
+        return source.toLowerCase(Locale.ROOT)
+                .indexOf(target.toLowerCase(Locale.ROOT));
     }
 
     /*
