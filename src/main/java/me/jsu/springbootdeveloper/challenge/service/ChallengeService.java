@@ -8,6 +8,7 @@ import me.jsu.springbootdeveloper.challenge.dto.basic.CreateChallengeResponse;
 import me.jsu.springbootdeveloper.challenge.dto.basic.SearchChallengeResponse;
 import me.jsu.springbootdeveloper.challenge.dto.setting.ChallengeSettingsResponse;
 import me.jsu.springbootdeveloper.challenge.enumType.ChallengeVisibility;
+import me.jsu.springbootdeveloper.challenge.enumType.InviteStatus;
 import me.jsu.springbootdeveloper.challenge.enumType.Status;
 import me.jsu.springbootdeveloper.challenge.dto.invite.ChallengeFriendInviteListResponse;
 import me.jsu.springbootdeveloper.challenge.dto.invite.ChallengeInviteResponse;
@@ -171,12 +172,23 @@ public class ChallengeService {
 
     /*
         챌린지에 참여하는 컨트롤러와 연결된 함수이다.
-        코드를 재사용하기 위해 사용한다.
+        탐색/링크 등 일반 참여 경로에서 호출한다.
+        초대 대기(INVITED)면 참여 API 대신 초대 수락 API를 쓰도록 안내한다.
      */
     @Transactional
     public void joinChallengeController(String email, Long challengeId) {
         User user = userService.findByEmail(email);
         Challenge challenge = challengeQueryService.findById(challengeId);
+
+        // INVITED 상태에서는 /participate가 아니라 초대 수락 API를 사용해야 한다.
+        challengeInviteRepository.findByChallenge_IdAndInvitee_Id(challengeId, user.getId())
+                .ifPresent(invite -> {
+                    if (invite.getStatus() == InviteStatus.INVITED) {
+                        throw new NotAllowedChallengeActionException(
+                                "초대된 챌린지입니다. 초대를 수락해주세요."
+                        );
+                    }
+                });
 
         joinChallenge(challenge, user);  // 챌린지에 실제로 참여한다.
     }
