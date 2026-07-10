@@ -37,3 +37,4 @@ public class SearchChallengeResponse {
         this.tags = tags;
     }
 }
+

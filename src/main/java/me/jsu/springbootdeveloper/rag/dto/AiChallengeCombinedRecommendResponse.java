@@ -30,7 +30,8 @@ public class AiChallengeCombinedRecommendResponse {
 
     /*
         합본 응답 안의 개별 추천 카드 항목이다.
-        기존 탐색 카드(SearchChallengeResponse)에 추천 이유 문자열을 붙인 형태이다.
+        기존 탐색 카드(SearchChallengeResponse)에
+        챌린지 소개(content)·추천 이유를 붙인 형태이다.
      */
     @Getter
     @AllArgsConstructor
@@ -41,6 +42,12 @@ public class AiChallengeCombinedRecommendResponse {
             (제목, 참여 인원, 잔여일, 태그 등)
          */
         private final SearchChallengeResponse challenge;
+
+        /*
+            챌린지 설명(소개)이다.
+            AI가 생성하지 않고 Challenge.content 필드 값을 그대로 넣는다.
+         */
+        private final String content;
 
         /*
             해당 챌린지를 추천한 이유이다.
