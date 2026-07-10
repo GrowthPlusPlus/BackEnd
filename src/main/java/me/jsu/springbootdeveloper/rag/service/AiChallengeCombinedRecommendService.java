@@ -149,8 +149,10 @@ public class AiChallengeCombinedRecommendService {
                         knownTagNames,
                         knownChallengeTitles
                 );
+                // content는 DB 소개 필드이며, 합본 전용 DTO에만 붙인다.
                 items.add(new AiChallengeCombinedRecommendItemResponse(
                         toResponse(challenge),
+                        challenge.getContent(),
                         reason
                 ));
             }
