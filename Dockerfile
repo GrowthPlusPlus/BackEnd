@@ -19,7 +19,7 @@ RUN chmod +x gradlew
 
 # 소스 복사 및 빌드 (테스트 제외)
 COPY src src
-RUN ./gradlew build -x test --stacktrace
+RUN ./gradlew build -x test --stacktrace -Dorg.gradle.jvmargs="-Xmx3g"
 
 # 2. 실행 단계 (Run stage)
 # java + chromium 환경 이미지
