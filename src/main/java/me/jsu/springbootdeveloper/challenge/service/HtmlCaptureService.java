@@ -47,11 +47,8 @@ public class HtmlCaptureService {
             }
             """, json);
 
-            // 현재 보이는 화면을 png 형식으로 캡처한다.
-            byte[] image = page.screenshot(
-                    new Page.ScreenshotOptions()
-                            .setFullPage(true)
-            );
+            // 캘린더 공유 화면에서 카드 부분만 png 형식으로 캡처한다.
+            byte[] image = page.locator(".share-card").screenshot();
 
             // 크롬을 닫는다.
             browser.close();
