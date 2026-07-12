@@ -132,3 +132,8 @@ test {
 jar {
     enabled = false
 }
+
+// Spring Boot 실행 시 Playwright driver-bundle을 미리 압축 해제하도록 설정
+bootJar {
+    requiresUnpack("**/driver-bundle-*.jar")
+}
