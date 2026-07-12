@@ -1,6 +1,6 @@
 # 1. 빌드 단계 (Build stage)
 # alpine -> Debian 기반 이미지로 변경
-FROM eclipse-temurin:17-jdk AS build
+FROM eclipse-temurin:17-jdk-jammy AS build
 
 WORKDIR /app
 
@@ -26,7 +26,7 @@ RUN ./gradlew installChromium
 
 # 2. 실행 단계 (Run stage)
 # alpine -> Debian 기반 이미지
-FROM eclipse-temurin:17-jre
+FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 
 # =====================================================
