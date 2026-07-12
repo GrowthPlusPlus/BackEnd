@@ -21,44 +21,13 @@ RUN chmod +x gradlew
 COPY src src
 RUN ./gradlew build -x test
 
-# Playwright가 Chromium을 설치한다. 최초 docker build 때 한 번만 실행된다.
-RUN ./gradlew installChromium
-
 # 2. 실행 단계 (Run stage)
-# alpine -> Debian 기반 이미지
-FROM eclipse-temurin:17-jre-jammy
+# java + chromium 환경 이미지
+FROM mcr.microsoft.com/playwright/java:v1.54.0-jammy
 WORKDIR /app
-
-# =====================================================
-# Playwright(Chromium)가 실행되는데 필요한 라이브러리 설치
-# =====================================================
-RUN apt-get update && apt-get install -y \
-    wget \
-    curl \
-    ca-certificates \
-    fonts-liberation \
-    libatk-bridge2.0-0 \
-    libatk1.0-0 \
-    libcups2 \
-    libdrm2 \
-    libgbm1 \
-    libgtk-3-0 \
-    libnspr4 \
-    libnss3 \
-    libx11-xcb1 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxfixes3 \
-    libxkbcommon0 \
-    libxrandr2 \
-    xdg-utils \
-    && rm -rf /var/lib/apt/lists/*
 
 # 빌드 결과물(JAR) 복사
 COPY --from=build /app/build/libs/*.jar app.jar
-
-# Chromium 복사
-COPY --from=build /root/.cache/ms-playwright /root/.cache/ms-playwright
 
 # Render 무료 플랜 메모리 최적화 옵션 추가
 ENTRYPOINT ["java", "-Xmx300m", "-Xms300m", "-jar", "app.jar"]
