@@ -115,6 +115,16 @@ dependencies {
     implementation 'com.microsoft.playwright:playwright:1.54.0'
 }
 
+// Chromium 설치를 위한 코드
+tasks.register('installChromium', JavaExec) {
+    group = "playwright"
+    description = "Install Playwright Chromium"
+
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = "com.microsoft.playwright.CLI"
+    args = ["install", "chromium"]
+}
+
 test {
     useJUnitPlatform()
 }
