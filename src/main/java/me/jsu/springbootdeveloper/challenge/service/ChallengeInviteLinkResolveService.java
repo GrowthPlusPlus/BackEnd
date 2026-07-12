@@ -57,7 +57,7 @@ public class ChallengeInviteLinkResolveService {
             throw new NotAllowedChallengeActionException("CHALLENGE_FULL");
         }
 
-        return new ChallengeInviteLinkResolveResponse(challenge.getId(), alreadyParticipant);
+        return new ChallengeInviteLinkResolveResponse(challenge.getId(), challenge.getTitle(), alreadyParticipant);
     }
 
     private ChallengeInviteLink findValidInviteLink(String inviteCode) {

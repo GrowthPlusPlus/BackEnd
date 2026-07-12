@@ -6,12 +6,13 @@ import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.domain.Challenge;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeCalenderShare;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
+import me.jsu.springbootdeveloper.challenge.dto.share.DayInfo;
+import me.jsu.springbootdeveloper.challenge.dto.share.ShareImageRenderRequest;
 import me.jsu.springbootdeveloper.challenge.exception.ShareImageNotFoundException;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeCalenderShareRepository;
 import me.jsu.springbootdeveloper.cloudinary.dto.ImageUploadResult;
 import me.jsu.springbootdeveloper.cloudinary.service.CloudinaryService;
 import me.jsu.springbootdeveloper.post.domain.Article;
-import me.jsu.springbootdeveloper.post.domain.PostPicture;
 import me.jsu.springbootdeveloper.post.event.CloudinaryDeleteEvent;
 import me.jsu.springbootdeveloper.post.service.PostQueryService;
 import me.jsu.springbootdeveloper.user.domain.User;
@@ -23,11 +24,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.imageio.ImageIO;
-import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /*
@@ -40,7 +40,7 @@ public class ChallengeShareImageAsyncGenerator {
     private static final long EXPIRE_HOURS = 24L;  // 만료 시간이다.
 
     private final ApplicationEventPublisher applicationEventPublisher;
-    private final CalendarImageRenderService renderService;
+    private final HtmlCaptureService htmlCaptureService;
     private final ChallengeCalenderShareRepository challengeCalenderShareRepository;
     private final ChallengeQueryService challengeQueryService;
     private final UserService userService;
@@ -98,19 +98,74 @@ public class ChallengeShareImageAsyncGenerator {
                 }
             }
 
-            // 이미지 랜더링 서비스에 정보들을 전달하여 이미지를 생성한다.
-            var rendered = renderService.render(
-                    challenge.getTitle(),
+            // 맨 위 상단에 표시할 달이다.
+            String[] months = {
+                    "JAN","FEB","MAR","APR",
+                    "MAY","JUN","JUL","AUG",
+                    "SEP","OCT","NOV","DEC"
+            };
+
+            // 맨 위 상단에 표시할 텍스트이다.
+            String badgeText =
+                    months[shareImage.getMonth() - 1]
+                            + " · "
+                            + shareImage.getYear()
+                            + " · CHALLENGE";
+
+            // 이번 달의 첫 날짜를 생성한다. 따라서 이번 달이 며칠까지 있는지, 1일이 무슨 요일인지 할 수 있다.
+            LocalDate firstDay = LocalDate.of(
                     shareImage.getYear(),
                     shareImage.getMonth(),
-                    successDays,
-                    proofImageUrlByDay,
-                    challengeParticipant.getJoinDate(),
-                    totalSuccessDays
+                    1
             );
 
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ImageIO.write(rendered, "png", baos);  // 생성한 이미지를 png로 변환하여 baos에 저장한다.
+            // 이번 달의 마지막 날짜를 계산한다.
+            int lastDay = firstDay.lengthOfMonth();
+
+            // HTML은 0=일요일, 1=월요일 ...로 계산하기 위해 사용한다.
+            int startDayOfWeek = firstDay.getDayOfWeek().getValue() % 7;
+
+            // 날짜 리스트를 생성한다.
+            List<DayInfo> days = new ArrayList<>();
+            // 모든 날짜를 하나씩 검사한다.
+            for (int day = 1; day <= lastDay; day++) {
+                String status = "not-done";
+                String photoUrl = null;
+
+                // 성공한 날이라면 사진 또는, 했다는 표시를 한다.
+                if (successDays.contains(day)) {
+                    photoUrl = proofImageUrlByDay.get(day);
+
+                    status = (photoUrl != null) ? "photo" : "done";
+                }
+
+                // dto를 생성한다.
+                days.add(
+                        DayInfo.builder()
+                                .date(day)
+                                .status(status)
+                                .photoUrl(photoUrl)
+                                .build()
+                );
+            }
+
+            // yyyy MM dd 형태로 날짜를 표시하기 위한 포맷터이다.
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy MM dd");
+
+            ShareImageRenderRequest request =
+                    ShareImageRenderRequest.builder()
+                            .badgeText(badgeText)
+                            .title(challenge.getTitle())
+                            .monthlyDone(successDays.size())
+                            .monthlyTotal(lastDay)   // 이번 달 총 날짜 수
+                            .startDate(challengeParticipant.getJoinDate().format(formatter))
+                            .totalDone(totalSuccessDays)
+                            .startDayOfWeek(startDayOfWeek)
+                            .days(days)
+                            .build();
+
+            // 이미지를 생성하고 캡처한 값을 얻는다.
+            byte[] image = htmlCaptureService.capture(request);
 
             // 클라우디너리에 사용할 publicId를 원하는 형태로 생성한다.
             String publicId = buildPublicId(
@@ -121,7 +176,7 @@ public class ChallengeShareImageAsyncGenerator {
             );
 
             // 클라우디너리에 실제로 업로드한다.
-            ImageUploadResult uploaded = cloudinaryService.uploadBytes(baos.toByteArray(), publicId);
+            ImageUploadResult uploaded = cloudinaryService.uploadBytes(image, publicId);
 
             // DB에 정보를 반영한다.
             LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));

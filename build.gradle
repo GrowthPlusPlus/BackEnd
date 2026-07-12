@@ -110,6 +110,9 @@ dependencies {
     // SMTP 방식으로 이메일을 보내기 위한 의존성
     implementation 'org.springframework.boot:spring-boot-starter-mail'
     implementation 'com.resend:resend-java:+'
+
+    // html 화면 캡처를 위한 의존성
+    implementation 'com.microsoft.playwright:playwright:1.54.0'
 }
 
 test {

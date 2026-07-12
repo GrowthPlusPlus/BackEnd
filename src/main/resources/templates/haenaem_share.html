@@ -1,0 +1,403 @@
+<!--정승빈-->
+
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>해냄 공유 이미지 템플릿</title>
+  <link rel="stylesheet" as="style" crossorigin
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <style>
+    :root {
+      --primary-green: #00A163;
+      --bg-main: #FBFBF8;
+      --gray-black: #1B1D1B;
+      --gray-1: #444444;
+      --gray-2: #616161;
+      --gray-3: #8C8C8C;
+      --gray-4: #D9D9D9;
+      --gray-5: #EDEEEA;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Pretendard', sans-serif;
+    }
+
+    body {
+      background-color: #E5E5E5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    /* 모바일 최적화 규격 (가로 375px) */
+    .share-card {
+      width: 375px;
+      padding: 28px;
+      background: var(--bg-main);
+      box-shadow:
+        0px 2px 8px -4px rgba(15, 20, 28, 0.12),
+        0px 10px 24px -10px rgba(15, 20, 28, 0.18),
+        0px 1px 0px rgba(255, 255, 255, 0.60) inset;
+      border-radius: 20px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* 배경 효과 축소 */
+    .bg-effect-1,
+    .bg-effect-2 {
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(0, 153, 81, 0.10) 0%, rgba(0, 153, 81, 0) 70%);
+      border-radius: 50%;
+      z-index: 0;
+    }
+
+    .bg-effect-1 {
+      left: 180px;
+      top: -150px;
+    }
+
+    .bg-effect-2 {
+      left: -150px;
+      top: 380px;
+    }
+
+    .content-wrapper {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* 상단 배지 */
+    .badge-wrapper {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 8px;
+      background: rgba(0, 153, 81, 0.06);
+      border-radius: 999px;
+      outline: 1px rgba(0, 153, 81, 0.22) solid;
+      outline-offset: -1px;
+      gap: 6px;
+      width: max-content;
+    }
+
+    .badge-dot-container {
+      width: 4px;
+      height: 4px;
+      background: var(--primary-green);
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .badge-dot-shadow {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      box-shadow: 0px 0px 0px 2px rgba(0, 153, 81, 0.15);
+    }
+
+    .badge-text {
+      color: var(--primary-green);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+    }
+
+    /* 타이틀 */
+    .title {
+      color: var(--gray-black);
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1.3;
+      padding-bottom: 8px;
+      word-break: keep-all;
+    }
+
+    /* 이번달 달성 횟수 */
+    .monthly-stat-wrap {
+      display: flex;
+      justify-content: flex-end;
+      align-items: flex-end;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--gray-4);
+      gap: 6px;
+    }
+
+    .monthly-label {
+      color: var(--gray-1);
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .monthly-count {
+      color: var(--primary-green);
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 28px;
+    }
+
+    .monthly-total {
+      color: var(--gray-1);
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 12px;
+    }
+
+    /* 캘린더 영역 (비율 기반 자동 맞춤) */
+    .calendar-container {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .weekdays,
+    .days {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .weekday {
+      text-align: center;
+      color: var(--gray-3);
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1.5;
+    }
+
+    /* 캘린더 날짜 칸 */
+    .day {
+      aspect-ratio: 1;
+      /* 가로세로를 완벽한 1:1 비율로 강제 */
+      border-radius: 8px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 14px;
+      font-weight: 400;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .day.empty {
+      background: transparent;
+      color: transparent;
+    }
+
+    .day.done {
+      background: var(--primary-green);
+      color: white;
+    }
+
+    .day.not-done {
+      background: var(--gray-5);
+      color: var(--gray-2);
+    }
+
+    .day.photo {
+      color: white;
+      background-size: cover;
+      background-position: center;
+    }
+
+    .day.photo::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(0deg, rgba(0, 0, 0, 0.20) 0%, rgba(0, 0, 0, 0.20) 100%);
+      z-index: 0;
+    }
+
+    .day.photo span{
+      position:relative;
+      z-index:1;
+     }
+
+    /* 하단 누적 달성 영역 */
+    .total-stat-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+      padding-bottom: 8px;
+      margin-top: 8px;
+    }
+
+    .total-date {
+      color: var(--gray-1);
+      font-size: 14px;
+      font-weight: 600;
+      opacity: 0.85;
+    }
+
+    .total-message {
+      color: var(--gray-black);
+      font-size: 32px;
+      font-weight: 900;
+      line-height: 1.2;
+      display: flex;
+      align-items: center;
+    }
+
+    .total-message .highlight {
+      color: var(--primary-green);
+    }
+
+    /* 푸터 */
+    .footer {
+      border-top: 1px solid var(--gray-4);
+      padding-top: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .logo-text {
+      color: var(--gray-black);
+      font-size: 16px;
+      font-weight: 700;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- 캡처될 실제 영역 -->
+  <div class="share-card">
+
+    <div class="bg-effect-1"></div>
+    <div class="bg-effect-2"></div>
+
+    <div class="content-wrapper badge-wrapper">
+      <div class="badge-dot-container">
+        <div class="badge-dot-shadow"></div>
+      </div>
+      <span class="badge-text" id="v-badge-text">MONTH · YEAR · CHALLENGE</span>
+    </div>
+
+    <div class="content-wrapper title" id="v-title">challenge title</div>
+
+    <div class="content-wrapper monthly-stat-wrap">
+      <div class="monthly-label">이번달 해낸 횟수</div>
+      <div>
+        <span class="monthly-count" id="v-monthly-done">00</span>
+        <span class="monthly-total">/<span id="v-monthly-total">00</span></span>
+      </div>
+    </div>
+
+    <div class="content-wrapper calendar-container">
+      <div class="weekdays">
+        <div class="weekday">일</div>
+        <div class="weekday">월</div>
+        <div class="weekday">화</div>
+        <div class="weekday">수</div>
+        <div class="weekday">목</div>
+        <div class="weekday">금</div>
+        <div class="weekday">토</div>
+      </div>
+      <div class="days" id="v-calendar-grid">
+        <!-- JS로 동적 생성됨 -->
+      </div>
+    </div>
+
+    <div class="content-wrapper total-stat-wrap">
+      <div class="total-date" id="v-start-date">0000년 00월 00일부터</div>
+      <div class="total-message">
+        총&nbsp;<span class="highlight" id="v-total-done">00일</span>&nbsp;해냈어요!
+      </div>
+    </div>
+
+    <!-- 기존의 <div class="logo-icon"></div> 대신 아래 SVG 삽입 -->
+    <div class="content-wrapper footer">
+      <svg width="24" height="24" viewBox="0 0 74 74" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path opacity="0.99" fill-rule="evenodd" clip-rule="evenodd"
+          d="M49.7798 3.34473L61.7684 15.3333L61.7714 16.012C61.7745 16.5067 61.6704 16.834 61.3869 17.2185C61.1742 17.5096 60.7157 17.9983 60.3673 18.3075C60.0189 18.6166 59.5303 18.9122 59.2814 18.9665C59.0326 19.0193 58.6254 19.0163 58.3765 18.959C58.0598 18.8866 57.0387 17.9741 54.9831 15.9275C53.3648 14.3168 52.0074 12.9986 51.9667 12.9971C51.926 12.9956 51.9124 14.3696 51.9381 16.0497C51.9637 17.7298 51.9139 21.0388 51.8265 23.4021C51.7405 25.767 51.5655 28.5827 51.4404 29.6611C51.3137 30.7394 51.0754 32.4362 50.9095 33.4316C50.7436 34.427 50.5731 35.3937 50.5324 35.5807C50.46 35.911 50.4736 35.9095 51.0995 35.4872C51.4524 35.2489 52.2834 34.7829 52.947 34.4496C53.6106 34.1163 54.594 33.6578 55.1339 33.4316C55.6738 33.2053 56.7582 32.8177 57.547 32.5719C58.3358 32.3261 59.6932 31.9943 60.5634 31.8344C61.4336 31.6745 62.7246 31.5418 63.4289 31.5388C64.4334 31.5343 64.7878 31.5916 65.0683 31.8042C65.3458 32.0139 65.4424 32.2597 65.4997 32.9037C65.5419 33.3592 65.4952 34.344 65.3986 35.0906C65.3021 35.8371 65.0925 36.9909 64.9341 37.6545C64.7742 38.3181 64.4696 39.3708 64.2569 39.9922C64.0443 40.6151 63.6054 41.6663 63.2826 42.3299C62.9614 42.9935 62.3023 44.0929 61.8182 44.7731C61.3356 45.4533 60.5 46.4668 59.9601 47.0264C59.4202 47.5844 58.4715 48.4441 57.8486 48.9357C57.2273 49.4274 56.2771 50.0744 55.7372 50.373C55.1973 50.6702 54.2139 51.1437 53.5503 51.4227C52.8867 51.7018 51.6651 52.1256 50.8356 52.3638C50.0061 52.6021 48.513 52.9747 47.5176 53.1888C46.5222 53.4045 45.4363 53.7016 45.1045 53.8494C44.7727 53.9972 44.2689 54.3501 43.9854 54.6337C43.7018 54.9172 43.2811 55.5567 43.0518 56.0544C42.8226 56.5521 42.5119 57.5022 42.3641 58.1658C42.1348 59.1899 42.0941 60.125 42.0911 64.3554C42.0881 68.8438 42.0624 69.3807 41.8242 69.7472C41.6794 69.9719 41.3732 70.2706 41.1455 70.4108C40.9177 70.5526 40.3235 70.6974 39.8258 70.7336C39.3281 70.7713 38.6826 70.7275 38.393 70.6386C38.1019 70.5496 37.6781 70.2691 37.4504 70.0142C37.185 69.7186 37.0085 69.3219 36.9602 68.9117C36.9195 68.5588 36.82 65.4549 36.74 62.0117C36.6073 56.3123 36.5621 55.5974 36.2318 54.0183C36.0312 53.0652 35.6888 51.7575 35.4717 51.1151C35.253 50.4726 34.8789 49.5556 34.6406 49.079C34.4024 48.6024 33.885 47.6689 33.4929 47.0052C33.0993 46.3416 32.4206 45.3236 31.9832 44.743C31.5474 44.1623 30.6892 43.1503 30.0784 42.4958C29.4676 41.8397 28.3907 40.8202 27.6849 40.229C26.9791 39.6362 25.7921 38.7404 25.0456 38.2366C24.299 37.7329 23.1452 37.0271 21.2751 36.0166L22.7079 37.5157C23.4967 38.3392 24.6549 39.5895 25.2839 40.2953C25.9113 40.9997 27.1419 42.4581 28.0167 43.5364C28.8914 44.6148 30.3121 46.5498 31.1718 47.8378C32.033 49.1243 32.965 50.6521 33.241 51.2312C33.5186 51.8103 33.7056 52.3684 33.6558 52.4724C33.6075 52.5765 33.4477 52.6625 33.3029 52.6625C33.1581 52.664 32.3256 52.5237 31.4554 52.3518C30.5851 52.1798 29.0242 51.8013 27.9865 51.5117C26.9504 51.2206 25.4905 50.741 24.7439 50.4454C23.9974 50.1483 22.8436 49.634 22.18 49.3022C21.5164 48.9689 20.5316 48.423 19.9931 48.0866C19.4547 47.7503 18.5076 47.0973 17.8907 46.6373C17.2739 46.1757 16.188 45.2211 15.4776 44.5167C14.7673 43.8109 13.7809 42.6918 13.2832 42.0282C12.787 41.3646 11.9877 40.143 11.5096 39.3135C11.03 38.484 10.3588 37.0934 10.018 36.2217C9.67712 35.3515 9.24277 34.0273 9.05274 33.2807C8.8627 32.5342 8.60028 31.1602 8.46756 30.2267C8.33635 29.2931 8.22625 27.7321 8.22323 26.7578C8.2172 25.2195 8.25491 24.9359 8.51281 24.6087C8.80539 24.2346 8.82651 24.2316 11.1205 24.2452C12.4296 24.2527 14.25 24.3734 15.3177 24.5227C16.3554 24.6675 17.7791 24.9133 18.4849 25.0687C19.1908 25.224 20.2767 25.5151 20.898 25.7172C21.5209 25.9193 22.3007 26.1998 22.6325 26.3386C22.9643 26.4788 23.5072 26.7066 23.839 26.8438C24.1708 26.9826 24.8163 27.2872 25.2718 27.5225C25.7273 27.7563 26.7453 28.3776 27.5341 28.9025C28.3229 29.4258 29.5701 30.4227 30.3091 31.115C31.0466 31.8088 32.0858 32.9188 32.6182 33.5824C33.1506 34.246 33.9454 35.3666 34.3843 36.0709C34.8231 36.7767 35.44 37.8626 35.7537 38.484C36.0674 39.1069 36.6616 40.4642 37.0749 41.5004C37.4881 42.538 38.2256 44.5906 38.7128 46.0626C39.1999 47.5346 39.6041 48.8588 39.6101 49.0036C39.6177 49.1951 39.6659 49.165 39.7896 48.8905C39.8831 48.6839 40.1591 48.073 40.4019 47.5331C40.6463 46.9947 41.0444 46.1124 41.2887 45.5725C41.5316 45.034 42.0413 43.8124 42.4199 42.8577C42.7984 41.9046 43.4786 40.0042 43.9311 38.6348C44.3835 37.2669 44.9189 35.3997 45.121 34.4873C45.3231 33.5748 45.6218 31.9807 45.7816 30.9431C45.943 29.9069 46.1451 28.1423 46.2311 27.0218C46.3155 25.9027 46.3864 22.2544 46.3864 18.9153C46.3864 15.5761 46.3382 12.8448 46.2808 12.8448C46.222 12.8448 45.2221 13.8372 44.0563 15.0483C42.8904 16.2608 41.4788 17.6514 40.9192 18.14C40.0927 18.861 39.8017 19.0284 39.3733 19.0284C39.0838 19.0284 38.6585 18.9349 38.4307 18.8202C38.203 18.7056 37.6254 18.1974 37.1488 17.6891C36.6722 17.1808 36.2393 16.5791 36.1865 16.3513C36.1338 16.1236 36.1322 15.6998 36.182 15.4087C36.2559 14.9759 36.7038 14.4555 38.6524 12.5356C39.9615 11.2461 42.4908 8.77722 44.275 7.04884C46.0591 5.32045 47.7212 3.78059 47.97 3.62525C48.237 3.45935 48.7015 3.34473 49.7798 3.34473Z"
+          fill="#00A163" />
+      </svg>
+      <div class="logo-text">해냄</div>
+    </div>
+
+  </div>
+
+  <script>
+    // ==========================================
+    // 렌더링 함수 (백엔드 스크립트에서 호출)
+    // ==========================================
+    async function renderShareImage(data) {
+      document.getElementById('v-badge-text').innerText = data.badgeText;
+      document.getElementById('v-title').innerText = data.title;
+      document.getElementById('v-monthly-done').innerText = data.monthlyDone;
+      document.getElementById('v-monthly-total').innerText = data.monthlyTotal;
+      document.getElementById('v-start-date').innerText = `${data.startDate}부터`;
+      document.getElementById('v-total-done').innerText = `${data.totalDone}일`;
+
+      const grid = document.getElementById('v-calendar-grid');
+      grid.innerHTML = ''; // 초기화
+
+      // 1. 시작 요일 전까지 빈 칸 채우기
+      for (let i = 0; i < data.startDayOfWeek; i++) {
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'day empty';
+        grid.appendChild(emptyDiv);
+      }
+
+      // 2. 실제 날짜 채우기
+      data.days.forEach(dayInfo => {
+        const dayDiv = document.createElement('div');
+
+        dayDiv.className = `day ${dayInfo.status}`;
+
+        const span = document.createElement('span');
+        span.innerText = dayInfo.date;
+        dayDiv.appendChild(span);
+
+        // 사진 인증일 경우 배경 이미지 삽입
+        if (dayInfo.status === 'photo' && dayInfo.photoUrl) {
+          dayDiv.style.backgroundImage = `url(${dayInfo.photoUrl})`;
+        }
+
+        grid.appendChild(dayDiv);
+      });
+
+      // 이미지가 모두 로드되고 캡쳐하도록 대기
+      const promises = [];
+
+      data.days.forEach(dayInfo => {
+        if (dayInfo.status === "photo" && dayInfo.photoUrl) {
+          promises.push(new Promise(resolve => {
+            const img = new Image();
+            img.onload = resolve;
+            img.onerror = resolve;
+            img.src = dayInfo.photoUrl;
+          }));
+        }
+      });
+
+      return Promise.all(promises);
+    }
+
+    // Playwright가 호출할 수 있도록 전역 등록
+    window.renderShareImage = renderShareImage;
+  </script>
+</body>
+
+</html>
