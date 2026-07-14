@@ -11,12 +11,12 @@ import lombok.Getter;
 @Getter
 public class ChallengeInviteLinkResolveResponse {
     private final long challengeId;
-    private final String title;
+    private final String challengeTitle;
     private final boolean alreadyParticipant;
 
-    public ChallengeInviteLinkResolveResponse(long challengeId, String title, boolean alreadyParticipant) {
+    public ChallengeInviteLinkResolveResponse(long challengeId, String challengeTitle, boolean alreadyParticipant) {
         this.challengeId = challengeId;
-        this.title = title;
+        this.challengeTitle = challengeTitle;
         this.alreadyParticipant = alreadyParticipant;
     }
 }

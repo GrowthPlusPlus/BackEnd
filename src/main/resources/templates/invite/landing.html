@@ -24,7 +24,7 @@
             초대자님이 초대했어요
         </p>
 
-        <div class="status-box valid" th:if="${landing.openAppEnabled}">
+        <div id="open-app-status" class="status-box valid" th:if="${landing.openAppEnabled}">
             <div class="spinner" aria-hidden="true"></div>
             <p id="loading-message">앱을 여는 중...</p>
         </div>
@@ -35,8 +35,12 @@
             유효하지 않은 초대 링크입니다.
         </div>
 
+        <!--
+            앱 미설치를 단정하지 않는다.
+            iOS 등에서는 '계속' 확인 창이 떠 있는 동안에도 이 문구가 보일 수 있다.
+         -->
         <p id="fallback-message" class="fallback" style="display: none;">
-            앱이 설치되어 있지 않습니다.
+            앱으로 이동하지 않았다면 브라우저 안내에서 '계속'을 눌러주세요.
         </p>
     </section>
 </main>
@@ -44,15 +48,16 @@
 <script th:if="${landing.openAppEnabled}" th:inline="javascript">
     /*
         유효한 초대 링크일 때만 앱 딥링크를 시도한다.
-        일정 시간 내 앱이 열리지 않으면 fallback 메시지를 표시한다.
+        일정 시간 후에도 페이지가 보이면 로딩 UI를 끄고 안내 문구만 남긴다.
      */
     (function openMobileApp() {
         var deepLinkUrl = /*[[${landing.deepLinkUrl}]]*/ '';
+        var openAppStatus = document.getElementById('open-app-status');
         var fallbackMessage = document.getElementById('fallback-message');
-        var loadingMessage = document.getElementById('loading-message');
         var fallbackDelayMs = 2000;
         var appOpened = false;
 
+        // 앱/다른 화면으로 넘어가면 페이지가 숨겨지거나 포커스를 잃는다.
         document.addEventListener('visibilitychange', function handleVisibilityChange() {
             if (document.hidden) {
                 appOpened = true;
@@ -63,15 +68,18 @@
             appOpened = true;
         });
 
+        // 커스텀 스킴으로 앱 실행을 시도한다. (예: haenaem://invite/...)
         window.location.href = deepLinkUrl;
 
-        window.setTimeout(function showFallbackMessage() {
+        window.setTimeout(function finishLoadingUi() {
+            // 앱이 열린 것으로 보이면 안내 문구를 띄우지 않는다.
             if (appOpened) {
                 return;
             }
 
-            if (loadingMessage) {
-                loadingMessage.style.display = 'none';
+            // 스피너가 계속 돌지 않도록 로딩 박스 전체를 숨긴다.
+            if (openAppStatus) {
+                openAppStatus.style.display = 'none';
             }
 
             if (fallbackMessage) {
