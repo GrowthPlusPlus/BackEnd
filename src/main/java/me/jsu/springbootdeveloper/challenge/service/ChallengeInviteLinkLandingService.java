@@ -30,7 +30,7 @@ public class ChallengeInviteLinkLandingService {
         앱 딥링크 URL 스킴이다.
         앱 팀과 맞춘 값으로 APP_DEEP_LINK_SCHEME 환경 변수로 덮어쓸 수 있다.
      */
-    @Value("${app.deep-link-scheme:hanaem}")
+    @Value("${app.deep-link-scheme:haenaem}")
     private String deepLinkScheme;
 
     /*
