@@ -370,7 +370,6 @@ public class ChallengeMaintenanceService {
                 }
             }
 
-            List<Long> toDelete = new ArrayList<>();  // 삭제할 챌린지들의 id를 모은 배열이다.
             for (Challenge challenge : batch) {
                 lastId = challenge.getId();
 
@@ -383,8 +382,8 @@ public class ChallengeMaintenanceService {
 
                 // 방장 후보를 가져온다.
                 List<ChallengeParticipant> participants = participantMap.getOrDefault(challenge.getId(), List.of());
-                if (participants.isEmpty()) {  // 남은 사람이 없는 경우, 챌린지 삭제 리스트에 올린다.
-                    toDelete.add(challenge.getId());
+                if (participants.isEmpty()) {  // 남은 사람이 없는 경우, 챌린지 상태를 비활성화 시킨다.
+                    challenge.failChallenge();
 
                     continue;
                 }
@@ -394,11 +393,6 @@ public class ChallengeMaintenanceService {
 
                 // 방장을 위임한다.
                 challenge.updateUser(nextOwner);
-            }
-
-            // 반복이 끝난 후 챌린지를 삭제한다.
-            for (Long id : toDelete) {
-                challengeDeleteService.deleteChallengeInternal(id);
             }
 
         } while (!batch.isEmpty());

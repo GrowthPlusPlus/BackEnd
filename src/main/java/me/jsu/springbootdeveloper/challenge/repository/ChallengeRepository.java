@@ -49,6 +49,7 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
         where c.startDate <= :today
           and c.endDate >= :today
           and c.id > :lastId
+          and c.active = true
         order by c.id asc
     """)
     List<Challenge> findActiveChallengesAfterId(@Param("today") LocalDate today, @Param("lastId") Long lastId, Pageable pageable);
@@ -60,6 +61,7 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
         where c.challengeVisibility = 'PUBLIC'
           and c.startDate <= :today
           and c.endDate >= :today
+          and c.active = true
         order by c.startDate desc
     """)
     List<Challenge> findPublicChallenges(@Param("today") LocalDate today);
@@ -76,6 +78,7 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
         where c.challengeVisibility = 'PUBLIC'
           and c.startDate <= :today
           and c.endDate >= :today
+          and c.active = true
         """)
     List<Challenge> findPublicChallengesWithTagMappings(@Param("today") LocalDate today);
 

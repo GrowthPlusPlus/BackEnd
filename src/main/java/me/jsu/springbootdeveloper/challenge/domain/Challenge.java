@@ -99,6 +99,9 @@ public class Challenge {
     @Column(name = "today_date", nullable = false)
     private LocalDate todayDate;  // 해당 챌린지의 "오늘"의 기준을 만드는 값이다.
 
+    @Column(name = "active", nullable = false)
+    private boolean active;  // 챌린지가 현재 진행중인지 알려주는 값이다. 챌린지 내의 모든 사람이 실패해서 진행될 수 없는 경우, 삭제 대신 검색되지 않도록 한다.
+
     @CreatedDate
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -143,6 +146,7 @@ public class Challenge {
         this.photoRequired = photoRequired;
         this.todaySuccessCount = 0;
         this.todayDate = LocalDate.now(ZoneId.of("Asia/Seoul"));  // 아시아 시간으로 초기화 한다.
+        this.active = true;
     }
     /*
         챌린지 참여 시 인원 초과인지 먼저 확인한다. 최대 50명이 기본값이다.
@@ -244,5 +248,12 @@ public class Challenge {
     public long getChallengeDayCount() {
         // 지난 날짜에 +1을 하면 현재 몇 일차인지 알 수 있다.
         return calculateDaysSinceStart() + 1;
+    }
+
+    /*
+        챌린지가 조기 실패한 경우, 진행 상태를 false로 바꾸는 함수이다.
+     */
+    public void failChallenge() {
+        this.active = false;
     }
 }
