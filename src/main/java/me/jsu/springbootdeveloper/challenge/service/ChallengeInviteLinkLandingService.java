@@ -44,8 +44,8 @@ public class ChallengeInviteLinkLandingService {
         String normalizedInviteCode = normalizeInviteCode(inviteCode);
         String pageUrl = baseUrl + "/v/" + normalizedInviteCode;
         String deepLinkUrl = deepLinkScheme + "://invite/" + normalizedInviteCode;
-        // 카카오톡 OG 미리보기용 기본 이미지 URL이다.
-        String defaultOgImageUrl = baseUrl + "/v/og-default.svg";
+        // 카카오톡 OG 미리보기용 기본 이미지 URL이다. (static/img/hanaem_logo_resized.png)
+        String defaultOgImageUrl = baseUrl + "/img/hanaem_logo_resized.png";
 
         return challengeInviteLinkRepository.findByInviteCode(normalizedInviteCode)
                 .map(link -> buildViewFromLink(
