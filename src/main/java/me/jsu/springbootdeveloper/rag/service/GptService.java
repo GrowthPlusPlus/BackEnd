@@ -4,6 +4,7 @@ package me.jsu.springbootdeveloper.rag.service;
 
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.rag.domain.GptResponse;
+import me.jsu.springbootdeveloper.rag.dto.CoachResponse;
 import me.jsu.springbootdeveloper.rag.dto.QueryResponseDto;
 import me.jsu.springbootdeveloper.rag.exception.AiGenerationException;
 import me.jsu.springbootdeveloper.rag.repository.GptResponseRepository;
@@ -14,6 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /*
     DB 기반으로 하루 1회 제한 + 이미 존재한다면 결과를 재사용 처리한다.
@@ -91,8 +94,24 @@ public class GptService {
         맞춤형 코칭을 컨트롤러에서 호출하는 경우이다. type 이름에 대한 책임을 서비스로 옮긴다.
      */
     @Transactional
-    public String coach(String email) {
-        return handleRequest(email, "coach");
+    public CoachResponse coach(String email) {
+        String answer = handleRequest(email, "coach");
+
+        Pattern pattern = Pattern.compile(
+                "잘한점:\\s*(.*?)\\R+개선할점:\\s*(.*?)\\R+추천행동:\\s*(.*)",
+                Pattern.DOTALL);
+
+        Matcher matcher = pattern.matcher(answer);
+
+        if (!matcher.find()) {
+            throw new AiGenerationException("AI 응답 형식이 올바르지 않습니다.");
+        }
+
+        return new CoachResponse(
+                matcher.group(1).trim(),
+                matcher.group(2).trim(),
+                matcher.group(3).trim()
+        );
     }
 
     /*

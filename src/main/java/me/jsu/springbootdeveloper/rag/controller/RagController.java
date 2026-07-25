@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.dto.basic.SearchChallengeResponse;
 import me.jsu.springbootdeveloper.rag.dto.AiChallengeCombinedRecommendResponse;
+import me.jsu.springbootdeveloper.rag.dto.CoachResponse;
 import me.jsu.springbootdeveloper.rag.dto.QueryRequestDto;
 import me.jsu.springbootdeveloper.rag.dto.QueryResponseDto;
 import me.jsu.springbootdeveloper.rag.service.AiChallengeCombinedRecommendService;
@@ -122,11 +123,11 @@ public class RagController {
             @ApiResponse(responseCode = "500", description = "서버 오류")
     })
     @PostMapping("/coach/query")
-    public ResponseEntity<String> queryWithRag(
+    public ResponseEntity<CoachResponse> queryWithRag(
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         // 유저 정보를 통해 코칭 답변을 생성한다.
-        String response = gptService.coach(userDetails.getUsername());
+        CoachResponse response = gptService.coach(userDetails.getUsername());
 
         return ResponseEntity.ok(response);
     }

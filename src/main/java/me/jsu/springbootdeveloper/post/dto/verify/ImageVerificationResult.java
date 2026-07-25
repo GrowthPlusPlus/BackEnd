@@ -18,11 +18,21 @@ public record ImageVerificationResult (
     String bestGenericPrompt,
     double genericScore,
 
+    String bestNegativePrompt,
+    double negativeScore,
+
     String passed,
 
     double threshold,
     double margin,
 
     Map<String, Double> promptScores,
-    Map<String, Double> genericPromptScores
+    Map<String, Double> genericPromptScores,
+    Map<String, Double> negativePromptScores,
+
+    boolean yoloChecked,
+    boolean yoloPass,
+
+    List<String> detectedObjects,
+    List<String> expectedObjects
 ) {}
