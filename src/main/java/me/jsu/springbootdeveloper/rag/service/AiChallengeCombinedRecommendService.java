@@ -12,6 +12,7 @@ import me.jsu.springbootdeveloper.challenge.repository.ChallengeRepository;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeQueryService;
 import me.jsu.springbootdeveloper.rag.dto.AiChallengeCombinedRecommendResponse;
 import me.jsu.springbootdeveloper.rag.dto.AiChallengeCombinedRecommendResponse.AiChallengeCombinedRecommendItemResponse;
+import me.jsu.springbootdeveloper.tag.domain.Tag;
 import me.jsu.springbootdeveloper.tag.domain.TagToChallenge;
 import me.jsu.springbootdeveloper.tag.domain.TagToUser;
 import me.jsu.springbootdeveloper.tag.dto.TagResponse;
@@ -33,6 +34,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 /*
@@ -142,6 +144,10 @@ public class AiChallengeCombinedRecommendService {
                     similarParticipatedTitles
             );
 
+            /*
+                추천 챌린지는 최대 3개(cardChallenges)이다.
+                for 루프 1회 = 추천 카드 1장 → imageUrl도 카드마다 1개씩 붙인다.
+             */
             List<AiChallengeCombinedRecommendItemResponse> items = new ArrayList<>();
             for (Challenge challenge : cardChallenges) {
                 String reason = formatRecommendReasonForDisplay(
@@ -149,11 +155,14 @@ public class AiChallengeCombinedRecommendService {
                         knownTagNames,
                         knownChallengeTitles
                 );
-                // content는 DB 소개 필드이며, 합본 전용 DTO에만 붙인다.
+                // 이 챌린지 태그(보통 2개) 중 1개를 랜덤으로 골라 imageUrl을 정한다.
+                String imageUrl = pickRandomTagImageUrl(challenge);
+
                 items.add(new AiChallengeCombinedRecommendItemResponse(
                         toResponse(challenge),
                         challenge.getContent(),
-                        reason
+                        reason,
+                        imageUrl
                 ));
             }
 
@@ -835,6 +844,46 @@ public class AiChallengeCombinedRecommendService {
         }
         return source.toLowerCase(Locale.ROOT)
                 .indexOf(target.toLowerCase(Locale.ROOT));
+    }
+
+    /*
+        추천 카드 1장에 쓸 imageUrl을 고른다.
+
+        cardChallenges.forEach(...) 안에서 챌린지마다 1번씩 호출된다.
+        즉 추천 3개면 imageUrl도 3개(각 카드 1개)가 API로 내려간다.
+
+        동작:
+        1) 이 챌린지에 붙은 태그 목록을 꺼낸다 (보통 2개)
+        2) 그중 1개를 랜덤으로 고른다
+        3) 고른 태그의 tag.image_url 을 그대로 반환한다
+
+        @param challenge 태그가 join fetch 된 추천 챌린지 1개이다.
+        @return 랜덤 선택된 태그의 imageUrl. 태그/URL이 없으면 null이다.
+     */
+    private String pickRandomTagImageUrl(Challenge challenge) {
+        if (challenge.getTagMappings() == null || challenge.getTagMappings().isEmpty()) {
+            return null;
+        }
+
+        // tagMappings → Tag 엔티티만 추출 (null 태그는 제외)
+        List<Tag> tags = new ArrayList<>();
+        for (TagToChallenge mapping : challenge.getTagMappings()) {
+            if (mapping.getTag() != null) {
+                tags.add(mapping.getTag());
+            }
+        }
+        if (tags.isEmpty()) {
+            return null;
+        }
+
+        // 태그 2개 중 1개를 랜덤 선택 (태그가 1개면 항상 그 1개)
+        Tag pickedTag = tags.get(ThreadLocalRandom.current().nextInt(tags.size()));
+
+        String imageUrl = pickedTag.getImageUrl();
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return null;
+        }
+        return imageUrl.trim();
     }
 
     /*

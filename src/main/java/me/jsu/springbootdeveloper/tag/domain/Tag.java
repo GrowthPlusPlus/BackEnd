@@ -31,6 +31,13 @@ public class Tag {
     private TagCategory tagCategory;  // 태그 타입을 지정한다.
 
     /*
+        추천 카드 등에 표시할 태그 대표 이미지 URL이다.
+        Cloudinary secure_url을 저장하며, 미설정 태그는 null이다.
+     */
+    @Column(name = "image_url", columnDefinition = "TEXT")
+    private String imageUrl;
+
+    /*
         태그가 삭제되면 유저나 챌린지에 저장된 태그도 자동으로 삭제된다.
      */
     @OneToMany(mappedBy = "tag", cascade = CascadeType.REMOVE)
