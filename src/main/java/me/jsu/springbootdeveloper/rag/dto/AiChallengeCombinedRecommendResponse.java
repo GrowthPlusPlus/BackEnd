@@ -54,5 +54,11 @@ public class AiChallengeCombinedRecommendResponse {
             카드의 "추천 이유 보기"에 사용한다.
          */
         private final String recommendReason;
+
+        /*
+            추천 카드 썸네일 이미지 URL이다.
+            챌린지 태그 중 하나를 랜덤으로 고른 뒤, 해당 태그의 imageUrl을 사용한다.
+         */
+        private final String imageUrl;
     }
 }
