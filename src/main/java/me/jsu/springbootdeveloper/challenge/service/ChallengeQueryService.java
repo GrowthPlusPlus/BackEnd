@@ -45,6 +45,10 @@ public class ChallengeQueryService {
         챌린지 id로 챌린지를 검색하지만 없을 경우 null을 반환하는 함수이다.
      */
     public Challenge findByIdOrNull(Long id) {
+        if (id == null) {
+            return null;
+        }
+
         return challengeRepository.findById(id)
                 .orElse(null);
     }
