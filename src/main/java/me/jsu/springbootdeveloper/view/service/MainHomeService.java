@@ -204,7 +204,8 @@ public class MainHomeService {
                 }
 
                 // 부분 주를 계산한다.
-                int adjustedRequiredWeeklyCount = ChallengeUtils.calculateAdjustedRequired(challenge, weekStartDate,weekStartDate.plusDays(6));
+                int adjustedRequiredWeeklyCount = ChallengeUtils.calculateAdjustedRequired(challenge,
+                        weekStartDate, weekStartDate.plusDays(6), challengeParticipant.getJoinDate());
 
                 /*
                     effectiveStart와 effectiveEnd는 남은 가능 일수를 계산하기 위해 필요한 값이다.

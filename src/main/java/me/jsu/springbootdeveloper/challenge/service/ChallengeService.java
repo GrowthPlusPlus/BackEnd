@@ -427,7 +427,7 @@ public class ChallengeService {
         월요일을 기준으로 이번주에 처음 인증을 하면 그 주에 해당하는 챌린지 주간 상태값이 생성된다.
         만약 주의 첫 인증이 아니라면 값을 업데이트 한다.
      */
-    public void updateWeeklyStatus(User user, Challenge challenge, LocalDate weekStartDate, int requiredWeeklyCount) {
+    public void updateWeeklyStatus(User user, Challenge challenge, LocalDate weekStartDate) {
         // 이번주에 해당하는 챌린지 주간 상태 튜플이 있는지 검색한다.
        ChallengeWeeklyStatus challengeWeeklyStatus = challengeQueryService.findWeeklyStatus(user.getId(), challenge.getId(), weekStartDate);
 
@@ -440,11 +440,19 @@ public class ChallengeService {
             challengeWeeklyStatusRepository.save(challengeWeeklyStatus);
         }
 
-        // 이번주 인증 횟수를 업데이트 한다.
-        challengeWeeklyStatus.updateSuccessCount(requiredWeeklyCount);
-
         // 챌린지 참여 DB를 검색한다.
         ChallengeParticipant challengeParticipant = challengeQueryService.findByUser_IdAndChallenge_IdForParticipant(user.getId(), challenge.getId());
+
+        // 참여자가 챌린지 중간에 들어왔을 수도 있으므로 보정 주를 적용한다.
+        int adjustedRequired = ChallengeUtils.calculateAdjustedRequired(
+                challenge,
+                weekStartDate,
+                weekStartDate.plusDays(6),
+                challengeParticipant.getJoinDate()
+        );
+
+        // 이번주 인증 횟수를 업데이트 한다.
+        challengeWeeklyStatus.updateSuccessCount(adjustedRequired);
 
         // 이번 주차가 챌린지 시작 이후 몇 주차인지 검색한다.
         int weekIndex = ChallengeUtils.calculateWeekIndex(challengeParticipant.getJoinDate(), weekStartDate);

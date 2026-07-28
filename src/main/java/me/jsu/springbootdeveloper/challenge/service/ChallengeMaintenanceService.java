@@ -221,7 +221,7 @@ public class ChallengeMaintenanceService {
         }
 
         // 지난 주 범위에 맞는 부분 주 보정 요구치이다.
-        int adjustedRequired = ChallengeUtils.calculateAdjustedRequired(challenge, weekStart, weekEnd);
+        int adjustedRequired = ChallengeUtils.calculateAdjustedRequired(challenge, weekStart, weekEnd, cp.getJoinDate());
 
         // 지난 주 "확정" 실패 판정이다.
         if (successCount < adjustedRequired) {
@@ -250,7 +250,7 @@ public class ChallengeMaintenanceService {
         }
 
         // 부분 주 보정이 적용된 최소 주간 성공 횟수로, 첫 주차나 마지막 주차를 위해 사용한다.
-        int adjustedRequired = ChallengeUtils.calculateAdjustedRequired(challenge, weekStart, weekEnd);
+        int adjustedRequired = ChallengeUtils.calculateAdjustedRequired(challenge, weekStart, weekEnd, cp.getJoinDate());
 
         /*
             effectiveStart와 effectiveEnd는 남은 가능 일수를 계산하기 위해 필요한 값이다.

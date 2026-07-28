@@ -16,14 +16,22 @@ public final class ChallengeUtils {
        부분 주 보정 로직이다.
        주는 항상 월요일을 기준으로 시작하므로, 해당 유저가 주에 늦게 시작하여 불이익을 보거나 챌린지 마지막 주에 불이익을 보지 않도록 한다.
        주간 최소 인증 횟수를 비례 조정한다.
+       해당 함수의 결과값으로 당일을 기준으로 수행가능한 챌린지 횟수를 반환한다.
      */
-    public static int calculateAdjustedRequired(Challenge challenge, LocalDate weekStart, LocalDate weekEnd) {
-        // 챌린지 시작일과 주 시작일 중 더 늦은 날짜를 사용한다. 따라서 챌린지가 없던 날은 계산에서 제외한다.
-        LocalDate effectiveStart;
-        if (challenge.getStartDate().isAfter(weekStart)) {  // 챌린지 시작일이 주 시작일보다 더 늦은 경우이다.
-            effectiveStart = challenge.getStartDate();  // 주의 시작인 월요일부터가 아닌, 챌린지 시작일부터 계산한다.
+    public static int calculateAdjustedRequired(Challenge challenge, LocalDate weekStart, LocalDate weekEnd, LocalDate participantStartDate) {
+        /*
+            실제 시작일 값으로 챌린지 시작일, 참여일, 이번 주 시작일 중 가장 늦은 날짜를 사용한다.
+            따라서 챌린지가 없던 날은 계산에서 제외하고, 유저가 중간에 참여해도 문제가 없도록 한다.
+         */
+        LocalDate effectiveStart = challenge.getStartDate();  // 챌린지 시작일을 기준으로 한다.
+
+        // 챌린지 시작일보다 유저 참여일이 더 이후라면 유저 참여일을 기준으로 부분주를 계산한다.
+        if (participantStartDate.isAfter(effectiveStart)) {
+            effectiveStart = participantStartDate;
         }
-        else {  // 일반적인 케이스이다.
+
+        // 해당 주의 월요일 날짜가 유저 참여일, 챌린지 시작일보다 이후라면 해당 주를 기준으로 계산한다. 즉 부분주를 적용하지 않는다.
+        if (weekStart.isAfter(effectiveStart)) {
             effectiveStart = weekStart;
         }
 

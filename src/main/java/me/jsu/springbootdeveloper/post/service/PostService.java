@@ -6,6 +6,7 @@ import me.jsu.springbootdeveloper.challenge.domain.ChallengeDailyLog;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeWeeklyStatus;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeDeleteService;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeQueryService;
+import me.jsu.springbootdeveloper.challenge.service.ChallengeUtils;
 import me.jsu.springbootdeveloper.fcm.service.FcmService;
 import me.jsu.springbootdeveloper.notification.enumType.NotificationType;
 import me.jsu.springbootdeveloper.notification.service.NotificationService;
@@ -218,7 +219,7 @@ public class PostService {
         LocalDate weekStartDate = postDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
 
         // 인증글을 업데이트 했으므로 챌린지 주간 상태도 업데이트 한다.
-        challengeService.updateWeeklyStatus(user, challenge, weekStartDate, challenge.getRequiredWeeklyCount());
+        challengeService.updateWeeklyStatus(user, challenge, weekStartDate);
 
         // 유저 통계를 업데이트 한다.
         userStatisticsService.onPostConfirmed(user, challenge.getId(), postDate);
@@ -358,7 +359,15 @@ public class PostService {
         // 이번주 챌린지 총 성공 횟수를 감소시킨다.
         LocalDate thisWeekMonday = article.getPostDate().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         ChallengeWeeklyStatus challengeWeeklyStatus = challengeQueryService.findWeeklyStatus(user.getId(), challenge.getId(), thisWeekMonday);
-        challengeWeeklyStatus.decreaseSuccessCount(challenge.getRequiredWeeklyCount());
+
+        int adjustedRequired = ChallengeUtils.calculateAdjustedRequired(
+                challenge,
+                thisWeekMonday,
+                thisWeekMonday.plusDays(6),
+                challengeParticipant.getJoinDate()
+        );
+
+        challengeWeeklyStatus.decreaseSuccessCount(adjustedRequired);
 
         // 유저 통계의 내용을 롤백한다.
         userStatisticsService.onTodayPostCancelled(user.getId(), challenge.getId(), article.getPostDate());
@@ -521,7 +530,16 @@ public class PostService {
         // 이번주 챌린지 총 성공 횟수를 감소시킨다.
         LocalDate thisWeekMonday = postDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         ChallengeWeeklyStatus challengeWeeklyStatus = challengeQueryService.findWeeklyStatus(authorId, challenge.getId(), thisWeekMonday);
-        challengeWeeklyStatus.decreaseSuccessCount(challenge.getRequiredWeeklyCount());
+
+        // 부분 주를 적용한다.
+        int adjustedRequired = ChallengeUtils.calculateAdjustedRequired(
+                challenge,
+                thisWeekMonday,
+                thisWeekMonday.plusDays(6),
+                challengeParticipant.getJoinDate()
+        );
+
+        challengeWeeklyStatus.decreaseSuccessCount(adjustedRequired);
 
         if (isTodayPost) {  // 삭제 날짜가 생성 날짜와 같다면 기존과 동일하게 유저 통계의 내용을 롤백한다.
             userStatisticsService.onTodayPostCancelled(authorId, challenge.getId(), postDate);
