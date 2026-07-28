@@ -4,6 +4,7 @@ package me.jsu.springbootdeveloper.challenge.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.playwright.*;
+import com.microsoft.playwright.options.ScreenshotScale;
 import com.microsoft.playwright.options.WaitUntilState;
 import me.jsu.springbootdeveloper.challenge.dto.share.ShareImageRenderRequest;
 import org.springframework.stereotype.Service;
@@ -25,7 +26,10 @@ public class HtmlCaptureService {
             );
 
             // 브라우저 프로필을 생성한다.
-            BrowserContext context = browser.newContext();
+            BrowserContext context = browser.newContext(
+                    new Browser.NewContextOptions()
+                            .setDeviceScaleFactor(3)
+            );
 
             // 새 탭을 하나 연다. 크롬에서 새 탭을 누르는 것과 같다.
             Page page = context.newPage();
@@ -48,7 +52,10 @@ public class HtmlCaptureService {
             """, json);
 
             // 캘린더 공유 화면에서 카드 부분만 png 형식으로 캡처한다.
-            byte[] image = page.locator(".share-card").screenshot();
+            byte[] image = page.locator(".share-card").screenshot(
+                    new Locator.ScreenshotOptions()
+                            .setScale(ScreenshotScale.DEVICE)
+            );
 
             // 크롬을 닫는다.
             browser.close();
