@@ -4,9 +4,7 @@ package me.jsu.springbootdeveloper.post.service;
 
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeDailyLog;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeWeeklyStatus;
-import me.jsu.springbootdeveloper.challenge.service.ChallengeDeleteService;
-import me.jsu.springbootdeveloper.challenge.service.ChallengeQueryService;
-import me.jsu.springbootdeveloper.challenge.service.ChallengeUtils;
+import me.jsu.springbootdeveloper.challenge.service.*;
 import me.jsu.springbootdeveloper.fcm.service.FcmService;
 import me.jsu.springbootdeveloper.notification.enumType.NotificationType;
 import me.jsu.springbootdeveloper.notification.service.NotificationService;
@@ -29,7 +27,6 @@ import me.jsu.springbootdeveloper.post.dto.article.ArticleDetailResponse;
 import me.jsu.springbootdeveloper.post.repository.PostPictureRepository;
 import me.jsu.springbootdeveloper.post.repository.PostRepository;
 import me.jsu.springbootdeveloper.user.service.UserService;
-import me.jsu.springbootdeveloper.challenge.service.ChallengeService;
 import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
@@ -51,6 +48,7 @@ public class PostService {
     private final UserStatisticsService userStatisticsService;
     private final ChallengeQueryService challengeQueryService;
     private final ChallengeDeleteService challengeDeleteService;
+    private final ChallengeRankingService challengeRankingService;
     private final ImageTemporaryService imageTemporaryService;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final FcmService fcmService;
@@ -224,6 +222,8 @@ public class PostService {
         // 유저 통계를 업데이트 한다.
         userStatisticsService.onPostConfirmed(user, challenge.getId(), postDate);
 
+        // 유저의 랭킹 스코어를 재집계한다.
+        challengeRankingService.updateRankingForUser(challengeParticipant);
         
         // 저장한 인증글 id로 검색하여 인증글 상세 정보를 반환한다.
         return getPost(email, article.getId());
