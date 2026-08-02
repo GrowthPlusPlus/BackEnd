@@ -14,6 +14,7 @@ import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.user.domain.UserStatistics;
 import me.jsu.springbootdeveloper.user.repository.UserStatisticsRepository;
 import me.jsu.springbootdeveloper.user.service.UserService;
+import me.jsu.springbootdeveloper.user.service.UserStatisticsService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,7 @@ public class ChallengeRankingService {
 
     private final UserService userService;
     private final UserStatisticsRepository userStatisticsRepository;
+    private final UserStatisticsService userStatisticsService;
     private final ChallengeParticipantRepository challengeParticipantRepository;
 
     /*
@@ -76,6 +78,7 @@ public class ChallengeRankingService {
 
     /*
         랭킹 점수를 12시마다 집계하는 함수이다.
+        진행중인 챌린지에 참여한 모든 유저들에 대해 수행한다.
      */
     @Transactional
     public void updateRankingForChallenge() {
@@ -106,17 +109,9 @@ public class ChallengeRankingService {
                 // 유저 당 유저 통계를 map으로 연결한다.
                 UserStatistics stats = statsMap.get(cp.getUser().getId());
 
-                // 유저 통계가 존재하는지 검사하는 방어 코드이다.
-                int weeklyActive = stats != null ? stats.getWeeklyActiveDays() : 0;
+                // 랭킹 스코어를 계산한다.
+                updateRankingScore(cp, stats);
 
-                // 스코어를 가중치에 따라 계산한다.
-                double score =
-                        cp.getTotalSuccessDays() * 1.0 +  // 총 수행 일자
-                                cp.getCurrentStreakDays() * 1.8 +  // 연속 수행 일자
-                                cp.getMaxStreakDays() * 1.2 +  // 최대 연속 수행 일자
-                                weeklyActive * 0.5;  // 최근 일주일간 챌린지 수행 일자
-
-                cp.updateRankingScore(score);  // DB에 반영한다.
                 lastId = cp.getId();  // 커서를 이동한다.
             }
 
@@ -124,5 +119,34 @@ public class ChallengeRankingService {
             entityManager.clear();
 
         } while (!batch.isEmpty());
+    }
+
+    /*
+        유저가 게시글을 올릴 경우, 해당 유저에 대해서만 랭킹 스코어를 재집계하는 함수이다.
+     */
+    @Transactional
+    public void updateRankingForUser(ChallengeParticipant cp) {
+        // 유저 통계를 조회한다. 예외처리는 해당 함수에서 대신 해준다.
+        UserStatistics stats = userStatisticsService.findByUser_IdStatistics(cp.getUser().getId());
+
+        // 랭킹 스코어 값을 갱신한다.
+        updateRankingScore(cp, stats);
+    }
+
+    /*
+        랭킹 스코어를 집계하는 계산 공식이다. 스케줄러와 post시에 ranking score값을 계산하기 위해 사용한다.
+     */
+    private void updateRankingScore(ChallengeParticipant cp, UserStatistics stats) {
+        // 유저 통계가 존재하는지 검사하는 방어 코드이다.
+        int weeklyActive = stats != null ? stats.getWeeklyActiveDays() : 0;
+
+        // 스코어를 가중치에 따라 계산한다.
+        double score =
+                cp.getTotalSuccessDays() * 1.0 +  // 총 수행 일자
+                        cp.getCurrentStreakDays() * 1.8 +  // 연속 수행 일자
+                        cp.getMaxStreakDays() * 1.2 +  // 최대 연속 수행 일자
+                        weeklyActive * 0.5;  // 최근 일주일간 챌린지 수행 일자
+
+        cp.updateRankingScore(score);  // DB에 반영한다.
     }
 }
