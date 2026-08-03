@@ -130,6 +130,22 @@ public class UserStatisticsService {
     }
 
     /*
+        탈퇴한 유저 (user = null -> inner join이므로)를 제외하고 모든 유저의 통계를 조회한다.
+        유저 통계의 총 수행 일자의 정합성을 위해 조회한다.
+     */
+    public List<UserStatistics> findAllForRepair() {
+        return userStatisticsRepository.findAllForRepair();
+    }
+
+    /*
+        탈퇴한 유저 (user = null -> inner join이므로)를 제외하고 모든 유저의 잔디를 조회한다. (2026, 2027, ...)
+        유저 통계의 총 수행 일자의 정합성을 위해 조회한다.
+     */
+    public List<UserYearlyActivity> findAllUserYearlyActivityForRepair() {
+        return userYearlyActivityRepository.findAllUserYearlyActivityForRepair();
+    }
+
+    /*
         onTodayPostCancelled는 당일 전용이므로 쓰지 않고, 로그를 삭제한 뒤 남아 있는 ChallengeDailyLog 기준으로 유저 전역 통계를 다시 맞춘 뒤 대표 챌린지를 재선정한다.
 
         @param userId 통계를 갱신할 유저 id

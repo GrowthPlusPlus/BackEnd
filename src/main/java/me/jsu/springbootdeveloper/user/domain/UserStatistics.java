@@ -469,4 +469,12 @@ public class UserStatistics {
         this.mostUnstableChallengeId = challengeId;
         this.mostUnstableChallengeVariance = variance;  // 활동 비율
     }
+
+    /*
+        유저의 총 수행일수를 갱신하는 함수이다.
+        정합성이 깨졌을 때 다시 원래대로 되돌리기 위해 사용한다.
+     */
+    public void replaceTotalActiveDays(int totalActiveDays) {
+        this.totalActiveDays = totalActiveDays;
+    }
 }

@@ -28,4 +28,15 @@ public interface UserYearlyActivityRepository extends JpaRepository<UserYearlyAc
             @Param("userIds") List<Long> userIds,
             @Param("year") int year
     );
+
+    /*
+        모든 유저의 연간 잔디를 모두 조회한다. (탈퇴한 유저는 제외) ex) 한 유저의 2026, 2027, 2028 모두 다 조회
+        유저 통계의 수행 일수 정합성을 위해 사용한다.
+     */
+    @Query("""
+        select uya
+        from UserYearlyActivity uya
+        join fetch uya.user
+    """)
+    List<UserYearlyActivity> findAllUserYearlyActivityForRepair();
 }

@@ -50,4 +50,15 @@ public interface UserStatisticsRepository extends JpaRepository<UserStatistics, 
         where us.user.id in :userIds
     """)
     List<UserStatistics> findAllByUserIds(@Param("userIds") List<Long> userIds);
+
+    /*
+        탈퇴한 유저 (user = null -> inner join이므로)를 제외하고 모든 유저의 통계를 조회한다.
+        유저 통계의 총 수행 일자의 정합성을 위해 조회한다.
+     */
+    @Query("""
+        select us
+        from UserStatistics us
+        join fetch us.user
+    """)
+    List<UserStatistics> findAllForRepair();
 }
