@@ -117,7 +117,7 @@ public class ImageVerificationService {
     /*
         clip 서버에 챌린지 제목과 이미지를 보내 검증 결과를 얻는 함수이다.
      */
-    public String verifyWithCLIP(Long challengeId, Long temporaryImageId) {
+    public ImageVerificationResult verifyWithCLIP(Long challengeId, Long temporaryImageId) {
         Challenge challenge = challengeQueryService.findById(challengeId);
 
         // 임시 이미지의 db값을 조회한다.
@@ -169,7 +169,7 @@ public class ImageVerificationService {
                 throw new ClipServerException("CLIP server error");
             }
 
-            return result.passed();
+            return result;
 
         } catch (Exception e) {  // 그 외의 예외 처리이다.
             log.error("CLIP verification failed", e);

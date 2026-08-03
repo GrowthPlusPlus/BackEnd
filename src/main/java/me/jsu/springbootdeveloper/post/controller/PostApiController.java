@@ -16,6 +16,7 @@ import me.jsu.springbootdeveloper.post.dto.comment.CommentResponse;
 import me.jsu.springbootdeveloper.post.dto.comment.CommentUpdateRequest;
 import me.jsu.springbootdeveloper.post.dto.verify.ClipRequest;
 import me.jsu.springbootdeveloper.post.dto.verify.ImageVerificationResponse;
+import me.jsu.springbootdeveloper.post.dto.verify.ImageVerificationResult;
 import me.jsu.springbootdeveloper.post.service.*;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -84,11 +85,11 @@ public class PostApiController {
             @ApiResponse(responseCode = "400", description = "clip 검사 실패")
     })
     @PostMapping(value = "/api/image/clip")
-    public ResponseEntity<String> clip(
+    public ResponseEntity<ImageVerificationResult> clip(
             @Parameter(description = "챌린지 id와 검사할 이미지 번호", required = true)
             @RequestBody @Valid ClipRequest request
     ) {
-        String response = imageVerificationService.verifyWithCLIP(request.getChallengeId(), request.getTemporaryImageId());
+        ImageVerificationResult response = imageVerificationService.verifyWithCLIP(request.getChallengeId(), request.getTemporaryImageId());
 
         return ResponseEntity.ok(response);  // 검증 결과를 string 형태로 반환한다.
     }
