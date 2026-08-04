@@ -45,8 +45,17 @@ public class ChallengePreviewService {
                 throw new ClipServerException("CLIP server error");
             }
 
+            // 반환된 카테고리 값이 존재하지 않는 경우이다.
+            String category = "unsupported";
+
+            // 반환된 카테고리 값이 있다면 첫 번째 카테고리를 반환한다.
+            if (result.autoVerifiable() && result.categories() != null && !result.categories().isEmpty()) {
+                category = result.categories().get(0);
+            }
+
             return ChallengePreviewResponse.builder()
                     .autoVerifiable(result.autoVerifiable())
+                    .category(category)
                     .build();
 
         } catch (Exception e) {  // 그 외의 예외 처리이다.

@@ -12,4 +12,5 @@ import lombok.Getter;
 @Builder
 public class ChallengePreviewResponse {
     boolean autoVerifiable;
+    String category;
 }
