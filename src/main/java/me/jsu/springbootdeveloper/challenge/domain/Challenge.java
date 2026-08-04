@@ -7,6 +7,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import me.jsu.springbootdeveloper.challenge.enumType.ChallengeCategory;
 import me.jsu.springbootdeveloper.challenge.enumType.ChallengeVisibility;
 import me.jsu.springbootdeveloper.post.domain.PostPictureTemporary;
 import me.jsu.springbootdeveloper.tag.domain.TagToChallenge;
@@ -102,6 +103,10 @@ public class Challenge {
     @Column(name = "active", nullable = false)
     private boolean active;  // 챌린지가 현재 진행중인지 알려주는 값이다. 챌린지 내의 모든 사람이 실패해서 진행될 수 없는 경우, 삭제 대신 검색되지 않도록 한다.
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "challenge_category", nullable = false)
+    private ChallengeCategory challengeCategory;  // 해당 챌린지가 속한 카테고리 값이다. 서버가 미리 지정한 값에 포함되지 않으면 unsupported가 된다.
+
     @CreatedDate
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -133,7 +138,7 @@ public class Challenge {
 
     @Builder
     public Challenge(String title, String content, User user, int maxParticipantNumber, ChallengeVisibility challengeVisibility,
-                     LocalDate startDate, LocalDate endDate, int requiredWeeklyCount, boolean photoRequired, LocalDate todayDate) {
+                     LocalDate startDate, LocalDate endDate, int requiredWeeklyCount, boolean photoRequired, String challengeCategory) {
         this.title = title;
         this.content = content;
         this.user = user;
@@ -147,6 +152,9 @@ public class Challenge {
         this.todaySuccessCount = 0;
         this.todayDate = LocalDate.now(ZoneId.of("Asia/Seoul"));  // 아시아 시간으로 초기화 한다.
         this.active = true;
+
+        // 파이썬/프론트에서 들어온 카테고리 문자열을 안전하게 Enum으로 변환하여 저장한다.
+        this.challengeCategory = ChallengeCategory.from(challengeCategory);
     }
     /*
         챌린지 참여 시 인원 초과인지 먼저 확인한다. 최대 50명이 기본값이다.

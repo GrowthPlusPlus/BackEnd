@@ -146,6 +146,8 @@ public class ChallengeService {
                 .endDate(endDate)
                 .requiredWeeklyCount(dto.getFrequency())
                 .photoRequired(dto.isPhotoRequired())
+                // clip검사에 사용하기 위한 카테고리값을 저장한다.
+                .challengeCategory(dto.getChallengeCategory())
                 .build();
 
         // 챌린지 객체 db에 저장

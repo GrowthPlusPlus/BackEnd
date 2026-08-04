@@ -198,6 +198,9 @@ public class ImageVerificationService {
             count++;
         }
 
+        // 챌린지 카테고리도 포함하여 보낸다.
+        prompt.append(", ").append(challenge.getChallengeCategory().name().toLowerCase());
+
         return prompt.toString();
     }
 }

@@ -42,4 +42,7 @@ public class CreateChallengeRequest {
 
     //최대 참여자 수 -> 현재 필드 없음, 기본값 50으로 설정
     private Integer maxParticipantNumber;
+
+    // 챌린지의 카테고리를 string 형태로 받는다.
+    private String challengeCategory;
 }
