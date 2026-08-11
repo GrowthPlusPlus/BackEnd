@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -39,96 +40,18 @@ public class MainHomeService {
     private final NotificationService notificationService;
     private final ChallengeQueryService challengeQueryService;
 
-    public MainHomeResponse getMainHome(String userEmail, LocalDate today, LocalDate weekStartDate, LocalDate targetDate) {
+    public MainHomeResponse getMainHome(String userEmail, LocalDate targetDate) {
         User user = userService.findByEmail(userEmail);
         List<MyChallenge> myChallenges = new ArrayList<>();
+
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));  // 해당 요청이 처리되는 기준이 되는 날짜를 생성한다.
+        LocalDate weekStartDate = today.with(DayOfWeek.MONDAY);  // 주간 상태와 warning 계산에 사용되는 현재 주의 시작일값이다.
 
         // 유저 id로 읽지 않은 알람 개수를 가져온다.
         long notificationNumber = notificationService.countByUser_IdAndIsReadFalse(user.getId());
 
-        // 주간 캘린더 색상 정보이다.
-        List<WeekDayStatusResponse> weekStatus = new ArrayList<>();
-
-        // 이번 주의 마지막 날이다.
-        LocalDate weekEnd = weekStartDate.plusDays(6);
-
-        // 조회 시작/종료 날짜
-        LocalDate searchStart = weekStartDate.minusDays(1);
-        LocalDate searchEnd = weekEnd.minusDays(1);
-
-        // 조회하는 날짜가 일요일인 경우에는 이번주 월 ~ 금을 조사한 뒤, status값을 넣을 때 일요일 외엔 모두 none값으로 만든다.
-        if (targetDate.getDayOfWeek() == DayOfWeek.SUNDAY) {
-            searchStart = weekStartDate;
-            searchEnd = weekEnd;
-        }
-
-        // 해당 주의 성공 로그를 전부 조회한다.
-        List<ChallengeDailyLog> logs = challengeQueryService.findByUserIdAndPostDateBetween(
-                user.getId(),
-                searchStart,
-                searchEnd
-        );
-
-        // 로그 인증 날짜인 postDate를 추출하여 중복을 제거한다.
-        Set<LocalDate> successDates = logs.stream()
-                .map(ChallengeDailyLog::getPostDate)
-                .collect(Collectors.toSet());
-
-        // filter 오류 방지를 위해 사용한다.
-        LocalDate start = searchStart;
-        LocalDate end = searchEnd;
-
-        // 유저의 모든 실패한 챌린지를 검색한다.
-        List<ChallengeParticipant> failedChallenges = challengeQueryService.findStatusWithChallengeByUserIdAndStatus(user.getId(), Status.FAIL);
-
-        // 실패 날짜만 추출한다.
-        Set<LocalDate> failDates = failedChallenges.stream()
-                .map(ChallengeParticipant::getFailedAt)
-                .filter(Objects::nonNull)
-                .filter(date -> !date.isBefore(start) && !date.isAfter(end))
-                .collect(Collectors.toSet());
-
-        /*
-            주간 캘린더 색상을 생성한다.
-            일 ~ 토 7일에 대해 RED > GREEN > GRAY 우선순위로 계산한다.
-         */
-        for (int i = 0; i < 7; i++) {
-            LocalDate date;
-
-            if (targetDate.getDayOfWeek() == DayOfWeek.SUNDAY) {
-                // 일요일인 경우 : 첫 칸은 오늘(일요일), 나머지는 미래
-                date = weekStartDate.plusDays(6 + i);
-            } else {
-                // 평일인 경우 : 이전 주 일요일 ~ 이번 주 토요일
-                date = weekStartDate.minusDays(1).plusDays(i);
-            }
-
-            DayStatus status;
-
-            if (date.isAfter(today)) {
-                status = DayStatus.NONE;
-            } else if (failDates.contains(date)) {
-                status = DayStatus.RED;
-            } else if (successDates.contains(date)) {
-                status = DayStatus.GREEN;
-            } else {
-                status = DayStatus.GRAY;
-            }
-
-            weekStatus.add(WeekDayStatusResponse.builder()
-                    .date(date)
-                    .status(status)
-                    .build());
-        }
-
-        // 요청받은 날짜가 오늘인지, 과거인지, 미래인지 판단한다.
-        boolean isToday = targetDate.isEqual(today);
-        boolean isPast = targetDate.isBefore(today);  // 현재는 사용하지 않는다.
-        boolean isFuture = targetDate.isAfter(today);
-
-        // 과거, 현재, 미래와 같이 시점에 따라 쓰는 경우도 있고 아닌 경우도 있으므로 일단 빈 map으로 초기화 한다.
-        Map<Long, ChallengeDailyLog> dailyLogMap = Collections.emptyMap();
-        Map<Long, ChallengeWeeklyStatus> weeklyStatusMap = Collections.emptyMap();
+        // 선택한 날짜 기준으로 상단 캘린더를 생성한다.
+        List<WeekDayStatusResponse> weekStatus = getWeekStatus(user.getId(), today, targetDate);
 
         // 내가 참여한 챌린지 중, 현재 진행중인 챌린지 목록을 가져온다. 시점은 상관없다.
         List<ChallengeParticipant> joinedChallenges = challengeQueryService.findStatusWithChallengeByUserIdAndStatus(user.getId(), Status.IN_PROGRESS);
@@ -137,37 +60,25 @@ public class MainHomeService {
                 return new MainHomeResponse(Collections.emptyList(), notificationNumber, weekStatus);
         }
 
-        log.info("dailyLogMap 찍기 직전");
         /*
-            유저가 요청한 날짜의 하루 데일리 로그를 검색한다. 하나도 수행하지 않았다면 빈 리스트를 반환한다.
-            과거, 현재의 경우에만 데일리 로그를 검색한다.
+            오늘 날짜의 하루 데일리 로그를 검색한다. 하나도 수행하지 않았다면 빈 리스트를 반환한다.
+            해당 로그 값으로 이번주 총 성공 횟수와 비교하여 챌린지 실패 여부 판단에 사용한다.
          */
-        if (!isFuture) {
-            List<ChallengeDailyLog> challengeDailyLogs = challengeQueryService.findByUser_IdAndPostDate(user.getId(), targetDate);
-            // 데일리 로그 list를 map으로 바꾸어서 챌린지 id와 데일리 로그의 챌린지 id를 바로 매핑한다.
-            dailyLogMap = challengeDailyLogs.stream().collect(Collectors.toMap(
-                    log -> log.getChallenge().getId(),  // 챌린지 id를 map key로 설정한다.
-                    log -> log,
-                    (existing, replacement) -> existing  // challengeId 키값 중복 시, 기존 값으로 사용한다.
-            ));
+        List<ChallengeDailyLog> challengeDailyLogs = challengeQueryService.findByUser_IdAndPostDate(user.getId(), today);
+        // 데일리 로그 list를 map으로 바꾸어서 챌린지 id와 데일리 로그의 챌린지 id를 바로 매핑한다.
+        Map<Long, ChallengeDailyLog> dailyLogMap = challengeDailyLogs.stream().collect(Collectors.toMap(
+                log -> log.getChallenge().getId(),  // 챌린지 id를 map key로 설정한다.
+                log -> log,
+                (existing, replacement) -> existing  // challengeId 키값 중복 시, 기존 값으로 사용한다.
+        ));
 
-            log.info("dailyLogMap = {}", dailyLogMap);
-        }
-
-        /*
-            유저의 이번주 챌린지 상태를 검색한다. 이번주에 한 번도 수행하지 않았다면 빈 리스트를 반환한다.
-            오늘만 주간 상태가 의미가 있으므로, 현재가 아니면 처리하지 않는다.
-         */
-        if (isToday) {
-            List<ChallengeWeeklyStatus> challengeWeeklyStatuses = challengeQueryService.findByUser_IdAndWeekStartDate(
-                    user.getId(), weekStartDate
-            );
-            // 위와 마찬가지로 챌린지 id를 매핑하기 위해 map을 사용한다.
-            weeklyStatusMap = challengeWeeklyStatuses.stream().collect(Collectors.toMap(
-                    ws -> ws.getChallenge().getId(),
-                    ws -> ws
-            ));
-        }
+        // 유저의 서버 기준 이번주 챌린지 상태를 검색한다. 이번주에 한 번도 수행하지 않았다면 빈 리스트를 반환한다.
+        List<ChallengeWeeklyStatus> challengeWeeklyStatuses = challengeQueryService.findByUser_IdAndWeekStartDate(user.getId(), weekStartDate);
+        // 위와 마찬가지로 챌린지 id를 매핑하기 위해 map을 사용한다.
+        Map<Long, ChallengeWeeklyStatus> weeklyStatusMap = challengeWeeklyStatuses.stream().collect(Collectors.toMap(
+                ws -> ws.getChallenge().getId(),
+                ws -> ws
+        ));
 
         for (ChallengeParticipant challengeParticipant : joinedChallenges) {
             Challenge challenge = challengeParticipant.getChallenge();  // 챌린지 하나를 가져온다.
@@ -176,23 +87,17 @@ public class MainHomeService {
             // 오늘 데일리 로그 여부를 판별한다.
             ChallengeDailyLog dailyLog = dailyLogMap.get(challengeId);
 
-            /*
-                미래엔 dailyLog가 비어있으므로 항상 false값을 가진다.
-                하지만 안했다는 의미가 아닌 판단이 불가하다는 의미로, 어떻게 사용할지는 프론트가 판단한다.
-                오늘 인증을 했다면 로그가 있으므로 true, 인증을 하지 않았다면 로그가 존재하지 않으므로 false이다.
-             */
-            boolean isDoIt = (dailyLog != null);
-            log.info("dailyLog = {}", dailyLog);
-            log.info("isDoIt = {}", isDoIt);
 
+            // 오늘 인증을 했다면 로그가 있으므로 true, 인증을 하지 않았다면 로그가 존재하지 않으므로 false이다.
+            boolean isDoIt = (dailyLog != null);
             boolean isWarning = false;
             /*
-                이번 주 챌린지가 실패에 임박했는지 판단한다. 오늘만 판단하고 과거나 미래는 판단하지 않는다.
+                이번 주 챌린지가 실패에 임박했는지 판단한다.
                 또한 오늘 안 했고, 실패에 임박하면 경고한다. 오늘 이미 했다면 실패 위험 경고를 줄 이유가 없다.
 
-                즉 요청받은 날짜가 오늘이며, 오늘 챌린지를 안했다면 if문에 진입한다.
+                즉 오늘 챌린지를 안했다면 if문에 진입한다.
              */
-            if (isToday && !isDoIt) {
+            if (!isDoIt) {
                 ChallengeWeeklyStatus weeklyStatus = weeklyStatusMap.get(challengeId);
 
                 // 이번주 성공 횟수를 검색한다.
@@ -239,7 +144,7 @@ public class MainHomeService {
 
             // 남은 챌린지 수행 일수를 계산한다.
             LocalDate endDate = challengeParticipant.getChallenge().getEndDate();  // 종료일을 구한다.
-            long dDay = ChallengeUtils.calculateDDay(targetDate, endDate);
+            long dDay = ChallengeUtils.calculateDDay(today, endDate);
 
             // 챌린지에 관한 정보를 종합하여 List에 넣는다.
             myChallenges.add(MyChallenge.builder()
@@ -258,5 +163,75 @@ public class MainHomeService {
 
         // 얻은 정보들을 dto로 반환한다.
         return new MainHomeResponse(myChallenges, notificationNumber, weekStatus);
+    }
+
+    /*
+        사용자가 선택한 날짜가 속한 주간 캘린더의 색상 정보를 생성한다.
+        targetDate를 기준으로 해당 날짜가 속한 월요일 ~ 일요일의 성공, 실패 여부를 조회하여 각 날짜의 상태를 반환한다.
+     */
+    private List<WeekDayStatusResponse> getWeekStatus(Long userId, LocalDate today, LocalDate targetDate) {
+        // 사용자가 선택한 날짜가 속한 주의 월요일을 구한다. 주간 캘린더는 월요일 ~ 일요일 기준으로 구성한다.
+        LocalDate targetWeekStart = targetDate.with(DayOfWeek.MONDAY);
+
+        // 해당 주의 마지막 날인 일요일을 구한다.
+        LocalDate targetWeekEnd = targetWeekStart.plusDays(6);
+
+        // 해당 주의 성공 로그를 전부 조회한다.
+        List<ChallengeDailyLog> logs = challengeQueryService.findByUserIdAndPostDateBetween(
+                userId,
+                targetWeekStart,
+                targetWeekEnd
+        );
+
+        /*
+            조회한 성공 로그에서 인증 날짜(postDate)만 추출한다.
+            Set으로 변환하여 같은 날짜에 여러 챌린지를 성공한 경우에도 해당 날짜 하나만 성공 날짜로 관리한다.
+         */
+        Set<LocalDate> successDates = logs.stream()
+                .map(ChallengeDailyLog::getPostDate)
+                .collect(Collectors.toSet());
+
+        // 유저의 모든 실패한 챌린지를 검색한다.
+        List<ChallengeParticipant> failedChallenges = challengeQueryService.findStatusWithChallengeByUserIdAndStatus(userId, Status.FAIL);
+
+        // 실패 날짜만 추출한다. 해당 주에 실패하지 않았으면 제외한다.
+        Set<LocalDate> failDates = failedChallenges.stream()
+                .map(ChallengeParticipant::getFailedAt)
+                .filter(Objects::nonNull)
+                .filter(date -> !date.isBefore(targetWeekStart) && !date.isAfter(targetWeekEnd))
+                .collect(Collectors.toSet());
+
+        // 월요일 ~ 일요일까지 7일의 상태를 저장할 리스트이다.
+        List<WeekDayStatusResponse> weekStatus = new ArrayList<>();
+
+        /*
+            월요일부터 일요일까지 각 날짜의 상태를 계산한다.
+            월 ~ 일 7일에 대해 RED > GREEN > GRAY 우선순위로 계산한다.
+         */
+        for (int i = 0; i < 7; i++) {
+            // 주의 시작일인 월요일에서 i일을 더하여 현재 확인할 날짜를 구한다.
+            LocalDate date = targetWeekStart.plusDays(i);
+
+            DayStatus status;
+
+            if (date.isAfter(today)) {  // 서버의 현재 시간인 오늘보다 내일이라면 미래이므로 NONE값을 넣는다.
+                status = DayStatus.NONE;
+            } else if (failDates.contains(date)) {
+                status = DayStatus.RED;
+            } else if (successDates.contains(date)) {
+                status = DayStatus.GREEN;
+            } else {
+                status = DayStatus.GRAY;
+            }
+
+            // 계산한 날짜와 상태를 주간 캘린더 목록에 추가한다.
+            weekStatus.add(WeekDayStatusResponse.builder()
+                    .date(date)
+                    .status(status)
+                    .build());
+        }
+
+        // 월요일 ~ 일요일까지 계산한 주간 캘린더 상태를 반환한다.
+        return weekStatus;
     }
 }

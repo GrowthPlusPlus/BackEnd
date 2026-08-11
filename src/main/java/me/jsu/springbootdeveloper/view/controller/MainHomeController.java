@@ -54,12 +54,8 @@ public class MainHomeController {
             )
             @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate targetDate  // 날짜를 받는다.
     ) {
-
-        LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));  // 해당 요청이 처리되는 기준이 되는 날짜를 생성한다.
-        LocalDate weekStartDate = targetDate.with(DayOfWeek.MONDAY);  // 요청 날짜 주의 챌린지 수행 로그를 검색하기 위한 값이다.
-
         // 서비스에서 정제한 정보를 response 객체에 담는다.
-        MainHomeResponse response = mainHomeService.getMainHome(userDetails.getUsername(), today, weekStartDate, targetDate);
+        MainHomeResponse response = mainHomeService.getMainHome(userDetails.getUsername(), targetDate);
 
         // 검색한 값을 클라이언트에게 반환한다.
         return ResponseEntity.ok(response);
