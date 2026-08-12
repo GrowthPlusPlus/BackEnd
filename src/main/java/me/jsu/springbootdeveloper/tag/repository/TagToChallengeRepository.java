@@ -44,6 +44,7 @@ public interface TagToChallengeRepository extends JpaRepository<TagToChallenge, 
     /*
         태그 id 목록과 연결된 진행 중 공개 챌린지 id를 조회한다.
         fetch join 없이 id만 조회해 distinct 누락을 방지한다.
+        (PostgreSQL: SELECT DISTINCT + ORDER BY 비호환 → 정렬은 서비스에서 수행)
      */
     @Query("""
         select distinct c.id
@@ -54,7 +55,6 @@ public interface TagToChallengeRepository extends JpaRepository<TagToChallenge, 
           and c.startDate <= :today
           and c.endDate >= :today
           and c.active = true
-        order by c.startDate desc
     """)
     List<Long> findPublicChallengeIdsByTagIds(
             @Param("tagIds") List<Long> tagIds,

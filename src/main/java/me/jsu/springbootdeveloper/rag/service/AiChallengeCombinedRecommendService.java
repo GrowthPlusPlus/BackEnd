@@ -164,7 +164,7 @@ public class AiChallengeCombinedRecommendService {
                     cardChallenges,
                     reasonByChallengeId
             );
-            String summary = buildBannerSummary(tagToUsers, similarParticipatedTitles);
+            String summary = buildBannerSummary(user, tagToUsers, similarParticipatedTitles);
 
             // 추천 이유 표시용: 태그 → #태그, 제목/태그 따옴표·역슬래시 제거
             Set<String> knownTagNames = collectKnownTagNames(tagToUsers, cardChallenges);
@@ -180,13 +180,19 @@ public class AiChallengeCombinedRecommendService {
              */
             List<AiChallengeCombinedRecommendItemResponse> items = new ArrayList<>();
             for (Challenge challenge : cardChallenges) {
-                String reason = formatRecommendReasonForDisplay(
-                        reasonByChallengeId.getOrDefault(challenge.getId(), ""),
-                        knownTagNames,
-                        knownChallengeTitles
+                String reason = personalizeUserWording(
+                        formatRecommendReasonForDisplay(
+                                reasonByChallengeId.getOrDefault(challenge.getId(), ""),
+                                knownTagNames,
+                                knownChallengeTitles
+                        ),
+                        user
                 );
                 if (reason.isBlank()) {
-                    reason = buildRecommendReasonForChallenge(challenge, tagToUsers);
+                    reason = personalizeUserWording(
+                            buildRecommendReasonForChallenge(challenge, tagToUsers),
+                            user
+                    );
                 }
                 // 이 챌린지 태그(보통 2개) 중 1개를 랜덤으로 골라 imageUrl을 정한다.
                 String imageUrl = pickRandomTagImageUrl(challenge);
@@ -280,24 +286,26 @@ public class AiChallengeCombinedRecommendService {
         배너용 서술형 요약을 고정 문장으로 만든다.
 
         예1) 비슷한 참여 챌린지가 있을 때
-        사용자의 관심사 태그는 #요가 와 #운동 이며, 지금까지 참여한 챌린지는 매일 30분 러닝 입니다.
+        홍길동님의 관심사 태그는 #요가 와 #운동 이며, 지금까지 참여한 챌린지는 매일 30분 러닝 입니다.
         이러한 정보를 바탕으로 추천할 수 있는 공개 챌린지는 다음과 같습니다.
 
         예2) 참여 이력이 없거나 비슷한 참여 챌린지가 없을 때
-        사용자의 관심사 태그는 #요가 와 #운동 입니다.
+        홍길동님의 관심사 태그는 #요가 와 #운동 입니다.
         이러한 정보를 바탕으로 추천할 수 있는 공개 챌린지는 다음과 같습니다.
 
+        @param user 추천 대상 사용자이다.
         @param tagToUsers 사용자 관심 태그 목록이다.
         @param similarParticipatedTitles 추천 결과와 비슷한 참여 챌린지 제목(최대 3개)이다.
         @return 배너에 표시할 서술형 요약이다.
      */
     private String buildBannerSummary(
+            User user,
             List<TagToUser> tagToUsers,
             List<String> similarParticipatedTitles
     ) {
         String tagPart = formatInterestTagsForSummary(tagToUsers);
         StringBuilder sb = new StringBuilder();
-        sb.append("사용자의 관심사 태그는 ").append(tagPart);
+        sb.append(formatUserPossessiveLabel(user)).append(" 관심사 태그는 ").append(tagPart);
 
         if (similarParticipatedTitles != null && !similarParticipatedTitles.isEmpty()) {
             /*
@@ -313,6 +321,34 @@ public class AiChallengeCombinedRecommendService {
 
         sb.append(" 이러한 정보를 바탕으로 추천할 수 있는 공개 챌린지는 다음과 같습니다.");
         return sb.toString();
+    }
+
+    /*
+        API 응답에 쓸 '닉네임님의' 표현을 만든다. 닉네임이 없으면 '회원님의'를 쓴다.
+
+        @param user 추천 대상 사용자이다.
+        @return 소유격 호칭 문자열이다.
+     */
+    private String formatUserPossessiveLabel(User user) {
+        if (user == null || user.getNickname() == null || user.getNickname().isBlank()) {
+            return "회원님의";
+        }
+        return user.getNickname().trim() + "님의";
+    }
+
+    /*
+        응답 문장 속 '사용자의'를 닉네임 소유격(예: 홍길동님의)으로 바꾼다.
+        RAG 본문에서 잘라 온 추천 이유에도 동일하게 적용한다.
+
+        @param text 원문이다.
+        @param user 추천 대상 사용자이다.
+        @return 개인화된 문장이다.
+     */
+    private String personalizeUserWording(String text, User user) {
+        if (text == null || text.isBlank()) {
+            return text == null ? "" : text;
+        }
+        return text.replace("사용자의", formatUserPossessiveLabel(user));
     }
 
     /*
