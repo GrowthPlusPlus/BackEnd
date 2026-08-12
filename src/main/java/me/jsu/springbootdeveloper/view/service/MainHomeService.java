@@ -167,20 +167,21 @@ public class MainHomeService {
 
     /*
         사용자가 선택한 날짜가 속한 주간 캘린더의 색상 정보를 생성한다.
-        targetDate를 기준으로 해당 날짜가 속한 월요일 ~ 일요일의 성공, 실패 여부를 조회하여 각 날짜의 상태를 반환한다.
+        targetDate를 기준으로 해당 날짜가 속한 월의 1일 ~ 말일까지 성공, 실패 여부를 조회하여 각 날짜의 상태를 반환한다.
      */
     private List<WeekDayStatusResponse> getWeekStatus(Long userId, LocalDate today, LocalDate targetDate) {
-        // 사용자가 선택한 날짜가 속한 주의 월요일을 구한다. 주간 캘린더는 월요일 ~ 일요일 기준으로 구성한다.
-        LocalDate targetWeekStart = targetDate.with(DayOfWeek.MONDAY);
+        // 사용자가 선택한 날짜의 월의 1일을 구한 뒤 월의 1일이 포함된 주의 월요일로 이동한다.
+        LocalDate targetMonthStart = targetDate.withDayOfMonth(1).with(DayOfWeek.MONDAY);
 
-        // 해당 주의 마지막 날인 일요일을 구한다.
-        LocalDate targetWeekEnd = targetWeekStart.plusDays(6);
+        // 해당 월의 마지막 날짜를 구한다.
+        LocalDate targetMonthEnd = targetDate.withDayOfMonth(targetDate.lengthOfMonth());
+                //.with(DayOfWeek.SUNDAY);  // 해당 월의 마지막 날짜가 포함된 주의 일요일까지 확장한다. 현재는 미래의 정보는 NONE처리를 하지 않고 생략하므로 사용하지 않는다.
 
-        // 해당 주의 성공 로그를 전부 조회한다.
+        // 해당 월 전체의 성공 로그를 조회한다.
         List<ChallengeDailyLog> logs = challengeQueryService.findByUserIdAndPostDateBetween(
                 userId,
-                targetWeekStart,
-                targetWeekEnd
+                targetMonthStart,
+                targetMonthEnd
         );
 
         /*
@@ -194,28 +195,29 @@ public class MainHomeService {
         // 유저의 모든 실패한 챌린지를 검색한다.
         List<ChallengeParticipant> failedChallenges = challengeQueryService.findStatusWithChallengeByUserIdAndStatus(userId, Status.FAIL);
 
-        // 실패 날짜만 추출한다. 해당 주에 실패하지 않았으면 제외한다.
+        // 실패 날짜만 추출한다. 해당 월에 실패하지 않았으면 제외한다.
         Set<LocalDate> failDates = failedChallenges.stream()
                 .map(ChallengeParticipant::getFailedAt)
                 .filter(Objects::nonNull)
-                .filter(date -> !date.isBefore(targetWeekStart) && !date.isAfter(targetWeekEnd))
+                .filter(date -> !date.isBefore(targetMonthStart) && !date.isAfter(targetMonthEnd))
                 .collect(Collectors.toSet());
 
-        // 월요일 ~ 일요일까지 7일의 상태를 저장할 리스트이다.
-        List<WeekDayStatusResponse> weekStatus = new ArrayList<>();
+        // 월의 모든 날짜를 저장하는 리스트이다.
+        List<WeekDayStatusResponse> monthStatus = new ArrayList<>();
+
+        // 해당 월의 1일부터 시작한다.
+        LocalDate date = targetMonthStart;
 
         /*
-            월요일부터 일요일까지 각 날짜의 상태를 계산한다.
-            월 ~ 일 7일에 대해 RED > GREEN > GRAY 우선순위로 계산한다.
+            해당 월의 마지막 날까지 반복한다.
+            날짜에 대해 RED > GREEN > GRAY 우선순위로 계산한다.
          */
-        for (int i = 0; i < 7; i++) {
-            // 주의 시작일인 월요일에서 i일을 더하여 현재 확인할 날짜를 구한다.
-            LocalDate date = targetWeekStart.plusDays(i);
-
+        while (!date.isAfter(targetMonthEnd)) {
             DayStatus status;
 
             if (date.isAfter(today)) {  // 서버의 현재 시간인 오늘보다 내일이라면 미래이므로 NONE값을 넣는다.
-                status = DayStatus.NONE;
+                break;  // 현재는 그냥 반환하지 않는다.
+                //status = DayStatus.NONE;
             } else if (failDates.contains(date)) {
                 status = DayStatus.RED;
             } else if (successDates.contains(date)) {
@@ -225,13 +227,16 @@ public class MainHomeService {
             }
 
             // 계산한 날짜와 상태를 주간 캘린더 목록에 추가한다.
-            weekStatus.add(WeekDayStatusResponse.builder()
+            monthStatus.add(WeekDayStatusResponse.builder()
                     .date(date)
                     .status(status)
                     .build());
+
+            // 다음 날짜로 이동한다.
+            date = date.plusDays(1);
         }
 
         // 월요일 ~ 일요일까지 계산한 주간 캘린더 상태를 반환한다.
-        return weekStatus;
+        return monthStatus;
     }
 }
