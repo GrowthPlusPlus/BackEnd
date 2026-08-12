@@ -57,6 +57,9 @@ public class AiChallengeCombinedRecommendService {
      */
     private static final int MAX_PARTICIPATED_TITLES_IN_SUMMARY = 3;
 
+    // 추천 카드로 내려줄 챌린지 최대 개수이다.
+    private static final int MAX_RECOMMENDED_CARD_COUNT = 3;
+
     private final AiChallengeRecommendService aiChallengeRecommendService;
     private final UserService userService;
     private final ChallengeRepository challengeRepository;
@@ -105,6 +108,8 @@ public class AiChallengeCombinedRecommendService {
                     .stream()
                     .collect(Collectors.toMap(Challenge::getId, c -> c, (a, b) -> a));
 
+            List<TagToUser> tagToUsers = tagToUserRepository.findWithTagByUserId(user.getId());
+
             List<Challenge> cardChallenges = new ArrayList<>();
             for (Challenge brief : picked) {
                 if (participatingIds.contains(brief.getId())) {
@@ -115,20 +120,37 @@ public class AiChallengeCombinedRecommendService {
                     continue;
                 }
                 cardChallenges.add(full);
-                if (cardChallenges.size() >= 3) {
+                if (cardChallenges.size() >= MAX_RECOMMENDED_CARD_COUNT) {
                     break;
                 }
             }
 
-            // 카드별 추천 이유: 해당 제목 구간 ~ 다음 제목 직전까지.
-            Map<Long, String> reasonByChallengeId = extractRecommendReasons(prose, cardChallenges);
+            /*
+                RAG/본문 매칭으로 카드가 비면 관심 태그와 겹치는 공개 챌린지로 채운다.
+                사용자 응답 형식(summary·카드·추천 이유)은 1차와 동일하며, 폴백 사실은 노출하지 않는다.
+             */
+            boolean usedTagBasedFallback = false;
+            if (cardChallenges.isEmpty()) {
+                cardChallenges = pickChallengesByInterestTagOverlap(
+                        tagToUsers,
+                        publicWithTags,
+                        participatingIds,
+                        MAX_RECOMMENDED_CARD_COUNT
+                );
+                usedTagBasedFallback = !cardChallenges.isEmpty();
+            }
+
+            // 카드별 추천 이유: RAG 본문 우선, 비어 있으면 관심 태그·챌린지 정보로 보완한다.
+            Map<Long, String> reasonByChallengeId = new HashMap<>(
+                    extractRecommendReasons(prose, cardChallenges)
+            );
+            fillMissingRecommendReasons(cardChallenges, tagToUsers, reasonByChallengeId);
 
             /*
                 배너 요약은 LLM 본문을 쓰지 않는다.
                 관심 태그 + (추천 결과·추천 이유와 비슷한 참여 챌린지 최대 3개)로 문장을 만든다.
                 비슷한 참여 챌린지가 없으면 참여 문장 전체를 생략한다.
              */
-            List<TagToUser> tagToUsers = tagToUserRepository.findWithTagByUserId(user.getId());
             List<String> similarParticipatedTitles = selectSimilarParticipatedTitles(
                     participants,
                     cardChallenges,
@@ -155,6 +177,9 @@ public class AiChallengeCombinedRecommendService {
                         knownTagNames,
                         knownChallengeTitles
                 );
+                if (reason.isBlank()) {
+                    reason = buildRecommendReasonForChallenge(challenge, tagToUsers);
+                }
                 // 이 챌린지 태그(보통 2개) 중 1개를 랜덤으로 골라 imageUrl을 정한다.
                 String imageUrl = pickRandomTagImageUrl(challenge);
 
@@ -168,6 +193,10 @@ public class AiChallengeCombinedRecommendService {
 
             if (items.isEmpty() && !picked.isEmpty()) {
                 log.debug("합본 추천: 답변 매칭은 됐으나 공개·참여 필터 후 카드가 비었습니다.");
+            } else if (usedTagBasedFallback) {
+                log.debug("합본 추천: RAG 매칭 결과가 없어 관심 태그 겹침 기준으로 대체 추천했습니다.");
+            } else if (items.isEmpty()) {
+                log.debug("합본 추천: RAG·태그 폴백 모두 후보가 없습니다.");
             }
 
             return new AiChallengeCombinedRecommendResponse(summary, items);
@@ -362,6 +391,266 @@ public class AiChallengeCombinedRecommendService {
         }
 
         return "과";
+    }
+
+    /*
+        RAG/본문 매칭으로 추천 카드가 비었을 때, 사용자 관심 태그와 겹치는
+        공개 챌린지를 태그 유사도 순으로 고른다.
+
+        @param tagToUsers 사용자 관심 태그 목록이다.
+        @param publicWithTags 오늘 기준 진행 중 공개 챌린지(id → 엔티티)이다.
+        @param participatingIds 이미 참여 중인 챌린지 id 집합이다.
+        @param limit 반환할 최대 개수이다.
+        @return 겹치는 태그가 1개 이상인 챌린지 목록(최대 limit)이다.
+     */
+    private List<Challenge> pickChallengesByInterestTagOverlap(
+            List<TagToUser> tagToUsers,
+            Map<Long, Challenge> publicWithTags,
+            Set<Long> participatingIds,
+            int limit
+    ) {
+        Set<String> interestTagNames = collectInterestTagNames(tagToUsers);
+        if (interestTagNames.isEmpty() || publicWithTags == null || publicWithTags.isEmpty()) {
+            return List.of();
+        }
+
+        record ScoredChallenge(Challenge challenge, int overlapCount) {
+        }
+
+        List<ScoredChallenge> scored = new ArrayList<>();
+        for (Challenge challenge : publicWithTags.values()) {
+            if (participatingIds.contains(challenge.getId())) {
+                continue;
+            }
+            int overlap = countInterestTagOverlapOnChallenge(challenge, interestTagNames);
+            if (overlap <= 0) {
+                continue;
+            }
+            scored.add(new ScoredChallenge(challenge, overlap));
+        }
+
+        scored.sort(Comparator
+                .comparingInt(ScoredChallenge::overlapCount).reversed()
+                .thenComparing(
+                        (ScoredChallenge item) -> item.challenge().getStartDate(),
+                        Comparator.nullsLast(Comparator.reverseOrder())
+                ));
+
+        List<Challenge> result = new ArrayList<>();
+        for (ScoredChallenge item : scored) {
+            result.add(item.challenge());
+            if (result.size() >= limit) {
+                break;
+            }
+        }
+        return result;
+    }
+
+    /*
+        사용자 관심 태그 이름 집합을 만든다.
+
+        @param tagToUsers 사용자 관심 태그 목록이다.
+        @return 태그 이름 집합이다.
+     */
+    private Set<String> collectInterestTagNames(List<TagToUser> tagToUsers) {
+        Set<String> names = new HashSet<>();
+        if (tagToUsers == null) {
+            return names;
+        }
+        for (TagToUser tagToUser : tagToUsers) {
+            if (tagToUser.getTag() == null || tagToUser.getTag().getTagName() == null) {
+                continue;
+            }
+            String name = tagToUser.getTag().getTagName().trim();
+            if (!name.isBlank()) {
+                names.add(name);
+            }
+        }
+        return names;
+    }
+
+    /*
+        챌린지 태그 중 사용자 관심 태그와 이름이 같은 개수를 센다.
+
+        @param challenge 공개 챌린지 엔티티이다.
+        @param interestTagNames 사용자 관심 태그 이름 집합이다.
+        @return 겹치는 태그 개수이다.
+     */
+    private int countInterestTagOverlapOnChallenge(Challenge challenge, Set<String> interestTagNames) {
+        if (interestTagNames.isEmpty() || challenge.getTagMappings() == null) {
+            return 0;
+        }
+
+        int overlap = 0;
+        for (TagToChallenge mapping : challenge.getTagMappings()) {
+            if (mapping.getTag() == null || mapping.getTag().getTagName() == null) {
+                continue;
+            }
+            if (interestTagNames.contains(mapping.getTag().getTagName())) {
+                overlap++;
+            }
+        }
+        return overlap;
+    }
+
+    /*
+        RAG 본문에서 추천 이유를 못 찾은 카드에 대해, LLM 답변과 같은 톤의 문장을 채운다.
+        폴백 여부는 사용자에게 드러내지 않으며, 관심 태그는 실제로 보유한 것만 쓴다.
+
+        @param cardChallenges 추천 카드 목록이다.
+        @param tagToUsers 사용자 관심 태그 목록이다.
+        @param reasonByChallengeId 챌린지 id → 추천 이유 맵(빈 값이면 덮어쓴다)이다.
+     */
+    private void fillMissingRecommendReasons(
+            List<Challenge> cardChallenges,
+            List<TagToUser> tagToUsers,
+            Map<Long, String> reasonByChallengeId
+    ) {
+        if (cardChallenges == null || cardChallenges.isEmpty()) {
+            return;
+        }
+
+        for (Challenge challenge : cardChallenges) {
+            String existing = reasonByChallengeId.getOrDefault(challenge.getId(), "");
+            if (existing != null && !existing.isBlank()) {
+                continue;
+            }
+            reasonByChallengeId.put(
+                    challenge.getId(),
+                    buildRecommendReasonForChallenge(challenge, tagToUsers)
+            );
+        }
+    }
+
+    /*
+        관심 태그·챌린지 제목으로 추천 이유 1문장을 만든다.
+        RAG가 쓰는 형식(관심사 + #태그 + 챌린지 연결)과 비슷하게 구성한다.
+
+        @param challenge 추천 대상 챌린지이다.
+        @param tagToUsers 사용자 관심 태그 목록이다.
+        @return 비어 있지 않은 추천 이유 문장이다.
+     */
+    private String buildRecommendReasonForChallenge(
+            Challenge challenge,
+            List<TagToUser> tagToUsers
+    ) {
+        String title = challenge.getTitle() == null ? "" : challenge.getTitle().trim();
+        Set<String> interestTagNames = collectInterestTagNames(tagToUsers);
+        List<String> overlappingHashedTags = collectOverlappingInterestHashedTags(
+                challenge,
+                interestTagNames
+        );
+
+        if (!overlappingHashedTags.isEmpty()) {
+            String tagPart = joinHashedTagsWithWaOrGwa(overlappingHashedTags);
+            if (title.isBlank()) {
+                return "관심사인 " + tagPart + "에 맞는 챌린지입니다.";
+            }
+            return "관심사인 " + tagPart + "에 맞는 " + title + " 챌린지입니다.";
+        }
+
+        List<String> interestHashedTags = formatHashedTagsFromUserTags(tagToUsers, 2);
+        if (!interestHashedTags.isEmpty()) {
+            String tagPart = joinHashedTagsWithWaOrGwa(interestHashedTags);
+            if (title.isBlank()) {
+                return "관심사 " + tagPart + "에 관심이 있으시다면 참여해 보시기 좋은 챌린지입니다.";
+            }
+            return "관심사 " + tagPart + "에 관심이 있으시다면 "
+                    + title + " 챌린지가 도움이 될 수 있습니다.";
+        }
+
+        if (title.isBlank()) {
+            return "현재 진행 중인 공개 챌린지로 추천드립니다.";
+        }
+        return title + selectEunOrNeun(title) + " 추천드리는 공개 챌린지입니다.";
+    }
+
+    /*
+        챌린지 태그 중 사용자 관심 태그와 겹치는 항목을 #태그 형태로 모은다.
+
+        @param challenge 추천 대상 챌린지이다.
+        @param interestTagNames 사용자 관심 태그 이름 집합이다.
+        @return 겹치는 #태그 목록이다.
+     */
+    private List<String> collectOverlappingInterestHashedTags(
+            Challenge challenge,
+            Set<String> interestTagNames
+    ) {
+        List<String> hashedTags = new ArrayList<>();
+        if (challenge.getTagMappings() == null || interestTagNames.isEmpty()) {
+            return hashedTags;
+        }
+
+        Set<String> seen = new HashSet<>();
+        for (TagToChallenge mapping : challenge.getTagMappings()) {
+            if (mapping.getTag() == null || mapping.getTag().getTagName() == null) {
+                continue;
+            }
+            String tagName = mapping.getTag().getTagName().trim();
+            if (tagName.isBlank() || !interestTagNames.contains(tagName) || !seen.add(tagName)) {
+                continue;
+            }
+            hashedTags.add(tagName.startsWith("#") ? tagName : "#" + tagName);
+        }
+        return hashedTags;
+    }
+
+    /*
+        사용자 관심 태그를 #태그 형태로 변환한다.
+
+        @param tagToUsers 사용자 관심 태그 목록이다.
+        @param limit 최대 개수이다.
+        @return #태그 문자열 목록이다.
+     */
+    private List<String> formatHashedTagsFromUserTags(List<TagToUser> tagToUsers, int limit) {
+        List<String> hashedTags = new ArrayList<>();
+        if (tagToUsers == null || tagToUsers.isEmpty() || limit <= 0) {
+            return hashedTags;
+        }
+
+        Set<String> seen = new HashSet<>();
+        for (TagToUser tagToUser : tagToUsers) {
+            if (tagToUser.getTag() == null || tagToUser.getTag().getTagName() == null) {
+                continue;
+            }
+            String tagName = tagToUser.getTag().getTagName().trim();
+            if (tagName.isBlank() || !seen.add(tagName)) {
+                continue;
+            }
+            hashedTags.add(tagName.startsWith("#") ? tagName : "#" + tagName);
+            if (hashedTags.size() >= limit) {
+                break;
+            }
+        }
+        return hashedTags;
+    }
+
+    /*
+        명사 뒤 주제 조사 '은' / '는'을 고른다.
+
+        @param word 조사를 붙일 단어이다.
+        @return 받침 없으면 "는", 있으면 "은"이다.
+     */
+    private String selectEunOrNeun(String word) {
+        if (word == null || word.isBlank()) {
+            return "는";
+        }
+
+        char lastChar = word.charAt(word.length() - 1);
+        if (lastChar >= '가' && lastChar <= '힣') {
+            boolean hasBatchim = (lastChar - '가') % 28 != 0;
+            return hasBatchim ? "은" : "는";
+        }
+
+        if (Character.isLetter(lastChar)) {
+            char lower = Character.toLowerCase(lastChar);
+            if ("aeiou".indexOf(lower) >= 0) {
+                return "는";
+            }
+            return "은";
+        }
+
+        return "은";
     }
 
     /*
