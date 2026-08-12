@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /*
@@ -39,4 +40,24 @@ public interface TagToChallengeRepository extends JpaRepository<TagToChallenge, 
     boolean existsByChallenge_IdAndTag_Id(Long challengeId, Long tagId);  // 이미 챌린지에 중복된 태그가 존재하는지 검사한다.
 
     void deleteByChallenge_IdAndTag_IdIn(Long challengeId, List<Long> tagIds);  // 챌린지 태그를 id 리스트로 삭제한다.
+
+    /*
+        태그 id 목록과 연결된 진행 중 공개 챌린지 id를 조회한다.
+        fetch join 없이 id만 조회해 distinct 누락을 방지한다.
+        (PostgreSQL: SELECT DISTINCT + ORDER BY 비호환 → 정렬은 서비스에서 수행)
+     */
+    @Query("""
+        select distinct c.id
+        from TagToChallenge ttc
+        join ttc.challenge c
+        where ttc.tag.id in :tagIds
+          and c.challengeVisibility = 'PUBLIC'
+          and c.startDate <= :today
+          and c.endDate >= :today
+          and c.active = true
+    """)
+    List<Long> findPublicChallengeIdsByTagIds(
+            @Param("tagIds") List<Long> tagIds,
+            @Param("today") LocalDate today
+    );
 }
