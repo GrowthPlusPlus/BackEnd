@@ -18,6 +18,7 @@ import me.jsu.springbootdeveloper.tag.dto.TagResponse;
 import me.jsu.springbootdeveloper.tag.repository.TagToChallengeRepository;
 import me.jsu.springbootdeveloper.tag.service.TagService;
 import me.jsu.springbootdeveloper.user.domain.User;
+import me.jsu.springbootdeveloper.user.repository.UserProfilePictureRepository;
 import me.jsu.springbootdeveloper.user.service.UserService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +41,7 @@ public class ChallengeInviteService {
     private final TagToChallengeRepository tagToChallengeRepository;
     private final ChallengeParticipantRepository challengeParticipantRepository;
     private final TagService tagService;
+    private final UserProfilePictureRepository userProfilePictureRepository;
 
     /*
        작성된 함수 목록
@@ -102,7 +104,9 @@ public class ChallengeInviteService {
         // 전체 알림이 아니라 "챌린지 초대 푸시 알림" 활성화 여부만 확인 후 초대되는 사람에게 푸시알림 전송
         String message = inviter.getNickname() + "님이 " + challenge.getTitle()+ " 방에 나를 초대했어요.";
         String title = "챌린지 초대";
-        notificationService.sendNotification(invitee, NotificationType.CHALLENGE, message); // 예시 메서드
+        // 초대자의 프로필 이미지를 인앱 알림에 함께 저장한다. 없으면 null이다.
+        String imageUrl = userProfilePictureRepository.findImageUrlByUserId(inviter.getId()).orElse(null);
+        notificationService.sendNotification(invitee, NotificationType.CHALLENGE, message, imageUrl, challengeId);
         if (invitee.isChallengeInvitePushNotificationEnabled()
                 && invitee.getFcmToken() != null
                 && !invitee.getFcmToken().isBlank()) {

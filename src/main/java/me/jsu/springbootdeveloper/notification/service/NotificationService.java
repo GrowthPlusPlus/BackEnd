@@ -51,6 +51,17 @@ public class NotificationService {
         */
     }
 
+    /*
+        프로필 이미지 URL이 없거나 빈 문자열이면 null로 저장한다.
+        클라이언트는 profileImageUrl이 null인 경우 기본 이미지를 표시하면 된다.
+     */
+    private String normalizeImageUrl(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return null;
+        }
+        return imageUrl;
+    }
+
     //친구 관련 알림 등 imageUrl 필요, targetId 필요하지 않을 경우 호출
     @Transactional
     public void sendNotification(User user, NotificationType notificationType, String message, String imageUrl ) {
@@ -61,7 +72,7 @@ public class NotificationService {
                 .type(notificationType)
                 .build();
         //이미지 url 설정
-        notification.setImageUrl(imageUrl);
+        notification.setImageUrl(normalizeImageUrl(imageUrl));
         notificationRepository.save(notification);
 
     }
@@ -76,7 +87,7 @@ public class NotificationService {
                 .type(notificationType)
                 .build();
         //이미지 url 설정
-        notification.setImageUrl(imageUrl);
+        notification.setImageUrl(normalizeImageUrl(imageUrl));
         //타겟 id 설정
         notification.setTargetId(targetId);
         notificationRepository.save(notification);
