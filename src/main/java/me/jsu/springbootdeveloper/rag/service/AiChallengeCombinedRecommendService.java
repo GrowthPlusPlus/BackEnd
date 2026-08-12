@@ -237,11 +237,11 @@ public class AiChallengeCombinedRecommendService {
         배너용 서술형 요약을 고정 문장으로 만든다.
 
         예1) 비슷한 참여 챌린지가 있을 때
-        사용자의 관심사 태그는 #운동 과 #러닝 이며, 지금까지 참여한 챌린지는 매일 30분 러닝 입니다.
+        사용자의 관심사 태그는 #요가 와 #운동 이며, 지금까지 참여한 챌린지는 매일 30분 러닝 입니다.
         이러한 정보를 바탕으로 추천할 수 있는 공개 챌린지는 다음과 같습니다.
 
         예2) 참여 이력이 없거나 비슷한 참여 챌린지가 없을 때
-        사용자의 관심사 태그는 #운동 과 #러닝 입니다.
+        사용자의 관심사 태그는 #요가 와 #운동 입니다.
         이러한 정보를 바탕으로 추천할 수 있는 공개 챌린지는 다음과 같습니다.
 
         @param tagToUsers 사용자 관심 태그 목록이다.
@@ -273,8 +273,9 @@ public class AiChallengeCombinedRecommendService {
     }
 
     /*
-        관심 태그를 "#태그1 과 #태그2" 형태로 만든다.
-        태그가 없으면 "없음"을 반환한다.
+        관심 태그를 "#태그1 와/과 #태그2" 형태로 만든다.
+        앞 태그의 마지막 글자 받침 유무에 따라 연결 조사를 '과'(받침 있음) 또는
+        '와'(받침 없음)로 구분한다. 태그가 없으면 "없음"을 반환한다.
 
         @param tagToUsers 사용자 관심 태그 목록이다.
         @return 배너 문장에 넣을 태그 구문이다.
@@ -296,7 +297,71 @@ public class AiChallengeCombinedRecommendService {
         List<String> hashed = tagNames.stream()
                 .map(name -> name.startsWith("#") ? name : "#" + name)
                 .toList();
-        return String.join(" 과 ", hashed);
+        return joinHashedTagsWithWaOrGwa(hashed);
+    }
+
+    /*
+        #태그 목록을 받침에 맞는 '와' / '과'로 이어 붙인다.
+        예: #요가 와 #운동, #과제 와 #러닝
+
+        @param hashedTags # 접두가 붙은 태그 문자열 목록이다.
+        @return 배너 문장에 넣을 태그 구문이다.
+     */
+    private String joinHashedTagsWithWaOrGwa(List<String> hashedTags) {
+        if (hashedTags == null || hashedTags.isEmpty()) {
+            return "";
+        }
+        if (hashedTags.size() == 1) {
+            return hashedTags.get(0);
+        }
+
+        StringBuilder joined = new StringBuilder(hashedTags.get(0));
+        for (int i = 1; i < hashedTags.size(); i++) {
+            String previousTag = hashedTags.get(i - 1);
+            joined.append(' ')
+                    .append(selectWaOrGwaParticle(previousTag))
+                    .append(' ')
+                    .append(hashedTags.get(i));
+        }
+        return joined.toString();
+    }
+
+    /*
+        태그 문자열의 마지막 글자 받침 유무로 연결 조사 '와' / '과'를 고른다.
+        한글은 유니코드 음절 블록으로 받침을 판별하고, 그 외 문자는
+        마지막 글자가 모음이면 '와', 자음(또는 숫자)이면 '과'를 쓴다.
+
+        @param hashedTag # 접두가 있을 수 있는 태그 문자열이다.
+        @return 받침 없으면 "와", 있으면 "과"이다.
+     */
+    private String selectWaOrGwaParticle(String hashedTag) {
+        if (hashedTag == null || hashedTag.isBlank()) {
+            return "과";
+        }
+
+        String tagText = hashedTag.startsWith("#")
+                ? hashedTag.substring(1)
+                : hashedTag;
+        if (tagText.isBlank()) {
+            return "과";
+        }
+
+        char lastChar = tagText.charAt(tagText.length() - 1);
+        if (lastChar >= '가' && lastChar <= '힣') {
+            // (음절 - '가') % 28 == 0 이면 받침 없음, 0이 아니면 받침 있음이다.
+            boolean hasBatchim = (lastChar - '가') % 28 != 0;
+            return hasBatchim ? "과" : "와";
+        }
+
+        if (Character.isLetter(lastChar)) {
+            char lower = Character.toLowerCase(lastChar);
+            if ("aeiou".indexOf(lower) >= 0) {
+                return "와";
+            }
+            return "과";
+        }
+
+        return "과";
     }
 
     /*
