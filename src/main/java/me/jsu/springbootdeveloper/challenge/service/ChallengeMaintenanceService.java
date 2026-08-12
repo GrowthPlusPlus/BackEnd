@@ -14,7 +14,6 @@ import me.jsu.springbootdeveloper.fcm.service.FcmService;
 import me.jsu.springbootdeveloper.notification.enumType.NotificationType;
 import me.jsu.springbootdeveloper.notification.service.NotificationService;
 import me.jsu.springbootdeveloper.user.domain.User;
-import me.jsu.springbootdeveloper.user.repository.UserProfilePictureRepository;
 import me.jsu.springbootdeveloper.user.service.UserStatisticsService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -38,7 +37,6 @@ public class ChallengeMaintenanceService {
     private final ChallengeDeleteService challengeDeleteService;
     private final UserStatisticsService userStatisticsService;
     private final NotificationService notificationService;
-    private final UserProfilePictureRepository userProfilePictureRepository;
     private final FcmService fcmService;
 
     private static final int BATCH_SIZE = 500;  // 해당 배치 사이즈로 처리한다.
@@ -306,9 +304,9 @@ public class ChallengeMaintenanceService {
 
         //인앱 알림 발송
         User user = cp.getUser();
-        long userId = user.getId();
         Long targetId = challenge.getId();
-        String imageUrl = userProfilePictureRepository.findImageUrlByUserId(userId).orElse("");
+        // 본인에게 가는 시스템성 알림이므로 프로필 이미지는 넣지 않는다.
+        String imageUrl = null;
         notificationService.sendNotification(user, NotificationType.CHALLENGE, message, imageUrl, targetId);
 
         // 푸시 알림을 발송
@@ -420,9 +418,9 @@ public class ChallengeMaintenanceService {
                 String message = "축하합니다! '" + cp.getChallenge().getTitle() + "' 목표를 훌륭하게 해냈어요!";
                 //인앱 알림 발송
                 User user = cp.getUser();
-                long userId = user.getId();
                 Long targetId = cp.getChallenge().getId();
-                String imageUrl = "";
+                // 본인에게 가는 시스템성 알림이므로 프로필 이미지는 넣지 않는다.
+                String imageUrl = null;
                 notificationService.sendNotification(user, NotificationType.CHALLENGE, message, imageUrl, targetId);
 
                 // 푸시 알림을 발송
