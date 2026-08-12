@@ -126,23 +126,26 @@ public class AiChallengeCombinedRecommendService {
             }
 
             /*
-                RAG/본문 매칭으로 카드가 비면 관심·참여 태그와 겹치는 공개 챌린지로 채운다.
-                겹침이 없어도 미참여 공개 챌린지가 있으면 최신순으로 보완한다.
-                사용자 응답 형식(summary·카드·추천 이유)은 1차와 동일하며, 폴백 사실은 노출하지 않는다.
+                RAG/본문 매칭으로 카드가 3개 미만이면, 관심사 태그와 1개 이상 겹치는
+                미참여 공개 챌린지로 최대 3개까지 채운다. 겹침 후보가 없을 때만
+                태그 무관 최신순으로 보완한다.
              */
-            Set<String> preferenceTagNames = collectPreferenceTagNamesForMatching(
-                    tagToUsers,
-                    participants
+            Set<Long> excludeChallengeIds = new HashSet<>(participatingIds);
+            excludeChallengeIds.addAll(
+                    cardChallenges.stream().map(Challenge::getId).collect(Collectors.toSet())
             );
             boolean usedTagBasedFallback = false;
-            if (cardChallenges.isEmpty()) {
-                cardChallenges = pickChallengesByInterestTagOverlap(
-                        preferenceTagNames,
+            if (cardChallenges.size() < MAX_RECOMMENDED_CARD_COUNT) {
+                int beforeSize = cardChallenges.size();
+                List<Challenge> tagOverlapChallenges = pickChallengesByInterestTagOverlap(
+                        tagToUsers,
+                        excludeChallengeIds,
                         publicWithTags,
-                        participatingIds,
-                        MAX_RECOMMENDED_CARD_COUNT
+                        today,
+                        MAX_RECOMMENDED_CARD_COUNT - cardChallenges.size()
                 );
-                usedTagBasedFallback = !cardChallenges.isEmpty();
+                cardChallenges.addAll(tagOverlapChallenges);
+                usedTagBasedFallback = cardChallenges.size() > beforeSize;
             }
 
             // 카드별 추천 이유: RAG 본문 우선, 비어 있으면 관심 태그·챌린지 정보로 보완한다.
@@ -201,7 +204,13 @@ public class AiChallengeCombinedRecommendService {
             } else if (usedTagBasedFallback) {
                 log.debug("합본 추천: RAG 매칭 결과가 없어 관심 태그 겹침 기준으로 대체 추천했습니다.");
             } else if (items.isEmpty()) {
-                log.debug("합본 추천: RAG·태그 폴백 모두 후보가 없습니다.");
+                log.debug(
+                        "합본 추천: RAG·태그 폴백 모두 후보가 없습니다. "
+                                + "publicChallenges={}, participatingRecords={}, interestTags={}",
+                        publicWithTags.size(),
+                        participatingIds.size(),
+                        tagToUsers.size()
+                );
             }
 
             return new AiChallengeCombinedRecommendResponse(summary, items);
@@ -399,124 +408,282 @@ public class AiChallengeCombinedRecommendService {
     }
 
     /*
-        RAG/본문 매칭으로 추천 카드가 비었을 때, 선호 태그와 겹치는 공개 챌린지를 고른다.
-        겹치는 태그가 없으면 미참여 공개 챌린지를 시작일 최신순으로 채운다.
+        RAG/본문 매칭으로 카드가 부족할 때, 사용자 관심사 태그와 1개 이상 겹치는
+        미참여 공개 챌린지를 최대 limit개까지 고른다. 관심 태그 기준은 id 우선,
+        id 조회·태그 매핑 일괄 조회로 fetch join 누락을 피한다.
 
-        @param preferenceTagNames 관심·참여 태그를 정규화한 선호 태그 집합이다.
+        @param tagToUsers 사용자 관심 태그 목록이다.
+        @param excludeChallengeIds 제외할 챌린지 id(참여·이미 추천된 카드)이다.
         @param publicWithTags 오늘 기준 진행 중 공개 챌린지(id → 엔티티)이다.
-        @param participatingIds 이미 참여 중인 챌린지 id 집합이다.
-        @param limit 반환할 최대 개수이다.
-        @return 추천 카드 후보 목록(최대 limit)이다.
+        @param today 서울 기준 오늘이다.
+        @param limit 추가로 채울 최대 개수이다.
+        @return 관심사 태그와 겹치는 추천 카드 후보 목록이다.
      */
     private List<Challenge> pickChallengesByInterestTagOverlap(
-            Set<String> preferenceTagNames,
+            List<TagToUser> tagToUsers,
+            Set<Long> excludeChallengeIds,
             Map<Long, Challenge> publicWithTags,
-            Set<Long> participatingIds,
+            LocalDate today,
             int limit
     ) {
-        if (publicWithTags == null || publicWithTags.isEmpty()) {
+        if (limit <= 0) {
             return List.of();
         }
 
-        record ScoredChallenge(Challenge challenge, int overlapCount) {
+        Map<Long, Challenge> challengeById = buildPublicChallengeLookup(publicWithTags, today);
+        if (challengeById.isEmpty()) {
+            log.debug("합본 추천 폴백: 진행 중인 공개 챌린지가 없습니다.");
+            return List.of();
         }
 
-        List<ScoredChallenge> scored = new ArrayList<>();
-        for (Challenge challenge : publicWithTags.values()) {
-            if (participatingIds.contains(challenge.getId())) {
-                continue;
-            }
-            int overlap = countTagOverlapOnChallenge(challenge, preferenceTagNames);
-            if (overlap <= 0) {
-                continue;
-            }
-            scored.add(new ScoredChallenge(challenge, overlap));
+        Set<Long> interestTagIds = collectInterestTagIds(tagToUsers);
+        Set<String> interestTagNames = collectInterestTagNamesNormalized(tagToUsers);
+
+        List<Challenge> byInterestTags = pickChallengesOverlappingInterestTags(
+                interestTagIds,
+                interestTagNames,
+                excludeChallengeIds,
+                challengeById,
+                today,
+                limit
+        );
+        if (!byInterestTags.isEmpty()) {
+            return byInterestTags;
         }
 
-        if (!scored.isEmpty()) {
-            scored.sort(Comparator
-                    .comparingInt(ScoredChallenge::overlapCount).reversed()
-                    .thenComparing(
-                            (ScoredChallenge item) -> item.challenge().getStartDate(),
-                            Comparator.nullsLast(Comparator.reverseOrder())
-                    ));
-
-            List<Challenge> result = new ArrayList<>();
-            for (ScoredChallenge item : scored) {
-                result.add(item.challenge());
-                if (result.size() >= limit) {
-                    break;
-                }
-            }
-            return result;
-        }
-
+        log.debug(
+                "합본 추천 폴백: 관심사 태그와 겹치는 미참여 공개 챌린지가 없어 최신순으로 보완합니다."
+        );
         return pickPublicChallengesExcludingParticipating(
-                publicWithTags,
-                participatingIds,
+                challengeById,
+                excludeChallengeIds,
                 limit
         );
     }
 
     /*
+        관심사 태그(id·이름)와 1개 이상 겹치는 공개 챌린지를 겹침 개수 순으로 고른다.
+
+        @param interestTagIds 사용자 관심 태그 id 집합이다.
+        @param interestTagNames 정규화된 사용자 관심 태그 이름 집합이다.
+        @param excludeChallengeIds 제외할 챌린지 id이다.
+        @param challengeById 공개 챌린지 lookup 맵이다.
+        @param today 서울 기준 오늘이다.
+        @param limit 반환할 최대 개수이다.
+        @return 겹치는 챌린지 목록(최대 limit)이다.
+     */
+    private List<Challenge> pickChallengesOverlappingInterestTags(
+            Set<Long> interestTagIds,
+            Set<String> interestTagNames,
+            Set<Long> excludeChallengeIds,
+            Map<Long, Challenge> challengeById,
+            LocalDate today,
+            int limit
+    ) {
+        Set<Long> candidateIds = new LinkedHashSet<>();
+
+        if (interestTagIds != null && !interestTagIds.isEmpty()) {
+            for (Long challengeId : tagToChallengeRepository.findPublicChallengeIdsByTagIds(
+                    new ArrayList<>(interestTagIds),
+                    today
+            )) {
+                if (!excludeChallengeIds.contains(challengeId)) {
+                    candidateIds.add(challengeId);
+                }
+            }
+        }
+
+        if (candidateIds.isEmpty() && interestTagNames != null && !interestTagNames.isEmpty()) {
+            for (Challenge challenge : challengeById.values()) {
+                if (excludeChallengeIds.contains(challenge.getId())) {
+                    continue;
+                }
+                if (countTagOverlapOnChallenge(challenge, interestTagNames) > 0) {
+                    candidateIds.add(challenge.getId());
+                }
+            }
+        }
+
+        if (candidateIds.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, Integer> overlapCountByChallengeId = buildInterestTagOverlapCountByChallengeId(
+                new ArrayList<>(candidateIds),
+                interestTagIds,
+                interestTagNames
+        );
+
+        record ScoredChallenge(Challenge challenge, int overlapCount) {
+        }
+
+        List<ScoredChallenge> scored = new ArrayList<>();
+        for (Long challengeId : candidateIds) {
+            Challenge challenge = challengeById.get(challengeId);
+            if (challenge == null) {
+                continue;
+            }
+            int overlap = overlapCountByChallengeId.getOrDefault(challengeId, 0);
+            if (overlap <= 0) {
+                overlap = 1;
+            }
+            scored.add(new ScoredChallenge(challenge, overlap));
+        }
+
+        scored.sort(Comparator
+                .comparingInt(ScoredChallenge::overlapCount).reversed()
+                .thenComparing(
+                        (ScoredChallenge item) -> item.challenge().getStartDate(),
+                        Comparator.nullsLast(Comparator.reverseOrder())
+                ));
+
+        List<Challenge> result = new ArrayList<>();
+        Set<Long> seen = new HashSet<>();
+        for (ScoredChallenge item : scored) {
+            if (!seen.add(item.challenge().getId())) {
+                continue;
+            }
+            result.add(item.challenge());
+            if (result.size() >= limit) {
+                break;
+            }
+        }
+        return result;
+    }
+
+    /*
+        후보 챌린지별 관심사 태그 겹침 개수를 일괄 계산한다.
+
+        @param challengeIds 후보 챌린지 id 목록이다.
+        @param interestTagIds 사용자 관심 태그 id 집합이다.
+        @param interestTagNames 정규화된 사용자 관심 태그 이름 집합이다.
+        @return 챌린지 id → 겹침 개수 맵이다.
+     */
+    private Map<Long, Integer> buildInterestTagOverlapCountByChallengeId(
+            List<Long> challengeIds,
+            Set<Long> interestTagIds,
+            Set<String> interestTagNames
+    ) {
+        Map<Long, Integer> overlapCountByChallengeId = new HashMap<>();
+        if (challengeIds == null || challengeIds.isEmpty()) {
+            return overlapCountByChallengeId;
+        }
+
+        List<TagToChallenge> mappings =
+                tagToChallengeRepository.findWithTagByChallengeIdsByOnce(challengeIds);
+        for (TagToChallenge mapping : mappings) {
+            if (mapping.getChallenge() == null || mapping.getTag() == null) {
+                continue;
+            }
+            Long challengeId = mapping.getChallenge().getId();
+            Long tagId = mapping.getTag().getId();
+            boolean matched = tagId != null && interestTagIds != null && interestTagIds.contains(tagId);
+            if (!matched && interestTagNames != null && !interestTagNames.isEmpty()) {
+                String normalized = normalizeTagNameForComparison(mapping.getTag().getTagName());
+                matched = !normalized.isBlank() && interestTagNames.contains(normalized);
+            }
+            if (matched) {
+                overlapCountByChallengeId.merge(challengeId, 1, Integer::sum);
+            }
+        }
+        return overlapCountByChallengeId;
+    }
+
+    /*
+        사용자 관심사 태그 id 집합을 만든다.
+
+        @param tagToUsers 사용자 관심 태그 목록이다.
+        @return 관심 태그 id 집합이다.
+     */
+    private Set<Long> collectInterestTagIds(List<TagToUser> tagToUsers) {
+        Set<Long> tagIds = new HashSet<>();
+        if (tagToUsers == null) {
+            return tagIds;
+        }
+        for (TagToUser tagToUser : tagToUsers) {
+            if (tagToUser.getTag() != null && tagToUser.getTag().getId() != null) {
+                tagIds.add(tagToUser.getTag().getId());
+            }
+        }
+        return tagIds;
+    }
+
+    /*
+        사용자 관심사 태그 이름을 비교용으로 정규화해 모은다.
+
+        @param tagToUsers 사용자 관심 태그 목록이다.
+        @return 정규화된 관심 태그 이름 집합이다.
+     */
+    private Set<String> collectInterestTagNamesNormalized(List<TagToUser> tagToUsers) {
+        Set<String> names = new HashSet<>();
+        if (tagToUsers == null) {
+            return names;
+        }
+        for (TagToUser tagToUser : tagToUsers) {
+            if (tagToUser.getTag() == null || tagToUser.getTag().getTagName() == null) {
+                continue;
+            }
+            String normalized = normalizeTagNameForComparison(tagToUser.getTag().getTagName());
+            if (!normalized.isBlank()) {
+                names.add(normalized);
+            }
+        }
+        return names;
+    }
+
+    /*
+        공개 챌린지 lookup 맵을 만든다. 태그 fetch 버전이 비어 있으면 기본 공개 조회로 보완한다.
+
+        @param publicWithTags 태그 fetch 된 공개 챌린지 맵이다.
+        @param today 서울 기준 오늘이다.
+        @return 챌린지 id → 엔티티 맵이다.
+     */
+    private Map<Long, Challenge> buildPublicChallengeLookup(
+            Map<Long, Challenge> publicWithTags,
+            LocalDate today
+    ) {
+        Map<Long, Challenge> challengeById = new HashMap<>();
+        if (publicWithTags != null) {
+            challengeById.putAll(publicWithTags);
+        }
+        if (!challengeById.isEmpty()) {
+            return challengeById;
+        }
+
+        for (Challenge challenge : challengeRepository.findPublicChallengesWithTagMappings(today)) {
+            challengeById.putIfAbsent(challenge.getId(), challenge);
+        }
+        if (!challengeById.isEmpty()) {
+            return challengeById;
+        }
+
+        for (Challenge challenge : challengeRepository.findPublicChallenges(today)) {
+            challengeById.putIfAbsent(challenge.getId(), challenge);
+        }
+        return challengeById;
+    }
+
+    /*
         태그 겹침 후보가 없을 때, 미참여 공개 챌린지를 시작일 최신순으로 고른다.
 
-        @param publicWithTags 오늘 기준 진행 중 공개 챌린지(id → 엔티티)이다.
-        @param participatingIds 이미 참여 중인 챌린지 id 집합이다.
+        @param challengeById 공개 챌린지 lookup 맵이다.
+        @param excludeChallengeIds 제외할 챌린지 id(참여·이미 추천된 카드)이다.
         @param limit 반환할 최대 개수이다.
         @return 미참여 공개 챌린지 목록(최대 limit)이다.
      */
     private List<Challenge> pickPublicChallengesExcludingParticipating(
-            Map<Long, Challenge> publicWithTags,
-            Set<Long> participatingIds,
+            Map<Long, Challenge> challengeById,
+            Set<Long> excludeChallengeIds,
             int limit
     ) {
-        return publicWithTags.values().stream()
-                .filter(challenge -> !participatingIds.contains(challenge.getId()))
+        return challengeById.values().stream()
+                .filter(challenge -> !excludeChallengeIds.contains(challenge.getId()))
                 .sorted(Comparator.comparing(
                         Challenge::getStartDate,
                         Comparator.nullsLast(Comparator.reverseOrder())
                 ))
                 .limit(limit)
                 .collect(Collectors.toCollection(ArrayList::new));
-    }
-
-    /*
-        RAG 후보 선정과 동일하게, 관심 태그 + 참여 챌린지 태그를 선호 태그로 모은다.
-        비교 시 # 접두·대소문자 차이를 없애기 위해 정규화한 값을 쓴다.
-
-        @param tagToUsers 사용자 관심 태그 목록이다.
-        @param participants 사용자 참여 이력이다.
-        @return 정규화된 선호 태그 이름 집합이다.
-     */
-    private Set<String> collectPreferenceTagNamesForMatching(
-            List<TagToUser> tagToUsers,
-            List<ChallengeParticipant> participants
-    ) {
-        Set<String> names = new HashSet<>();
-        if (tagToUsers != null) {
-            for (TagToUser tagToUser : tagToUsers) {
-                if (tagToUser.getTag() == null || tagToUser.getTag().getTagName() == null) {
-                    continue;
-                }
-                String normalized = normalizeTagNameForComparison(tagToUser.getTag().getTagName());
-                if (!normalized.isBlank()) {
-                    names.add(normalized);
-                }
-            }
-        }
-
-        Map<Long, List<String>> participatedTagsByChallengeId =
-                buildParticipatedTagNamesByChallengeId(participants);
-        for (List<String> tagNames : participatedTagsByChallengeId.values()) {
-            for (String tagName : tagNames) {
-                String normalized = normalizeTagNameForComparison(tagName);
-                if (!normalized.isBlank()) {
-                    names.add(normalized);
-                }
-            }
-        }
-        return names;
     }
 
     /*
