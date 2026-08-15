@@ -324,20 +324,31 @@ public class AiChallengeCombinedRecommendService {
     }
 
     /*
+        API 응답에 쓸 '닉네임님' 호칭을 만든다. 닉네임이 없으면 '회원님'을 쓴다.
+
+        @param user 추천 대상 사용자이다.
+        @return 호칭 문자열이다. (예: snowpie님)
+     */
+    private String formatUserHonorificLabel(User user) {
+        if (user == null || user.getNickname() == null || user.getNickname().isBlank()) {
+            return "회원님";
+        }
+        return user.getNickname().trim() + "님";
+    }
+
+    /*
         API 응답에 쓸 '닉네임님의' 표현을 만든다. 닉네임이 없으면 '회원님의'를 쓴다.
 
         @param user 추천 대상 사용자이다.
         @return 소유격 호칭 문자열이다.
      */
     private String formatUserPossessiveLabel(User user) {
-        if (user == null || user.getNickname() == null || user.getNickname().isBlank()) {
-            return "회원님의";
-        }
-        return user.getNickname().trim() + "님의";
+        return formatUserHonorificLabel(user) + "의";
     }
 
     /*
-        응답 문장 속 '사용자의'를 닉네임 소유격(예: 홍길동님의)으로 바꾼다.
+        응답 문장 속 '사용자+조사'를 닉네임 호칭으로 바꾼다.
+        예) 사용자가 → 홍길동님이, 사용자는 → 홍길동님은, 사용자의 → 홍길동님의
         RAG 본문에서 잘라 온 추천 이유에도 동일하게 적용한다.
 
         @param text 원문이다.
@@ -348,7 +359,27 @@ public class AiChallengeCombinedRecommendService {
         if (text == null || text.isBlank()) {
             return text == null ? "" : text;
         }
-        return text.replace("사용자의", formatUserPossessiveLabel(user));
+
+        // 닉네임 + 님 (예: snowpie님). 조사는 아래에서 이어 붙인다.
+        String honorific = formatUserHonorificLabel(user);
+        String personalized = text;
+
+        /*
+            긴 조사부터 먼저 치환한다.
+            (예: '사용자에게'를 '사용자'보다 먼저 바꿔야 '에게'가 빠지지 않는다.)
+         */
+        personalized = personalized.replace("사용자에게", honorific + "에게");
+        personalized = personalized.replace("사용자의", honorific + "의");
+        personalized = personalized.replace("사용자가", honorific + "이");
+        personalized = personalized.replace("사용자는", honorific + "은");
+        personalized = personalized.replace("사용자를", honorific + "을");
+        // '님'은 받침(ㅁ)이 있으므로 연결 조사는 '와'가 아니라 '과'이다.
+        personalized = personalized.replace("사용자와", honorific + "과");
+        personalized = personalized.replace("사용자도", honorific + "도");
+        // 위 조사 치환 후에도 남은 단독 '사용자'를 호칭으로 바꾼다.
+        personalized = personalized.replace("사용자", honorific);
+
+        return personalized;
     }
 
     /*
