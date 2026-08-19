@@ -57,7 +57,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
         select new me.jsu.springbootdeveloper.post.dto.report.ReportedCommentResponse(
             c.id,
             challenge.title,
-            COALESCE(a.totalReport, 0)
+            COALESCE(c.totalReport, 0)
         )
         from Comment c
         join c.article a
