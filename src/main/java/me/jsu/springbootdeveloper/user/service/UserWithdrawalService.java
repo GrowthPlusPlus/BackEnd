@@ -62,8 +62,7 @@ public class UserWithdrawalService {
         refreshTokenService.deleteByUser_Id(user.getId());
 
         // 임시
-        LocalDateTime threshold = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
-        withdraw(threshold);
+        withdraw(today.plusMinutes(1));
     }
 
     /*
