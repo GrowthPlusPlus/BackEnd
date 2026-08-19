@@ -60,6 +60,10 @@ public class UserWithdrawalService {
 
         // 유저의 리프레시 토큰을 직접 삭제한다.
         refreshTokenService.deleteByUser_Id(user.getId());
+
+        // 임시
+        LocalDateTime threshold = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+        withdraw(threshold);
     }
 
     /*
