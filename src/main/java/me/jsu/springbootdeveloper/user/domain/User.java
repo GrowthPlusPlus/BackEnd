@@ -5,6 +5,7 @@ package me.jsu.springbootdeveloper.user.domain;
 import jakarta.persistence.*;
 import lombok.*;
 import me.jsu.springbootdeveloper.challenge.domain.*;
+import me.jsu.springbootdeveloper.notification.domain.UserNotificationSchedule;
 import me.jsu.springbootdeveloper.post.domain.PostPictureTemporary;
 import me.jsu.springbootdeveloper.rag.domain.GptResponse;
 import me.jsu.springbootdeveloper.token.domain.RefreshToken;
@@ -184,6 +185,9 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE)
     private List<ChallengeDailyLog> challengeDailyLogs;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
+    private UserNotificationSchedule userNotificationSchedule;
 
     @Builder
     public User(String email, String password, Role role, String nickname) {
