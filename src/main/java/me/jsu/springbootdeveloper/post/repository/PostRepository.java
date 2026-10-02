@@ -282,4 +282,15 @@ public interface PostRepository extends JpaRepository<Article, Long> {
             @Param("start") LocalDate start,
             @Param("end") LocalDate end
     );
+
+    // 챌린지 id로 모든 인증글을 가져온다.
+    @Query("""
+        select a
+        from Article a
+        join fetch a.challenge c
+        where c.id = :challengeId
+    """)
+    List<Article> findByChallengeId(
+            @Param("challengeId") Long challengeId
+    );
 }
