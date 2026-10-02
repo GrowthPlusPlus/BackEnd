@@ -83,8 +83,13 @@ public class ChallengeService {
 
         ChallengeParticipant challengeParticipant = challengeQueryService.findByUser_IdAndChallenge_IdForParticipantCanNull(user.getId(), challengeId);
         LocalDate joinDate = null;
+        boolean isJoin;  // 해당 챌린지에 참여 했는지에 대한 여부이다.
         if (challengeParticipant != null) {
             joinDate = challengeParticipant.getJoinDate();
+            isJoin = true;
+        }
+        else {  // 참여자 정보가 없으면 참여 여부에 대한 불린값을 false로 한다.
+            isJoin = false;
         }
 
         // 챌린지의 태그를 조회한다.
@@ -112,6 +117,7 @@ public class ChallengeService {
                 ),
                 challenge.getParticipantNumber(),  // 참여자 수
                 joinDate,
+                isJoin,
                 successUsers.stream()
                         .map(u -> new ChallengeDetailResponse.UserSummary(
                                 u.getId(),

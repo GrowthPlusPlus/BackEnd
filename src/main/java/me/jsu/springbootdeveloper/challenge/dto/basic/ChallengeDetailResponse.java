@@ -27,6 +27,7 @@ public class ChallengeDetailResponse {
     private int participantCount;
 
     private LocalDate joinDate;  // 만약 조회한 유저가 해당 챌린지에 가입해있다면 언제 가입했는지 반환한다.
+    private boolean isJoin;
 
     private List<UserSummary> todaySuccessUsers;
 
