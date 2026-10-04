@@ -30,6 +30,7 @@ import me.jsu.springbootdeveloper.post.domain.Article;
 import me.jsu.springbootdeveloper.user.domain.User;
 import me.jsu.springbootdeveloper.user.domain.UserProfilePicture;
 import me.jsu.springbootdeveloper.tag.dto.TagResponse;
+import me.jsu.springbootdeveloper.user.exception.UserNotFoundException;
 import me.jsu.springbootdeveloper.user.service.UserService;
 import me.jsu.springbootdeveloper.tag.service.TagService;
 import org.springframework.data.domain.Page;
@@ -323,10 +324,16 @@ public class ChallengeService {
         return new ChallengeInviteResponse(link, friendList);
     }
 
-    /**
-     * 키워드로 챌린지를 검색한다. (제목 또는 태그명 포함)
+    /*
+        키워드로 챌린지를 검색한다. (제목 또는 태그명 포함)
+        로그인한 사용자가 진행 중인 챌린지는 join을 true로 표시한다.
+
+        @param email 현재 사용자 이메일이다. 비로그인 검색이면 null이다.
+        @param keyword 제목 또는 태그 검색어이다.
+        @param page 0부터 시작하는 페이지 번호이다.
+        @return 참여 여부가 포함된 챌린지 검색 페이지이다.
      */
-    public Page<SearchChallengeResponse> searchChallenges(String keyword, int page) {
+    public Page<SearchChallengeResponse> searchChallenges(String email, String keyword, int page) {
         Pageable pageable = PageRequest.of(page, 20);
 
         // 검색어가 포함된 공개 챌린지를 조회한다.
@@ -341,13 +348,53 @@ public class ChallengeService {
         // 태그를 한 번에 조회한다.
         Map<Long, List<TagResponse>> tagMap = tagService.getChallengeTagsByOnce(challengeIds);
 
+        // 이번 페이지 중 현재 사용자가 진행 중인 챌린지 id이다.
+        Set<Long> joinedChallengeIds = findJoinedChallengeIds(email, challengeIds);
+
         // DTO로 변환한다. (생성자에서 필요한 모든 필드 매핑)
         return challenges.map(challenge -> {
             // 맞는 챌린지 id키가 있으면 태그 리스트를 생성하고 없다면 빈 리스트를 생성한다.
             List<TagResponse> tags = tagMap.getOrDefault(challenge.getId(), List.of());
+            // 진행 중인 참여 기록에 이번 챌린지 id가 있으면 참여 중이다.
+            boolean join = joinedChallengeIds.contains(challenge.getId());
 
-            return new SearchChallengeResponse(challenge, tags);
+            return new SearchChallengeResponse(challenge, tags, join);
         });
+    }
+
+    /*
+        검색 결과 중 현재 사용자가 진행 중인 챌린지 id를 고른다.
+        비로그인이거나 검색 결과가 없으면 빈 집합을 반환한다.
+
+        @param email 현재 사용자 이메일이다.
+        @param challengeIds 이번 검색 페이지의 챌린지 id 목록이다.
+        @return 사용자가 진행 중인 챌린지 id 집합이다.
+     */
+    private Set<Long> findJoinedChallengeIds(String email, List<Long> challengeIds) {
+        if (email == null || email.isBlank() || challengeIds.isEmpty()) {
+            return Set.of();
+        }
+
+        User user;
+        try {
+            user = userService.findByEmail(email);
+        } catch (UserNotFoundException exception) {
+            // 사용자를 찾지 못하면 참여 여부를 표시하지 않고 검색 결과만 반환한다.
+            return Set.of();
+        }
+
+        // 진행 중(IN_PROGRESS)인 참여만 참여 중으로 본다. 완료·실패는 제외한다.
+        List<ChallengeParticipant> participants =
+                challengeParticipantRepository.findStatusWithChallengeByUserIdAndStatus(
+                        user.getId(),
+                        Status.IN_PROGRESS
+                );
+        Set<Long> pageChallengeIds = new HashSet<>(challengeIds);
+
+        return participants.stream()
+                .map(participant -> participant.getChallenge().getId())
+                .filter(pageChallengeIds::contains)
+                .collect(Collectors.toSet());
     }
 
     /*
