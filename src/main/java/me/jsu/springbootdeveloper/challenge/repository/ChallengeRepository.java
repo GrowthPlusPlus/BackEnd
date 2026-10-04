@@ -42,6 +42,75 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
             Pageable pageable
     );
 
+    /*
+        제목 또는 태그로 공개 챌린지를 검색한다.
+        누구든 완료(SUCCESS)한 챌린지는 결과에서 뺀다.
+        현재 사용자가 실패(FAIL)한 챌린지도 결과에서 뺀다.
+
+        @param keyword 제목 또는 태그 검색어이다.
+        @param visibility 공개 여부이다.
+        @param userId 현재 사용자 id이다. 비로그인이면 null이다.
+        @param pageable 페이징 정보이다.
+        @return 완료된 챌린지와 내 실패 챌린지를 제외한 검색 페이지이다.
+     */
+    @Query(
+            value = """
+                select distinct c
+                from Challenge c
+                left join c.tagMappings tm
+                left join tm.tag t
+                where c.challengeVisibility = :visibility
+                  and (c.title like %:keyword% or t.tagName like %:keyword%)
+                  and not exists (
+                      select finished.id
+                      from ChallengeParticipant finished
+                      where finished.challenge = c
+                        and finished.status = me.jsu.springbootdeveloper.challenge.enumType.Status.SUCCESS
+                  )
+                  and (
+                      :userId is null
+                      or not exists (
+                          select mine.id
+                          from ChallengeParticipant mine
+                          where mine.challenge = c
+                            and mine.user.id = :userId
+                            and mine.status = me.jsu.springbootdeveloper.challenge.enumType.Status.FAIL
+                      )
+                  )
+                order by c.startDate desc
+                """,
+            countQuery = """
+                select count(distinct c.id)
+                from Challenge c
+                left join c.tagMappings tm
+                left join tm.tag t
+                where c.challengeVisibility = :visibility
+                  and (c.title like %:keyword% or t.tagName like %:keyword%)
+                  and not exists (
+                      select finished.id
+                      from ChallengeParticipant finished
+                      where finished.challenge = c
+                        and finished.status = me.jsu.springbootdeveloper.challenge.enumType.Status.SUCCESS
+                  )
+                  and (
+                      :userId is null
+                      or not exists (
+                          select mine.id
+                          from ChallengeParticipant mine
+                          where mine.challenge = c
+                            and mine.user.id = :userId
+                            and mine.status = me.jsu.springbootdeveloper.challenge.enumType.Status.FAIL
+                      )
+                  )
+                """
+    )
+    Page<Challenge> searchChallengesExcludingFinishedByUser(
+            @Param("keyword") String keyword,
+            @Param("visibility") ChallengeVisibility visibility,
+            @Param("userId") Long userId,
+            Pageable pageable
+    );
+
     // 현재 진행중인 챌린지들을 배치 단위로 검색한다.
     @Query("""
         select c
