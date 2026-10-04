@@ -326,7 +326,8 @@ public class ChallengeService {
 
     /*
         키워드로 챌린지를 검색한다. (제목 또는 태그명 포함)
-        로그인한 사용자가 진행 중인 챌린지는 join을 true로 표시한다.
+        누군가 완료한 챌린지와, 로그인한 사용자가 실패한 챌린지는 결과에 넣지 않는다.
+        진행 중인 챌린지는 join을 true로 표시한다.
 
         @param email 현재 사용자 이메일이다. 비로그인 검색이면 null이다.
         @param keyword 제목 또는 태그 검색어이다.
@@ -335,9 +336,10 @@ public class ChallengeService {
      */
     public Page<SearchChallengeResponse> searchChallenges(String email, String keyword, int page) {
         Pageable pageable = PageRequest.of(page, 20);
+        User user = findSearchUser(email);
 
-        // 검색어가 포함된 공개 챌린지를 조회한다.
-        Page<Challenge> challenges = challengeRepository.searchChallenges(keyword, ChallengeVisibility.PUBLIC, pageable);
+        // 누군가 완료한 챌린지와, 내 실패 챌린지를 검색에서 제외한다.
+        Page<Challenge> challenges = searchPublicChallenges(keyword, user, pageable);
 
         // 검색한 챌린지의 id 목록을 추출한다.
         List<Long> challengeIds = challenges.getContent()
@@ -349,7 +351,7 @@ public class ChallengeService {
         Map<Long, List<TagResponse>> tagMap = tagService.getChallengeTagsByOnce(challengeIds);
 
         // 이번 페이지 중 현재 사용자가 진행 중인 챌린지 id이다.
-        Set<Long> joinedChallengeIds = findJoinedChallengeIds(email, challengeIds);
+        Set<Long> joinedChallengeIds = findJoinedChallengeIds(user, challengeIds);
 
         // DTO로 변환한다. (생성자에서 필요한 모든 필드 매핑)
         return challenges.map(challenge -> {
@@ -363,27 +365,60 @@ public class ChallengeService {
     }
 
     /*
+        공개 챌린지를 키워드로 검색한다.
+        누군가 완료한 챌린지는 항상 제외하고, 로그인 사용자의 실패 챌린지도 제외한다.
+
+        @param keyword 제목 또는 태그 검색어이다.
+        @param user 현재 사용자이다. 비로그인이면 null이다.
+        @param pageable 페이징 정보이다.
+        @return 검색된 챌린지 페이지이다.
+     */
+    private Page<Challenge> searchPublicChallenges(String keyword, User user, Pageable pageable) {
+        // 비로그인이면 내 실패 여부는 보지 않고, 누군가 완료한 챌린지만 제외한다.
+        Long userId = (user != null) ? user.getId() : null;
+
+        return challengeRepository.searchChallengesExcludingFinishedByUser(
+                keyword,
+                ChallengeVisibility.PUBLIC,
+                userId,
+                pageable
+        );
+    }
+
+    /*
+        검색에 사용할 현재 사용자를 찾는다.
+        이메일이 없거나 사용자를 찾지 못하면 null을 반환한다.
+
+        @param email 현재 사용자 이메일이다.
+        @return 검색 기준 사용자이다. 없으면 null이다.
+     */
+    private User findSearchUser(String email) {
+        if (email == null || email.isBlank()) {
+            return null;
+        }
+
+        try {
+            return userService.findByEmail(email);
+        } catch (UserNotFoundException exception) {
+            // 사용자를 찾지 못하면 완료·실패 제외 없이 검색 결과만 반환한다.
+            return null;
+        }
+    }
+
+    /*
         검색 결과 중 현재 사용자가 진행 중인 챌린지 id를 고른다.
         비로그인이거나 검색 결과가 없으면 빈 집합을 반환한다.
 
-        @param email 현재 사용자 이메일이다.
+        @param user 현재 사용자이다. 비로그인이면 null이다.
         @param challengeIds 이번 검색 페이지의 챌린지 id 목록이다.
         @return 사용자가 진행 중인 챌린지 id 집합이다.
      */
-    private Set<Long> findJoinedChallengeIds(String email, List<Long> challengeIds) {
-        if (email == null || email.isBlank() || challengeIds.isEmpty()) {
+    private Set<Long> findJoinedChallengeIds(User user, List<Long> challengeIds) {
+        if (user == null || challengeIds.isEmpty()) {
             return Set.of();
         }
 
-        User user;
-        try {
-            user = userService.findByEmail(email);
-        } catch (UserNotFoundException exception) {
-            // 사용자를 찾지 못하면 참여 여부를 표시하지 않고 검색 결과만 반환한다.
-            return Set.of();
-        }
-
-        // 진행 중(IN_PROGRESS)인 참여만 참여 중으로 본다. 완료·실패는 제외한다.
+        // 진행 중(IN_PROGRESS)인 참여만 참여 중으로 본다.
         List<ChallengeParticipant> participants =
                 challengeParticipantRepository.findStatusWithChallengeByUserIdAndStatus(
                         user.getId(),
