@@ -207,24 +207,28 @@ public class ChallengeApiController {
 
     /*
         챌린지를 검색하는 API이다. (제목 또는 태그 검색)
-        반환값에는 제목, 생성날짜, 참여자 수 정보 등이 포함된다.
+        반환값에는 제목, 생성날짜, 참여자 수, 현재 사용자 참여 여부(join)가 포함된다.
      */
     @Operation(
             summary = "챌린지 검색",
             description = """
         키워드를 포함하는 제목 또는 태그를 가진 챌린지 목록을 조회한다.
         응답 데이터로 챌린지 이름, 생성일, 참여 인원 현황 등을 포함한다.
+        로그인한 사용자가 진행 중인 챌린지는 join이 true이다.
         ex) GET /api/challenges/search?keyword=운동&page=0
         """
     )
     @GetMapping("/api/challenges/search")
     public ResponseEntity<Page<SearchChallengeResponse>> searchChallenges(
+            @AuthenticationPrincipal UserDetails userDetails,
             @Parameter(description = "검색어", required = true, example = "운동")
             @RequestParam String keyword,
             @Parameter(description = "페이지 번호", required = true, example = "0")
             @RequestParam int page
     ) {
-        Page<SearchChallengeResponse> response = challengeService.searchChallenges(keyword, page);
+        // 비로그인 검색이면 참여 여부를 계산하지 않는다.
+        String email = (userDetails != null) ? userDetails.getUsername() : null;
+        Page<SearchChallengeResponse> response = challengeService.searchChallenges(email, keyword, page);
         return ResponseEntity.ok(response);
     }
 
