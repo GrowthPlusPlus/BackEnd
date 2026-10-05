@@ -31,6 +31,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 /*
     챌린지에 참여한 맴버를 관리하는 서비스이다.
@@ -198,11 +199,12 @@ public class ChallengeMemberService {
         leaveChallengeInternal(targetUserId, challengeId);
 
         // 추방하려는 유저의 챌린지 초대 튜플을 검색한다.
-        ChallengeInvite challengeInvite = challengeInviteRepository.findByChallenge_IdAndInvitee_Id(challengeId, targetUserId)
-                .orElseThrow(() -> new ChallengeInviteNotFoundException("초대 정보가 존재하지 않습니다."));
+        Optional<ChallengeInvite> challengeInvite = challengeInviteRepository.findByChallenge_IdAndInvitee_Id(challengeId, targetUserId);
 
-        // 초대 상태가 됐던 유저의 챌린지 초대 DB를 삭제한다.
-        challengeInviteRepository.delete(challengeInvite);
+        // 만약 초대로 챌린지에 참여했다면, 초대 상태가 됐던 유저의 챌린지 초대 DB를 삭제한다.
+        if(challengeInvite.isPresent()) {
+            challengeInviteRepository.delete(challengeInvite.get());
+        }
 
         // 챌린지 멤버 강퇴 인앱 알림을 전송한다. (푸시 알림은 보내지 않는다.)
         // 예: "'챌린지명' 챌린지에서 방장에 의해 추방되었어요."
