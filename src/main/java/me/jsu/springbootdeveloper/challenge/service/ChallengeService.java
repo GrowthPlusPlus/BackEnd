@@ -326,8 +326,9 @@ public class ChallengeService {
 
     /*
         키워드로 챌린지를 검색한다. (제목 또는 태그명 포함)
-        누군가 완료한 챌린지와, 로그인한 사용자가 실패한 챌린지는 결과에 넣지 않는다.
-        진행 중인 챌린지는 join을 true로 표시한다.
+        종료일이 지난 챌린지는 결과에 넣지 않는다.
+        종료일이 남았어도 진행 중인 참여자가 없으면 결과에 넣지 않는다.
+        공개 챌린지만 조회하고, 내가 진행 중인 챌린지는 join을 true로 표시한다.
 
         @param email 현재 사용자 이메일이다. 비로그인 검색이면 null이다.
         @param keyword 제목 또는 태그 검색어이다.
@@ -338,8 +339,9 @@ public class ChallengeService {
         Pageable pageable = PageRequest.of(page, 20);
         User user = findSearchUser(email);
 
-        // 누군가 완료한 챌린지와, 내 실패 챌린지를 검색에서 제외한다.
-        Page<Challenge> challenges = searchPublicChallenges(keyword, user, pageable);
+        // 종료일이 지났거나, 방에 진행 중인 참여자가 없는 챌린지는 제외한다.
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
+        Page<Challenge> challenges = searchPublicChallenges(keyword, today, pageable);
 
         // 검색한 챌린지의 id 목록을 추출한다.
         List<Long> challengeIds = challenges.getContent()
@@ -366,21 +368,18 @@ public class ChallengeService {
 
     /*
         공개 챌린지를 키워드로 검색한다.
-        누군가 완료한 챌린지는 항상 제외하고, 로그인 사용자의 실패 챌린지도 제외한다.
+        종료일이 지난 챌린지와, 진행 중인 참여자가 없는 챌린지는 제외한다.
 
         @param keyword 제목 또는 태그 검색어이다.
-        @param user 현재 사용자이다. 비로그인이면 null이다.
+        @param today 서울 기준 오늘 날짜이다.
         @param pageable 페이징 정보이다.
         @return 검색된 챌린지 페이지이다.
      */
-    private Page<Challenge> searchPublicChallenges(String keyword, User user, Pageable pageable) {
-        // 비로그인이면 내 실패 여부는 보지 않고, 누군가 완료한 챌린지만 제외한다.
-        Long userId = (user != null) ? user.getId() : null;
-
+    private Page<Challenge> searchPublicChallenges(String keyword, LocalDate today, Pageable pageable) {
         return challengeRepository.searchChallengesExcludingFinishedByUser(
                 keyword,
                 ChallengeVisibility.PUBLIC,
-                userId,
+                today,
                 pageable
         );
     }
@@ -400,7 +399,7 @@ public class ChallengeService {
         try {
             return userService.findByEmail(email);
         } catch (UserNotFoundException exception) {
-            // 사용자를 찾지 못하면 완료·실패 제외 없이 검색 결과만 반환한다.
+            // 사용자를 찾지 못하면 참여 여부(join)만 표시하지 않는다.
             return null;
         }
     }

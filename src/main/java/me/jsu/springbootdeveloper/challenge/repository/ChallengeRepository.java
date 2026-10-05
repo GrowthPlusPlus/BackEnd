@@ -44,14 +44,14 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
 
     /*
         제목 또는 태그로 공개 챌린지를 검색한다.
-        누구든 완료(SUCCESS)한 챌린지는 결과에서 뺀다.
-        현재 사용자가 실패(FAIL)한 챌린지도 결과에서 뺀다.
+        종료일이 지난 챌린지는 제외한다.
+        종료일이 남았어도 진행 중인 참여자가 없으면, 전원이 실패한 것으로 보고 제외한다.
 
         @param keyword 제목 또는 태그 검색어이다.
         @param visibility 공개 여부이다.
-        @param userId 현재 사용자 id이다. 비로그인이면 null이다.
+        @param today 오늘 날짜이다. 종료일이 이 날짜보다 이전이면 제외한다.
         @param pageable 페이징 정보이다.
-        @return 완료된 챌린지와 내 실패 챌린지를 제외한 검색 페이지이다.
+        @return 공개이면서 아직 살아있는 챌린지 검색 페이지이다.
      */
     @Query(
             value = """
@@ -60,23 +60,14 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
                 left join c.tagMappings tm
                 left join tm.tag t
                 where c.challengeVisibility = :visibility
+                  and c.endDate >= :today
+                  and exists (
+                      select alive.id
+                      from ChallengeParticipant alive
+                      where alive.challenge = c
+                        and alive.status = me.jsu.springbootdeveloper.challenge.enumType.Status.IN_PROGRESS
+                  )
                   and (c.title like %:keyword% or t.tagName like %:keyword%)
-                  and not exists (
-                      select finished.id
-                      from ChallengeParticipant finished
-                      where finished.challenge = c
-                        and finished.status = me.jsu.springbootdeveloper.challenge.enumType.Status.SUCCESS
-                  )
-                  and (
-                      :userId is null
-                      or not exists (
-                          select mine.id
-                          from ChallengeParticipant mine
-                          where mine.challenge = c
-                            and mine.user.id = :userId
-                            and mine.status = me.jsu.springbootdeveloper.challenge.enumType.Status.FAIL
-                      )
-                  )
                 order by c.startDate desc
                 """,
             countQuery = """
@@ -85,29 +76,20 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
                 left join c.tagMappings tm
                 left join tm.tag t
                 where c.challengeVisibility = :visibility
+                  and c.endDate >= :today
+                  and exists (
+                      select alive.id
+                      from ChallengeParticipant alive
+                      where alive.challenge = c
+                        and alive.status = me.jsu.springbootdeveloper.challenge.enumType.Status.IN_PROGRESS
+                  )
                   and (c.title like %:keyword% or t.tagName like %:keyword%)
-                  and not exists (
-                      select finished.id
-                      from ChallengeParticipant finished
-                      where finished.challenge = c
-                        and finished.status = me.jsu.springbootdeveloper.challenge.enumType.Status.SUCCESS
-                  )
-                  and (
-                      :userId is null
-                      or not exists (
-                          select mine.id
-                          from ChallengeParticipant mine
-                          where mine.challenge = c
-                            and mine.user.id = :userId
-                            and mine.status = me.jsu.springbootdeveloper.challenge.enumType.Status.FAIL
-                      )
-                  )
                 """
     )
     Page<Challenge> searchChallengesExcludingFinishedByUser(
             @Param("keyword") String keyword,
             @Param("visibility") ChallengeVisibility visibility,
-            @Param("userId") Long userId,
+            @Param("today") LocalDate today,
             Pageable pageable
     );
 
@@ -123,7 +105,7 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
     """)
     List<Challenge> findActiveChallengesAfterId(@Param("today") LocalDate today, @Param("lastId") Long lastId, Pageable pageable);
 
-    // 공개 챌린지를 검색한다. AI 추천 기능에서 사용한다.
+    // 진행 중인 참여자가 있는 공개 챌린지를 검색한다. AI 추천과 탐색에서 사용한다.
     @Query("""
         select c
         from Challenge c
@@ -131,12 +113,19 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
           and c.startDate <= :today
           and c.endDate >= :today
           and c.active = true
+          and exists (
+              select alive.id
+              from ChallengeParticipant alive
+              where alive.challenge = c
+                and alive.status = me.jsu.springbootdeveloper.challenge.enumType.Status.IN_PROGRESS
+          )
         order by c.startDate desc
     """)
     List<Challenge> findPublicChallenges(@Param("today") LocalDate today);
 
     /*
-        진행 중인 공개 챌린지와 태그 매핑·태그 엔티티를 한 번에 조회한다.
+        진행 중인 참여자가 있는 공개 챌린지와 태그 매핑·태그 엔티티를 한 번에 조회한다.
+        만든 사람만 실패해서 진행 중인 참여자가 없으면 탐색에 넣지 않는다.
         탐색 탭 추천 API에서 N+1 조회를 막기 위해 사용한다.
      */
     @Query("""
@@ -148,6 +137,12 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
           and c.startDate <= :today
           and c.endDate >= :today
           and c.active = true
+          and exists (
+              select alive.id
+              from ChallengeParticipant alive
+              where alive.challenge = c
+                and alive.status = me.jsu.springbootdeveloper.challenge.enumType.Status.IN_PROGRESS
+          )
         """)
     List<Challenge> findPublicChallengesWithTagMappings(@Param("today") LocalDate today);
 
