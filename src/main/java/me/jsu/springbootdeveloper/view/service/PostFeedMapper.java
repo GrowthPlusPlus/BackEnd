@@ -110,6 +110,9 @@ public class PostFeedMapper {
                         .getOrDefault(challengeId, 0);  // 그 안에서 챌린지 id로 2차 접근을 한다. 값이 없으면 0을 사용한다.
             }
 
+            // 현재 조회한 유저가 게시글 작성자인지 확인한다.
+            boolean isAuthor = author != null && Objects.equals(authorId, userId);
+
             return ArticleDetailResponse.builder()
                     .postId(article.getId())
                     .challengeId(challenge == null ? 0 : challenge.getId())
@@ -128,6 +131,7 @@ public class PostFeedMapper {
                     .updatedAt(article.getUpdateAt())
                     .createdAt(article.getCreatedAt())
                     .isEdited(Boolean.TRUE.equals(article.getIsEdited()))
+                    .isAuthor(isAuthor)
                     .likeNumber(article.getLikeNumber())
                     .commentNumber(article.getCommentNumber())
                     .liked(likedPostIds.contains(article.getId()))
