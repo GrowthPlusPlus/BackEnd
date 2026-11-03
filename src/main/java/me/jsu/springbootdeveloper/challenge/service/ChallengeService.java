@@ -58,6 +58,7 @@ import java.util.stream.Collectors;
 public class ChallengeService {
     private final ChallengeRepository challengeRepository;
     private final ChallengeParticipantRepository challengeParticipantRepository;
+    private final ChallengeLeaveHistoryRepository challengeLeaveHistoryRepository;
     private final ChallengeDailyLogRepository challengeDailyLogRepository;
     private final ChallengeWeeklyStatusRepository challengeWeeklyStatusRepository;
     private final ChallengeInviteLinkRepository challengeInviteLinkRepository;
@@ -77,6 +78,11 @@ public class ChallengeService {
     private final FcmService fcmService;
     /*
         챌린지의 상세 정보를 반환하는 함수이다.
+        피드의 챌린지 보기와 탐색 상세가 이 응답을 함께 사용한다.
+
+        @param email 조회하는 사용자 이메일이다.
+        @param challengeId 조회할 챌린지 id이다.
+        @return 현재 참여 여부와 이탈 이력이 포함된 챌린지 상세이다.
      */
     public ChallengeDetailResponse getChallengeDetail(String email, Long challengeId) {
         User user = userService.findByEmail(email);
@@ -92,6 +98,12 @@ public class ChallengeService {
         else {  // 참여자 정보가 없으면 참여 여부에 대한 불린값을 false로 한다.
             isJoin = false;
         }
+
+        // 스스로 나간 경우와 강퇴된 경우를 같은 이탈 기록으로 본다.
+        boolean joinedBefore = challengeLeaveHistoryRepository.existsByUser_IdAndChallenge_Id(
+                user.getId(),
+                challengeId
+        );
 
         // 챌린지의 태그를 조회한다.
         List<TagToChallenge> tags = tagService.searchChallengeTags(challengeId);
@@ -119,6 +131,7 @@ public class ChallengeService {
                 challenge.getParticipantNumber(),  // 참여자 수
                 joinDate,
                 isJoin,
+                joinedBefore,
                 successUsers.stream()
                         .map(u -> new ChallengeDetailResponse.UserSummary(
                                 u.getId(),
@@ -215,6 +228,7 @@ public class ChallengeService {
         /*참여하기 전에 유효한 챌린지인지 확인한다
                 - challenge가 존재하는지 확인
                 - 이미 참여 중인 챌린지에는 참여 불가
+                - 나가거나 강퇴된 챌린지에는 다시 참여 불가
                 - 이미 종료된 챌린지에는 참여 불가
                 - 참여 인원이 초과된 챌린지에는 참여 불가
          */
@@ -234,6 +248,16 @@ public class ChallengeService {
             ))
         {
             throw new NotAllowedChallengeActionException("이미 참여 중인 챌린지입니다.");
+        }
+        // 스스로 나간 사용자와 강퇴된 사용자는 같은 챌린지에 다시 들어오지 못한다.
+        if (challengeLeaveHistoryRepository.existsByUser_IdAndChallenge_Id(
+                user.getId(),
+                challenge.getId()
+            ))
+        {
+            throw new NotAllowedChallengeActionException(
+                    "이전에 참여했던 챌린지에는 다시 참여할 수 없습니다."
+            );
         }
         // 이미 종료된 챌린지 && 인원초과가 된 챌린지인 경우엔 예외처리한다.
         // 이미 참여와 동일하게 안내 메시지를 reason으로 내려준다.
@@ -328,7 +352,9 @@ public class ChallengeService {
         키워드로 챌린지를 검색한다. (제목 또는 태그명 포함)
         종료일이 지난 챌린지는 결과에 넣지 않는다.
         종료일이 남았어도 진행 중인 참여자가 없으면 결과에 넣지 않는다.
-        공개 챌린지만 조회하고, 내가 진행 중인 챌린지는 join을 true로 표시한다.
+        공개 챌린지만 조회한다.
+        내가 진행 중인 챌린지는 join을 true로, 나갔거나 강퇴된 챌린지는 joinedBefore를 true로 표시한다.
+        이탈 기록이 있어도 검색 결과에서는 빼지 않는다.
 
         @param email 현재 사용자 이메일이다. 비로그인 검색이면 null이다.
         @param keyword 제목 또는 태그 검색어이다.
@@ -354,6 +380,8 @@ public class ChallengeService {
 
         // 이번 페이지 중 현재 사용자가 진행 중인 챌린지 id이다.
         Set<Long> joinedChallengeIds = findJoinedChallengeIds(user, challengeIds);
+        // 이번 페이지 중 나갔거나 강퇴된 적이 있는 챌린지 id이다.
+        Set<Long> leftChallengeIds = findLeftChallengeIds(user, challengeIds);
 
         // DTO로 변환한다. (생성자에서 필요한 모든 필드 매핑)
         return challenges.map(challenge -> {
@@ -361,8 +389,10 @@ public class ChallengeService {
             List<TagResponse> tags = tagMap.getOrDefault(challenge.getId(), List.of());
             // 진행 중인 참여 기록에 이번 챌린지 id가 있으면 참여 중이다.
             boolean join = joinedChallengeIds.contains(challenge.getId());
+            // 이탈 기록이 있으면 검색에는 보이지만 다시 참여할 수 없다.
+            boolean joinedBefore = leftChallengeIds.contains(challenge.getId());
 
-            return new SearchChallengeResponse(challenge, tags, join);
+            return new SearchChallengeResponse(challenge, tags, join, joinedBefore);
         });
     }
 
@@ -429,6 +459,27 @@ public class ChallengeService {
                 .map(participant -> participant.getChallenge().getId())
                 .filter(pageChallengeIds::contains)
                 .collect(Collectors.toSet());
+    }
+
+    /*
+        검색 결과 중 사용자가 나갔거나 강퇴된 챌린지 id를 고른다.
+        비로그인이거나 검색 결과가 없으면 빈 집합을 반환한다.
+
+        @param user 현재 사용자이다. 비로그인이면 null이다.
+        @param challengeIds 이번 검색 페이지의 챌린지 id 목록이다.
+        @return joinedBefore가 true인 챌린지 id 집합이다.
+     */
+    private Set<Long> findLeftChallengeIds(User user, List<Long> challengeIds) {
+        if (user == null || challengeIds.isEmpty()) {
+            return Set.of();
+        }
+
+        return new HashSet<>(
+                challengeLeaveHistoryRepository.findChallengeIdsByUserIdAndChallengeIds(
+                        user.getId(),
+                        challengeIds
+                )
+        );
     }
 
     /*

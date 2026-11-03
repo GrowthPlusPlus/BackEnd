@@ -8,6 +8,7 @@ import me.jsu.springbootdeveloper.challenge.domain.Challenge;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
 import me.jsu.springbootdeveloper.challenge.dto.basic.SearchChallengeResponse;
 import me.jsu.springbootdeveloper.challenge.enumType.Status;
+import me.jsu.springbootdeveloper.challenge.repository.ChallengeLeaveHistoryRepository;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeRepository;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeQueryService;
 import me.jsu.springbootdeveloper.rag.dto.AiChallengeCombinedRecommendResponse;
@@ -63,6 +64,7 @@ public class AiChallengeCombinedRecommendService {
     private final AiChallengeRecommendService aiChallengeRecommendService;
     private final UserService userService;
     private final ChallengeRepository challengeRepository;
+    private final ChallengeLeaveHistoryRepository challengeLeaveHistoryRepository;
     private final ChallengeQueryService challengeQueryService;
     // 배너 요약의 관심 태그(#태그)를 만들 때 사용한다.
     private final TagToUserRepository tagToUserRepository;
@@ -110,9 +112,19 @@ public class AiChallengeCombinedRecommendService {
 
             List<TagToUser> tagToUsers = tagToUserRepository.findWithTagByUserId(user.getId());
 
+            /*
+                카드에서 뺄 챌린지이다.
+                지금 참여 중인 챌린지에, 나가거나 강퇴된 챌린지를 더한다.
+             */
+            Set<Long> blockedChallengeIds = new HashSet<>(participatingIds);
+            blockedChallengeIds.addAll(findLeftChallengeIds(
+                    user.getId(),
+                    new ArrayList<>(publicWithTags.keySet())
+            ));
+
             List<Challenge> cardChallenges = new ArrayList<>();
             for (Challenge brief : picked) {
-                if (participatingIds.contains(brief.getId())) {
+                if (blockedChallengeIds.contains(brief.getId())) {
                     continue;
                 }
                 Challenge full = publicWithTags.get(brief.getId());
@@ -127,10 +139,11 @@ public class AiChallengeCombinedRecommendService {
 
             /*
                 RAG/본문 매칭으로 카드가 3개 미만이면, 관심사 태그와 1개 이상 겹치는
-                미참여 공개 챌린지로 최대 3개까지 채운다. 겹침 후보가 없을 때만
-                태그 무관 최신순으로 보완한다.
+                미참여 공개 챌린지로 최대 3개까지 채운다.
+                나가거나 강퇴된 챌린지도 여기서 제외한다.
+                겹침 후보가 없을 때만 태그 무관 최신순으로 보완한다.
              */
-            Set<Long> excludeChallengeIds = new HashSet<>(participatingIds);
+            Set<Long> excludeChallengeIds = new HashSet<>(blockedChallengeIds);
             excludeChallengeIds.addAll(
                     cardChallenges.stream().map(Challenge::getId).collect(Collectors.toSet())
             );
@@ -1625,5 +1638,26 @@ public class AiChallengeCombinedRecommendService {
         }
 
         return new SearchChallengeResponse(challenge, tags);
+    }
+
+    /*
+        공개 챌린지 중, 사용자가 나가거나 강퇴된 챌린지 id를 고른다.
+        후보가 없으면 조회하지 않는다.
+
+        @param userId 추천 대상 사용자 id
+        @param challengeIds 오늘 기준 공개 챌린지 id 목록
+        @return 추천 카드에서 제외할 챌린지 id 집합
+     */
+    private Set<Long> findLeftChallengeIds(Long userId, List<Long> challengeIds) {
+        if (userId == null || challengeIds == null || challengeIds.isEmpty()) {
+            return Set.of();
+        }
+
+        return new HashSet<>(
+                challengeLeaveHistoryRepository.findChallengeIdsByUserIdAndChallengeIds(
+                        userId,
+                        challengeIds
+                )
+        );
     }
 }
