@@ -1,4 +1,4 @@
-// 정성우
+// 여하늘
 
 package me.jsu.springbootdeveloper.config.fcm;
 
@@ -7,11 +7,11 @@ import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.FileInputStream;
 
 /*
     Firebase Cloud Messaging(FCM)을 초기화하는 클래스이다.
@@ -28,12 +28,8 @@ public class FCMInitializer {
 
     @PostConstruct
     public void initialize() {
-        try {
-            // Firebase 서비스 계정 키 파일 경로를 지정한다.
-            ClassPathResource resource = new ClassPathResource(firebaseConfigPath);
-
-            // 서비스 계정 키 파일을 읽어온다.
-            InputStream serviceAccount = resource.getInputStream();
+        // Firebase 서비스 계정 키 파일 경로를 지정하고 서비스 계정 키 파일을 읽어온다.
+        try (InputStream serviceAccount = new FileInputStream(firebaseConfigPath)) {
 
             // Firebase 옵션을 설정한다.
             FirebaseOptions options = FirebaseOptions.builder()
