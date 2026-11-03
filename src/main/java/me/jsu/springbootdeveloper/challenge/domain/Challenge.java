@@ -113,7 +113,7 @@ public class Challenge {
 
     /*
         다음 코드는 CASCADE 설정으로 Challenge 엔티티를 fk값으로 가지고 있는 DB들을 자동으로 삭제해주는 설정이다.
-        챌린지 삭제 시, 밑의 정보들도 함께 전부 삭제된다. (챌린지 참여자, 챌린지 초대 링크, 챌린지 주간 상태, 챌린지 태그)
+        챌린지 삭제 시, 밑의 정보들도 함께 전부 삭제된다. (챌린지 참여자, 챌린지 초대 링크, 챌린지 주간 상태, 챌린지 태그, 이탈 기록)
      */
     @OneToMany(mappedBy = "challenge", cascade = CascadeType.REMOVE)
     private List<ChallengeParticipant> challengeParticipants;
@@ -135,6 +135,10 @@ public class Challenge {
 
     @OneToMany(mappedBy = "challenge", cascade = CascadeType.REMOVE)
     private List<ChallengeCalenderShare> challengeCalenderShares;
+
+    // 챌린지가 삭제되면 나가기·강퇴 기록도 함께 지운다.
+    @OneToMany(mappedBy = "challenge", cascade = CascadeType.REMOVE)
+    private List<ChallengeLeaveHistory> challengeLeaveHistories;
 
     @Builder
     public Challenge(String title, String content, User user, int maxParticipantNumber, ChallengeVisibility challengeVisibility,

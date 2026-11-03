@@ -215,6 +215,7 @@ public class ChallengeApiController {
         키워드를 포함하는 제목 또는 태그를 가진 챌린지 목록을 조회한다.
         응답 데이터로 챌린지 이름, 생성일, 참여 인원 현황 등을 포함한다.
         로그인한 사용자가 진행 중인 챌린지는 join이 true이다.
+        나가거나 강퇴된 적이 있는 챌린지는 joinedBefore가 true이며, 검색 결과에는 그대로 포함된다.
         ex) GET /api/challenges/search?keyword=운동&page=0
         """
     )

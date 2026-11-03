@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.domain.Challenge;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
 import me.jsu.springbootdeveloper.challenge.enumType.Status;
+import me.jsu.springbootdeveloper.challenge.repository.ChallengeLeaveHistoryRepository;
 import me.jsu.springbootdeveloper.challenge.repository.ChallengeRepository;
 import me.jsu.springbootdeveloper.challenge.service.ChallengeQueryService;
 import me.jsu.springbootdeveloper.rag.dto.DocumentSearchResultDto;
@@ -40,7 +41,7 @@ import java.util.stream.Collectors;
     [이번 개선의 핵심]
     - 참여 이력: 제목만 → 태그·한줄소개·진행/종료 상태까지 포함
     - 후보 선정: 관심 태그만 → 관심 태그 + 참여했던 챌린지의 태그(preferenceTagNames)
-    - 후보 목록: 이미 참여한 챌린지는 LLM 컨텍스트에서 제외
+    - 후보 목록: 이미 참여했거나, 나갔거나 강퇴된 챌린지는 LLM 컨텍스트에서 제외
     - DB 호출: 공개 챌린지 1회 조회 후 메모리에서 필터·정렬
  */
 @RequiredArgsConstructor
@@ -103,6 +104,7 @@ public class AiChallengeRecommendService {
     // 참여했던 챌린지의 태그를 challengeId 목록으로 한 번에 조회할 때 사용한다.
     private final TagToChallengeRepository tagToChallengeRepository;
     private final ChallengeRepository challengeRepository;
+    private final ChallengeLeaveHistoryRepository challengeLeaveHistoryRepository;
     private final ChallengeQueryService challengeQueryService;
 
     /*
@@ -196,10 +198,16 @@ public class AiChallengeRecommendService {
 
         // ----- 3단계: 진행 중 공개 챌린지 1회 조회 후 메모리에서 필터·정렬 -----
         List<Challenge> allPublicWithTags = challengeRepository.findPublicChallengesWithTagMappings(today);
+        // 참여 중인 챌린지와, 나가거나 강퇴된 챌린지는 추천 후보에서 뺀다.
+        Set<Long> excludeChallengeIds = new HashSet<>(participatingChallengeIds);
+        excludeChallengeIds.addAll(findLeftChallengeIds(
+                userId,
+                allPublicWithTags.stream().map(Challenge::getId).toList()
+        ));
         List<Challenge> publicSlice = slicePublicChallengesForContext(
                 allPublicWithTags,
                 preferenceTagNames,
-                participatingChallengeIds
+                excludeChallengeIds
         );
 
         // ----- 4단계: LLM이 읽을 본문(content) 조립 -----
@@ -379,14 +387,14 @@ public class AiChallengeRecommendService {
         LLM에 실을 "추천 후보" 공개 챌린지 목록을 만든다.
 
         처리 순서:
-        1) participatingChallengeIds 에 있으면 제거 (이미 참여 → 추천 불필요)
+        1) excludeChallengeIds 에 있으면 제거 (참여 중·나간 적 있음·강퇴 → 추천 불필요)
         2) preferenceTagNames 와 챌린지 태그 겹침 개수로 내림차순 정렬
         3) 겹침이 같으면 startDate 최신순
         4) 상위 MAX_PUBLIC_CHALLENGES_IN_CONTEXT(20)개만 반환
 
         @param allPublicWithTags DB에서 이미 읽은 진행 중 공개 챌린지 전체
         @param preferenceTagNames 관심사+참여 이력 태그 합집합
-        @param excludeChallengeIds 제외할 챌린지 id (보통 참여 중인 id 전체)
+        @param excludeChallengeIds 제외할 챌린지 id (참여 중, 나간 적 있음, 강퇴)
         @return LLM 컨텍스트·Discovery 제목 매칭에 쓰는 후보 슬라이스
      */
     private List<Challenge> slicePublicChallengesForContext(
@@ -394,7 +402,7 @@ public class AiChallengeRecommendService {
             Set<String> preferenceTagNames,
             Set<Long> excludeChallengeIds
     ) {
-        //1. 공개 챌린지 중 미참여 챌린지만 다시 모음
+        // 공개 챌린지 중 참여 중이거나 이탈한 챌린지는 후보에서 뺀다.
         List<Challenge> candidates = allPublicWithTags.stream()
                 .filter(c -> !excludeChallengeIds.contains(c.getId())) //excludeChallengeIds에 있는 챌린지는 제외
                 .collect(Collectors.toCollection(ArrayList::new));
@@ -485,6 +493,27 @@ public class AiChallengeRecommendService {
                 .map(tm -> tm.getTag().getTagName())
                 .distinct()
                 .collect(Collectors.joining(", "));
+    }
+
+    /*
+        공개 챌린지 후보 중, 사용자가 나가거나 강퇴된 챌린지 id를 고른다.
+        후보가 없으면 조회하지 않는다.
+
+        @param userId 추천 대상 사용자 id
+        @param challengeIds 이번 공개 챌린지 후보 id 목록
+        @return 추천에서 제외할 챌린지 id 집합
+     */
+    private Set<Long> findLeftChallengeIds(Long userId, List<Long> challengeIds) {
+        if (userId == null || challengeIds == null || challengeIds.isEmpty()) {
+            return Set.of();
+        }
+
+        return new HashSet<>(
+                challengeLeaveHistoryRepository.findChallengeIdsByUserIdAndChallengeIds(
+                        userId,
+                        challengeIds
+                )
+        );
     }
 
 }

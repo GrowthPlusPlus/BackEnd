@@ -145,6 +145,10 @@ public class User implements UserDetails {  // userDetails를 상속 받아서 �
     @OneToMany(mappedBy = "user", cascade = REMOVE, fetch = FetchType.LAZY)
     private List<ChallengeParticipant> challengeParticipants;
 
+    // 회원탈퇴 시 나가기·강퇴 기록도 함께 지운다.
+    @OneToMany(mappedBy = "user", cascade = REMOVE, fetch = FetchType.LAZY)
+    private List<ChallengeLeaveHistory> challengeLeaveHistories;
+
     @OneToMany(mappedBy = "user", cascade = REMOVE, fetch = FetchType.LAZY)
     private List<Notification> notifications;
 

@@ -5,6 +5,7 @@ package me.jsu.springbootdeveloper.challenge.service;
 import lombok.RequiredArgsConstructor;
 import me.jsu.springbootdeveloper.challenge.domain.Challenge;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeInvite;
+import me.jsu.springbootdeveloper.challenge.domain.ChallengeLeaveHistory;
 import me.jsu.springbootdeveloper.challenge.domain.ChallengeParticipant;
 import me.jsu.springbootdeveloper.challenge.dto.member.ChallengeMemberResponse;
 import me.jsu.springbootdeveloper.challenge.enumType.Status;
@@ -44,6 +45,7 @@ public class ChallengeMemberService {
     private final ChallengeRepository challengeRepository;
     private final ChallengeInviteLinkRepository challengeInviteLinkRepository;
     private final ChallengeParticipantRepository challengeParticipantRepository;
+    private final ChallengeLeaveHistoryRepository challengeLeaveHistoryRepository;
     private final ChallengeWeeklyStatusRepository challengeWeeklyStatusRepository;
     private final ChallengeInviteRepository challengeInviteRepository;
     private final UserStatisticsService userStatisticsService;
@@ -247,8 +249,17 @@ public class ChallengeMemberService {
         challengeInviteLinkRepository.deleteByUser_IdAndChallenge_Id(userId, challengeId);
         challengeWeeklyStatusRepository.deleteByUser_IdAndChallenge_Id(userId, challengeId);
 
+        // 삭제 전에 사용자를 잡아 둔다. 삭제 뒤에는 참여 행으로 사용자를 다시 조회하지 않는다.
+        User leavingUser = challengeParticipant.getUser();
+
         // 참여자 정보를 실제로 삭제한다.
         challengeParticipantRepository.delete(challengeParticipant);
+
+        /*
+            스스로 나가기와 강퇴가 모두 이 함수를 탄다.
+            참여 행이 사라져도 다시 들어오지 못하도록 이탈 기록을 남긴다.
+         */
+        saveLeaveHistory(challenge, leavingUser);
 
         // 챌린지 탈퇴 후 잔디를 재집계한다.
         userStatisticsService.researchLog(userId, LocalDate.now(ZoneId.of("Asia/Seoul")));
@@ -259,6 +270,25 @@ public class ChallengeMemberService {
         // 유저가 참여한 총 챌린지 개수를 감소시킨다.
         UserStatistics userStatistics = userStatisticsService.findByUser_IdStatistics(userId);
         userStatistics.decreaseChallengeCount();
+    }
+
+    /*
+        같은 사용자가 같은 챌린지를 나간 기록이 없을 때만 저장한다.
+        나가기와 강퇴를 구분하지 않으며, 둘 다 재참여를 막는다.
+
+        @param challenge 사용자가 떠난 챌린지
+        @param user 나가거나 강퇴된 사용자
+     */
+    private void saveLeaveHistory(Challenge challenge, User user) {
+        boolean alreadyLeft = challengeLeaveHistoryRepository.existsByUser_IdAndChallenge_Id(
+                user.getId(),
+                challenge.getId()
+        );
+        if (alreadyLeft) {
+            return;
+        }
+
+        challengeLeaveHistoryRepository.save(new ChallengeLeaveHistory(challenge, user));
     }
 
     /*

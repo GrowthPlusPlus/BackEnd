@@ -28,6 +28,7 @@ public class ChallengeDetailResponse {
 
     private LocalDate joinDate;  // 만약 조회한 유저가 해당 챌린지에 가입해있다면 언제 가입했는지 반환한다.
     private boolean isJoin;
+    private boolean joinedBefore;  // 나가거나 강퇴된 적이 있으면 true이다.
 
     private List<UserSummary> todaySuccessUsers;
 
