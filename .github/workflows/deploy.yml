@@ -4,10 +4,54 @@ on:
   push:
     branches: [ "develop" ] # 또는 develop 브랜치로 설정
 
+concurrency:
+  group: haeneam-deploy
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      # GitHub Actions 러너 IP를 Vultr 방화벽에 임시 등록
+      - name: Allow GitHub Actions IP
+        id: firewall
+        shell: bash
+        env:
+          VULTR_API_KEY: ${{ secrets.VULTR_API_KEY }}
+          FIREWALL_ID: ${{ secrets.VULTR_FIREWALL_GROUP_ID }}
+        run: |
+          set -euo pipefail
+
+          RUNNER_IP=$(curl -fsS -4 https://api.ipify.org)
+          echo "GitHub Actions runner IP: $RUNNER_IP"
+
+          RESPONSE=$(curl -fsS --retry 3 \
+            -X POST \
+            "https://api.vultr.com/v2/firewalls/$FIREWALL_ID/rules" \
+            -H "Authorization: Bearer $VULTR_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --arg ip "$RUNNER_IP" '{
+              ip_type: "v4",
+              protocol: "tcp",
+              port: "22",
+              subnet: $ip,
+              subnet_size: 32,
+              notes: "github-actions-temporary"
+            }')")
+
+          RULE_ID=$(echo "$RESPONSE" | jq -r '.firewall_rule.id // empty')
+
+          if [ -z "$RULE_ID" ]; then
+            echo "Failed to retrieve firewall rule ID"
+            exit 1
+          fi
+
+          echo "rule_id=$RULE_ID" >> "$GITHUB_OUTPUT"
+          echo "Temporary SSH rule created"
+
+          # 방화벽 규칙 반영 대기
+          sleep 15
+
       - name: Deploy to Vultr
         uses: appleboy/ssh-action@master
         with:
@@ -16,6 +60,9 @@ jobs:
           password: ${{ secrets.VULTR_PASSWORD }} # 비밀번호 방식일 경우
           # key: ${{ secrets.SSH_KEY }} # 만약 키 방식을 쓰신다면 이 줄을 사용하세요.
           script: |
+            # 명령어 실패 시 배포 중단
+            set -e
+            
             # 1. 통합 프로젝트 폴더로 이동
             cd ~/hanaem
 
@@ -52,3 +99,21 @@ jobs:
             docker compose down
             docker compose build --no-cache backend  # --no-cache를 추가하여 캐시를 쓰지 않고 소스코드를 새로 구움
             docker compose up -d
+
+      # 배포 완료 후 임시 SSH 허용 규칙 삭제
+      - name: Remove GitHub Actions IP
+        if: ${{ always() && steps.firewall.outputs.rule_id != '' }}
+        shell: bash
+        env:
+          VULTR_API_KEY: ${{ secrets.VULTR_API_KEY }}
+          FIREWALL_ID: ${{ secrets.VULTR_FIREWALL_GROUP_ID }}
+          RULE_ID: ${{ steps.firewall.outputs.rule_id }}
+        run: |
+          set -euo pipefail
+          
+          curl -fsS --retry 3 \
+            -X DELETE \
+            "https://api.vultr.com/v2/firewalls/$FIREWALL_ID/rules/$RULE_ID" \
+            -H "Authorization: Bearer $VULTR_API_KEY"
+          
+          echo "Temporary SSH rule removed"
