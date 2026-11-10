@@ -50,7 +50,7 @@ jobs:
           echo "Temporary SSH rule created"
 
           # 방화벽 규칙 반영 대기
-          sleep 15
+          sleep 45
 
       - name: Deploy to Vultr
         uses: appleboy/ssh-action@master
@@ -58,6 +58,7 @@ jobs:
           host: ${{ secrets.VULTR_HOST }} #
           username: ${{ secrets.VULTR_USERNAME }} #
           password: ${{ secrets.VULTR_PASSWORD }} # 비밀번호 방식일 경우
+          timeout: 60s  # SSH 연결 대기 시간 30초 → 60초
           # key: ${{ secrets.SSH_KEY }} # 만약 키 방식을 쓰신다면 이 줄을 사용하세요.
           script: |
             # 명령어 실패 시 배포 중단
