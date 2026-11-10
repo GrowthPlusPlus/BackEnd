@@ -25,12 +25,6 @@ public class KakaoOAuthTokenService {
     private final KakaoOAuthProperties props;
 
     public KakaoTokenResponse exchangeCode(String code, String codeVerifier) {
-        System.out.println("code=" + code);
-        System.out.println("redirect_uri=" + props.redirectUri());
-        System.out.println("code_verifier=" + codeVerifier);
-        System.out.println("client_id=" + props.clientId());
-        System.out.println("client_id=" + props.clientSecret());
-
         try {
             return webClient.post()
                     .uri("https://kauth.kakao.com/oauth/token")

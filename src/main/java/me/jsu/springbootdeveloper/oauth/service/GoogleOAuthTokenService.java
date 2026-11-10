@@ -71,11 +71,6 @@ public class GoogleOAuthTokenService {
             String body = e.getResponseBodyAsString();
             System.out.println("Google token endpoint error status=" + e.getStatusCode());
             System.out.println("Google token endpoint error body=" + body);
-
-            System.out.println("clientId=" + clientId);
-            System.out.println("redirectUri=" + redirectUri);
-            System.out.println("code.length=" + code.length());
-            System.out.println("codeVerifier.length=" + codeVerifier.length());
             throw e;
         }
     }
