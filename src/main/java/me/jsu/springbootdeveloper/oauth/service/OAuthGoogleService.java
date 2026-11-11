@@ -37,13 +37,6 @@ public class OAuthGoogleService {
 
         // clientId 검증과 함께 redirectUri 주소를 정의한다.
         String redirectUri;
-//        if (clientId.equals("433865217738-m3uqqdv9lumpf1ne8e3bkpsbtsa6919i.apps.googleusercontent.com")) {
-//            redirectUri = "com.googleusercontent.apps.433865217738-m3uqqdv9lumpf1ne8e3bkpsbtsa6919i:/oauth2redirect";
-//        } else if (clientId.equals("433865217738-gu6vtmh4d7dpephj0mb152vm4s3vcap9.apps.googleusercontent.com")) {
-//            redirectUri = "com.googleusercontent.apps.433865217738-gu6vtmh4d7dpephj0mb152vm4s3vcap9:/oauth2redirect";
-//        } else {
-//            throw new OAuthLoginException("INVALID_CLIENT_ID");
-//        }
 
         if (clientId.equals(props.androidClientId())) {
             redirectUri = props.androidRedirectUri();
