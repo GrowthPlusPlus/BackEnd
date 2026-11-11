@@ -52,6 +52,25 @@ jobs:
           # 방화벽 규칙 반영 대기
           sleep 45
 
+      # 연결 테스트
+      - name: Test SSH Port
+        shell: bash
+        env:
+          VULTR_HOST: ${{ secrets.VULTR_HOST }}
+        run: |
+          echo "Runner public IP:"
+          curl -fsS -4 https://api.ipify.org
+          echo
+      
+          echo "Testing SSH port 22..."
+      
+          if timeout 10 bash -c 'echo > /dev/tcp/"$1"/22' _ "$VULTR_HOST"; then
+            echo "SSH port 22 reachable"
+          else
+            echo "SSH port 22 unreachable"
+            exit 1
+          fi
+
       - name: Deploy to Vultr
         uses: appleboy/ssh-action@master
         with:
